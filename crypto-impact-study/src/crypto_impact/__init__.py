@@ -11,4 +11,6 @@ __all__ = [
     "regression",
     "plotting",
     "pipeline",
+    "shape",
+    "sampling",
 ]

@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from crypto_impact.data_load import parse_bool
-from crypto_impact.imbalance import compute_window_imbalance, filter_nonzero_imbalance
+from crypto_impact.imbalance import compute_window_imbalance, filter_valid_windows, filter_nonzero_imbalance
 from crypto_impact.trade_signing import add_signed_volume, infer_trade_sign
 
 
@@ -21,10 +21,10 @@ def test_infer_trade_sign_uses_buyer_maker_flag() -> None:
     assert signs.tolist() == [-1, 1, -1]
 
 
-def test_compute_window_imbalance_and_signed_impact() -> None:
+def test_compute_window_fields_are_hand_calculable() -> None:
     trades = pd.DataFrame(
         {
-            "price": [100.0, 101.0, 102.0, 99.0],
+            "price": [100.0, 110.0, 120.0, 108.0],
             "quantity": [2.0, 3.0, 1.0, 4.0],
             "buyer_maker": [False, True, False, True],
         },
@@ -41,16 +41,39 @@ def test_compute_window_imbalance_and_signed_impact() -> None:
     signed = add_signed_volume(trades)
 
     windows = compute_window_imbalance(signed, "1min")
+    first = windows.loc[pd.Timestamp("2024-01-01 00:00:00", tz="UTC")]
 
-    assert windows.loc[pd.Timestamp("2024-01-01 00:00:00", tz="UTC"), "q_t"] == -1.0
-    assert windows.loc[pd.Timestamp("2024-01-01 00:00:00", tz="UTC"), "absolute_volume"] == 5.0
-    assert windows.loc[pd.Timestamp("2024-01-01 00:00:00", tz="UTC"), "start_price"] == 100.0
-    assert windows.loc[pd.Timestamp("2024-01-01 00:00:00", tz="UTC"), "end_price"] == 101.0
-    expected = -np.log(101.0 / 100.0)
-    assert np.isclose(windows.loc[pd.Timestamp("2024-01-01 00:00:00", tz="UTC"), "signed_impact"], expected)
+    assert first["signed_imbalance"] == -1.0
+    assert first["q_t"] == -1.0
+    assert first["abs_signed_imbalance"] == 1.0
+    assert first["gross_volume"] == 5.0
+    assert first["absolute_volume"] == 5.0
+    assert first["participation_ratio"] == 0.2
+    assert first["start_price"] == 100.0
+    assert first["end_price"] == 110.0
+    assert first["n_trades"] == 2
+    assert first["trade_count"] == 2
+    expected_return = np.log(110.0 / 100.0)
+    assert np.isclose(first["log_return"], expected_return)
+    assert np.isclose(first["signed_impact"], -expected_return)
+    assert np.isclose(first["abs_log_return"], expected_return)
 
 
-def test_filter_nonzero_imbalance() -> None:
+def test_filter_valid_windows_removes_zero_imbalance_and_zero_volume() -> None:
+    windows = pd.DataFrame(
+        {
+            "signed_imbalance": [1.0, 0.0, 2.0, 1.0],
+            "gross_volume": [10.0, 10.0, 0.0, 0.0],
+            "participation_ratio": [0.1, 0.0, np.inf, np.nan],
+        }
+    )
+
+    filtered = filter_valid_windows(windows)
+
+    assert filtered["signed_imbalance"].tolist() == [1.0]
+
+
+def test_filter_nonzero_imbalance_supports_legacy_q_t() -> None:
     windows = pd.DataFrame({"q_t": [1.0, 0.0, -2.0]})
 
     filtered = filter_nonzero_imbalance(windows)

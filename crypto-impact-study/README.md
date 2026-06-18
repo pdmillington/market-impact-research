@@ -86,6 +86,33 @@ signed impact = sign(Q_T) * log(end_price / start_price)
 
 Observations are binned by `abs(Q_T)` using logarithmic bins. Each bin reports mean absolute imbalance, mean signed impact, standard error, and observation count. The fitted power law is estimated from bins with positive mean signed impact.
 
+
+## Extended Methodology
+
+This repository implements fixed-window imbalance analysis, not true metaorder analysis. Public Binance aggregate trade data do not identify parent orders or traders, so the analysis treats short calendar-time windows as a proxy for directional order-flow pressure.
+
+For trade `i`, the inferred aggressor sign is `epsilon_i`, and quantity is `q_i`. In each window `T`:
+
+```text
+Q_T = sum(epsilon_i * q_i)
+V_T = sum(q_i)
+participation_ratio = |Q_T| / V_T
+signed_impact = sign(Q_T) * log(P_end / P_start)
+```
+
+The saved window table also includes absolute signed imbalance, gross volume, start/end prices, raw log return, absolute log return, and trade count. Audit CSV files contain the first 20 valid windows so the calculations can be checked by hand.
+
+The analysis now supports two explanatory variables:
+
+```text
+abs_signed_imbalance = |Q_T|
+participation_ratio = |Q_T| / V_T
+```
+
+Both can be summarized with logarithmic bins and equal-count bins. Regressions can be filtered by minimum absolute signed imbalance, minimum signed impact, minimum participation ratio, and minimum observations per bin.
+
+Low-imbalance bins can be dominated by microstructure noise, including bid-offer bounce and price discreteness. Trade-only Roll-spread estimates or minimum-impact filters can be used to remove this noise floor before fitting a power law. The estimated exponent is sensitive to binning and filtering choices, so the raw/bin overlay plots should be inspected before interpreting any regression.
+
 ## Tests
 
 ```bash
@@ -97,3 +124,38 @@ The tests cover the trade-signing convention, fixed-window imbalance calculation
 ## Notes For Extension
 
 The current design keeps core calculations in small functions so the study can be extended without rewriting the pipeline. Natural next modules include order-book snapshots, impact decay after high-imbalance windows, pseudo-metaorder construction, and liquidity replenishment metrics.
+
+## Robustness And Shape Analysis
+
+The current research focus is the shape of the impact function, not automatic exponent optimisation. Equal-count bins are now the primary methodology because they give each point on the binned curve comparable empirical support. Logarithmic bins remain available as diagnostic outputs.
+
+Supported sampling modes:
+
+```bash
+# Non-overlapping 5 minute bars
+python -m crypto_impact.pipeline --symbol BTCUSDT --start-date 2024-01-01 --end-date 2024-01-07 --sampling time --window-length 5min --window-step 5min
+
+# Rolling 5 minute bars stepped every minute
+python -m crypto_impact.pipeline --symbol BTCUSDT --start-date 2024-01-01 --end-date 2024-01-07 --sampling time --window-length 5min --window-step 1min
+
+# Volume bars, e.g. one observation when cumulative volume reaches 100 BTC
+python -m crypto_impact.pipeline --symbol BTCUSDT --start-date 2024-01-01 --end-date 2024-01-07 --sampling volume --volume-bar-size 100
+```
+
+Each analysis is run for both `abs_signed_imbalance` and `participation_ratio`. The primary CSV is the equal-count bin file, with columns:
+
+```text
+bin_id, mean_x, median_x, mean_impact, median_impact, stderr, ci_lower, ci_upper, n_obs
+```
+
+The pipeline also saves LOWESS curves, local log-log slope diagnostics, shape plots, local-slope plots, audit samples, and a markdown robustness report describing sampling choices, LOWESS settings, filters, and observation counts.
+
+Power-law fits are optional diagnostics for comparison with the market-impact literature and the square-root benchmark `delta = 0.5`. They are controlled by:
+
+```bash
+--fit none
+--fit powerlaw
+--fit both
+```
+
+The current default is `--fit both`, but the fitted exponent should be interpreted cautiously. It may depend on sampling method, binning, filters, and the fact that fixed-window imbalance is not a true metaorder measure. Filters are never selected automatically to improve fit quality; they must be supplied explicitly with options such as `--min-mean-impact`, `--min-obs-per-bin`, `--min-abs-signed-imbalance`, and `--min-participation-ratio`.
