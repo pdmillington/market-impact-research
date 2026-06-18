@@ -159,3 +159,21 @@ Power-law fits are optional diagnostics for comparison with the market-impact li
 ```
 
 The current default is `--fit both`, but the fitted exponent should be interpreted cautiously. It may depend on sampling method, binning, filters, and the fact that fixed-window imbalance is not a true metaorder measure. Filters are never selected automatically to improve fit quality; they must be supplied explicitly with options such as `--min-mean-impact`, `--min-obs-per-bin`, `--min-abs-signed-imbalance`, and `--min-participation-ratio`.
+
+## Output Storage Policy
+
+Large recurring analysis tables are written as compressed Parquet by default. This keeps processed runs smaller and faster to reload than CSV.
+
+```bash
+python -m crypto_impact.pipeline \
+  --symbol BTCUSDT \
+  --start-date 2024-01-01 \
+  --end-date 2024-01-07 \
+  --sampling time \
+  --window-length 5min \
+  --window-step 1min \
+  --output-format parquet \
+  --save-observations none
+```
+
+Use `--output-format csv` or `--output-format both` when CSV copies are needed for inspection or external tools. Audit samples remain CSV, reports remain Markdown, fit details remain JSON, and the cumulative power-law summary remains CSV. Full observation tables can be controlled separately with `--save-observations none|parquet|csv|both`.

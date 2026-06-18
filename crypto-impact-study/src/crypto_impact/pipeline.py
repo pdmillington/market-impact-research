@@ -25,6 +25,27 @@ from crypto_impact.trade_signing import add_signed_volume
 
 LOGGER = logging.getLogger(__name__)
 FitMode = Literal["none", "powerlaw", "both"]
+OutputFormat = Literal["parquet", "csv", "both"]
+SaveObservations = Literal["none", "parquet", "csv", "both"]
+
+
+def _table_path(processed_dir: Path, run_name: str, suffix: str, output_format: OutputFormat) -> Path:
+    """Return the primary path for a tabular output."""
+
+    extension = "parquet" if output_format in {"parquet", "both"} else "csv"
+    return processed_dir / f"{run_name}_{suffix}.{extension}"
+
+
+def _write_table(df: pd.DataFrame, path: Path, output_format: OutputFormat, *, index: bool = False) -> None:
+    """Write a table as Parquet, CSV, or both."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if output_format in {"parquet", "both"}:
+        parquet_path = path.with_suffix(".parquet")
+        df.to_parquet(parquet_path, index=index, compression="zstd")
+    if output_format in {"csv", "both"}:
+        csv_path = path.with_suffix(".csv")
+        df.to_csv(csv_path, index=index)
 
 
 def configure_logging() -> None:
@@ -126,6 +147,8 @@ def run_pipeline(
     filters: RegressionFilters,
     lowess_frac: float,
     lowess_max_points: int,
+    output_format: OutputFormat,
+    save_observations: SaveObservations,
 ) -> dict[str, Path]:
     """Run one robustness-focused empirical impact analysis."""
 
@@ -168,11 +191,12 @@ def run_pipeline(
     }
 
     paths: dict[str, Path] = {
-        "observations": processed_dir / f"{run_name}_observations.csv",
         "audit": processed_dir / f"{run_name}_audit_sample.csv",
         "report": processed_dir / f"{run_name}_robustness_report.md",
     }
-    observations.to_csv(paths["observations"])
+    if save_observations != "none":
+        paths["observations"] = _table_path(processed_dir, run_name, "observations", save_observations)
+        _write_table(observations, paths["observations"], save_observations, index=True)
     make_audit_sample(bars, audit_window).to_csv(paths["audit"], index=False)
 
     fit_rows: list[dict[str, object]] = []
@@ -183,17 +207,17 @@ def run_pipeline(
         slopes = compute_local_loglog_slopes(equal_bins, x_col="mean_x", impact_col="mean_impact")
         fit = _fit_if_requested(equal_bins, filters, fit_mode)
 
-        paths[f"{analysis_name}_equal_count_bins"] = processed_dir / f"{run_name}_{analysis_name}_equal_count_bins.csv"
-        paths[f"{analysis_name}_log_bins"] = processed_dir / f"{run_name}_{analysis_name}_log_bins.csv"
-        paths[f"{analysis_name}_lowess"] = processed_dir / f"{run_name}_{analysis_name}_lowess.csv"
-        paths[f"{analysis_name}_local_slope"] = processed_dir / f"{run_name}_{analysis_name}_local_slope.csv"
+        paths[f"{analysis_name}_equal_count_bins"] = _table_path(processed_dir, run_name, f"{analysis_name}_equal_count_bins", output_format)
+        paths[f"{analysis_name}_log_bins"] = _table_path(processed_dir, run_name, f"{analysis_name}_log_bins", output_format)
+        paths[f"{analysis_name}_lowess"] = _table_path(processed_dir, run_name, f"{analysis_name}_lowess", output_format)
+        paths[f"{analysis_name}_local_slope"] = _table_path(processed_dir, run_name, f"{analysis_name}_local_slope", output_format)
         paths[f"{analysis_name}_shape_plot"] = processed_dir / f"{run_name}_{analysis_name}_shape.png"
         paths[f"{analysis_name}_local_slope_plot"] = processed_dir / f"{run_name}_{analysis_name}_local_slope.png"
 
-        equal_bins[PRIMARY_BIN_COLUMNS].to_csv(paths[f"{analysis_name}_equal_count_bins"], index=False)
-        log_bins.to_csv(paths[f"{analysis_name}_log_bins"], index=False)
-        lowess_curve.to_csv(paths[f"{analysis_name}_lowess"], index=False)
-        slopes.to_csv(paths[f"{analysis_name}_local_slope"], index=False)
+        _write_table(equal_bins[PRIMARY_BIN_COLUMNS], paths[f"{analysis_name}_equal_count_bins"], output_format)
+        _write_table(log_bins, paths[f"{analysis_name}_log_bins"], output_format)
+        _write_table(lowess_curve, paths[f"{analysis_name}_lowess"], output_format)
+        _write_table(slopes, paths[f"{analysis_name}_local_slope"], output_format)
         plot_shape_overlay(
             observations,
             equal_bins,
@@ -265,6 +289,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--min-mean-impact", type=float, default=None)
     parser.add_argument("--min-signed-impact", type=float, default=None, help="Backward-compatible alias for --min-mean-impact.")
     parser.add_argument("--min-obs-per-bin", type=int, default=None)
+    parser.add_argument("--output-format", choices=["parquet", "csv", "both"], default="parquet", help="Format for large tabular outputs.")
+    parser.add_argument("--save-observations", choices=["none", "parquet", "csv", "both"], default="parquet", help="Whether/how to save full observation tables.")
     return parser.parse_args()
 
 
@@ -296,6 +322,8 @@ def main() -> None:
         filters=filters,
         lowess_frac=args.lowess_frac,
         lowess_max_points=args.lowess_max_points,
+        output_format=args.output_format,
+        save_observations=args.save_observations,
     )
 
 

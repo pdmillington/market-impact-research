@@ -3,16 +3,17 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "crypto-impact-study"
+name = "market-impact-research"
 version = "0.1.0"
-description = "Empirical crypto market-impact study using Binance public aggregate trade data."
-readme = "README.md"
+description = "Empirical crypto market-impact research using Binance public trade data."
+readme = "crypto-impact-study/README.md"
 requires-python = ">=3.11"
 authors = [{ name = "Researcher" }]
 dependencies = [
   "matplotlib>=3.8",
   "numpy>=1.26",
   "pandas>=2.1",
+  "pyarrow>=15.0",
   "requests>=2.31",
   "scipy>=1.11",
   "statsmodels>=0.14",
@@ -21,9 +22,12 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 
+[tool.setuptools.package-dir]
+"" = "crypto-impact-study/src"
+
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["crypto-impact-study/src"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["src"]
+testpaths = ["crypto-impact-study/tests"]
+pythonpath = ["crypto-impact-study/src"]
