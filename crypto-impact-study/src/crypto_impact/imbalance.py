@@ -12,7 +12,7 @@ AUDIT_COLUMNS = [
     "signed_imbalance",
     "abs_signed_imbalance",
     "gross_volume",
-    "participation_ratio",
+    "absolute_imbalance_ratio",
     "start_price",
     "end_price",
     "log_return",
@@ -48,7 +48,7 @@ def compute_window_imbalance(trades: pd.DataFrame, window: str) -> pd.DataFrame:
     )
     windows = windows.dropna(subset=["start_price", "end_price"])
     windows["abs_signed_imbalance"] = windows["signed_imbalance"].abs()
-    windows["participation_ratio"] = windows["abs_signed_imbalance"] / windows["gross_volume"]
+    windows["absolute_imbalance_ratio"] = windows["abs_signed_imbalance"] / windows["gross_volume"]
     windows["log_return"] = np.log(windows["end_price"] / windows["start_price"])
     windows["signed_impact"] = np.sign(windows["signed_imbalance"]) * windows["log_return"]
     windows["abs_log_return"] = windows["log_return"].abs()
@@ -63,7 +63,7 @@ def compute_window_imbalance(trades: pd.DataFrame, window: str) -> pd.DataFrame:
 def filter_valid_windows(windows: pd.DataFrame) -> pd.DataFrame:
     """Keep windows valid for fixed-window impact analysis."""
 
-    required = {"gross_volume", "signed_imbalance", "participation_ratio"}
+    required = {"gross_volume", "signed_imbalance", "absolute_imbalance_ratio"}
     missing = required.difference(windows.columns)
     if missing:
         raise KeyError(f"Missing required columns: {sorted(missing)}")
@@ -71,8 +71,8 @@ def filter_valid_windows(windows: pd.DataFrame) -> pd.DataFrame:
     valid = windows.loc[
         (windows["gross_volume"] > 0)
         & (windows["signed_imbalance"] != 0)
-        & windows["participation_ratio"].notna()
-        & np.isfinite(windows["participation_ratio"])
+        & windows["absolute_imbalance_ratio"].notna()
+        & np.isfinite(windows["absolute_imbalance_ratio"])
     ].copy()
     return valid
 
@@ -81,7 +81,7 @@ def filter_nonzero_imbalance(windows: pd.DataFrame) -> pd.DataFrame:
     """Keep valid windows with nonzero signed imbalance.
 
     This wrapper preserves the original public function name while applying the
-    richer validity filters introduced for participation-ratio analysis.
+    richer validity filters introduced for absolute-imbalance-ratio analysis.
     """
 
     if "signed_imbalance" in windows.columns:

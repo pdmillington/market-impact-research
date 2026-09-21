@@ -11,54 +11,69 @@ import pandas as pd
 from crypto_impact.regression import PowerLawFit, predict_power_law
 
 
-def plot_shape_overlay(
-    observations: pd.DataFrame,
-    equal_count_bins: pd.DataFrame,
-    lowess_curve: pd.DataFrame,
+def plot_imbalance_ratio_percentile_bands(
+    binned: pd.DataFrame,
     output_path: Path,
-    raw_x_col: str,
-    x_label: str,
-    title: str,
     fit: PowerLawFit | None = None,
-    raw_sample_size: int = 25_000,
-    random_state: int = 20240618,
 ) -> Path:
-    """Plot raw observations, equal-count bin averages, LOWESS, and optional fit."""
+    """Plot median signed impact with percentile bands by absolute imbalance ratio."""
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    raw = observations.loc[(observations[raw_x_col] > 0) & (observations["signed_impact"] > 0), [raw_x_col, "signed_impact"]].copy()
-    if len(raw) > raw_sample_size:
-        raw = raw.sample(raw_sample_size, random_state=random_state)
-    bins = equal_count_bins.loc[(equal_count_bins["mean_x"] > 0) & (equal_count_bins["mean_impact"] > 0)].copy()
-
+    data = binned.loc[binned["median_x"] > 0].sort_values("median_x").copy()
     fig, ax = plt.subplots(figsize=(9, 6))
-    ax.scatter(raw[raw_x_col], raw["signed_impact"], s=7, alpha=0.08, color="#64748b", linewidths=0, label=f"Raw sampled n={len(raw):,}")
-    ax.errorbar(
-        bins["mean_x"],
-        bins["mean_impact"],
-        yerr=bins["stderr"],
-        fmt="o-",
-        color="#0f766e",
-        ecolor="#0f766e",
-        elinewidth=1,
-        capsize=3,
-        markersize=6,
-        linewidth=1.8,
-        label="Equal-count bin averages",
-    )
-    if not lowess_curve.empty:
-        ax.plot(lowess_curve["x"], lowess_curve["lowess_impact"], color="#c2410c", linewidth=2.0, label="LOWESS")
-    if fit is not None and len(bins) > 0:
-        line_x = np.geomspace(bins["mean_x"].min(), bins["mean_x"].max(), 100)
-        ax.plot(line_x, predict_power_law(line_x, fit), color="#111827", linewidth=1.5, linestyle="--", label=f"Power law delta={fit.delta:.3f}")
-
+    x = data["median_x"].to_numpy(dtype=float)
+    ax.fill_between(x, data["impact_p10"], data["impact_p90"], color="#94a3b8", alpha=0.25, label="10th-90th percentile")
+    ax.fill_between(x, data["impact_p25"], data["impact_p75"], color="#0f766e", alpha=0.25, label="25th-75th percentile")
+    ax.plot(x, data["median_impact"], "o-", color="#0f766e", linewidth=2.0, markersize=5, label="Median impact")
+    ax.axhline(0, color="#111827", linewidth=1, alpha=0.5)
+    if fit is not None and len(data) > 0:
+        positive = data.loc[(data["mean_x"] > 0) & (data["mean_impact"] > 0)]
+        if not positive.empty:
+            line_x = np.geomspace(positive["mean_x"].min(), positive["mean_x"].max(), 100)
+            ax.plot(line_x, predict_power_law(line_x, fit), color="#7c2d12", linestyle=":", linewidth=1.8, label=f"Power law delta={fit.delta:.3f}")
     ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.set_xlabel(x_label)
-    ax.set_ylabel("Signed impact, positive observations only")
-    ax.set_title(title)
+    ax.set_xlabel("Absolute imbalance ratio |Q_T| / V_T")
+    ax.set_ylabel("Signed impact")
+    ax.set_title("Impact distribution by absolute imbalance ratio")
     ax.grid(True, which="both", alpha=0.25)
     ax.legend(frameon=False, loc="best")
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
+def plot_imbalance_ratio_volume_heatmap(heatmap: pd.DataFrame, output_path: Path) -> Path:
+    """Plot mean signed impact over absolute-imbalance-ratio and gross-volume bins."""
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    data = heatmap.copy()
+    pivot = data.pivot(index="gross_volume_bin_id", columns="imbalance_ratio_bin_id", values="mean_signed_impact")
+    x_labels = data.groupby("imbalance_ratio_bin_id")["median_absolute_imbalance_ratio"].median().sort_index()
+    y_labels = data.groupby("gross_volume_bin_id")["median_gross_volume"].median().sort_index()
+
+    fig, ax = plt.subplots(figsize=(10, 7))
+    max_abs = np.nanmax(np.abs(pivot.to_numpy(dtype=float))) if not pivot.empty else 1.0
+    image = ax.imshow(
+        pivot.to_numpy(dtype=float),
+        origin="lower",
+        aspect="auto",
+        cmap="RdBu_r",
+        vmin=-max_abs,
+        vmax=max_abs,
+    )
+    ax.set_xlabel("Absolute imbalance ratio bin median")
+    ax.set_ylabel("Gross volume bin median")
+    ax.set_title("Mean signed impact by absolute imbalance ratio and gross volume")
+
+    x_positions = np.arange(len(x_labels))
+    y_positions = np.arange(len(y_labels))
+    x_step = max(len(x_positions) // 8, 1)
+    y_step = max(len(y_positions) // 8, 1)
+    ax.set_xticks(x_positions[::x_step], [f"{value:.3g}" for value in x_labels.iloc[::x_step]], rotation=45, ha="right")
+    ax.set_yticks(y_positions[::y_step], [f"{value:.3g}" for value in y_labels.iloc[::y_step]])
+    cbar = fig.colorbar(image, ax=ax)
+    cbar.set_label("Mean signed impact")
     fig.tight_layout()
     fig.savefig(output_path, dpi=220)
     plt.close(fig)
@@ -83,28 +98,3 @@ def plot_local_slopes(slopes: pd.DataFrame, output_path: Path, x_label: str, tit
     fig.savefig(output_path, dpi=220)
     plt.close(fig)
     return output_path
-
-
-# Backward-compatible wrappers retained for older scripts.
-def plot_overlay(*args, **kwargs):
-    """Backward-compatible alias for the previous overlay function."""
-
-    return plot_shape_overlay(*args, **kwargs)
-
-
-def plot_impact_power_law(binned: pd.DataFrame, fit: PowerLawFit, output_path: Path, show_error_bars: bool = True) -> Path:
-    """Save a legacy bin-only power-law plot."""
-
-    bins = binned.rename(columns={"mean_signed_impact": "mean_impact", "standard_error": "stderr"}).copy()
-    if "mean_x" not in bins and fit.x_col in bins:
-        bins["mean_x"] = bins[fit.x_col]
-    return plot_shape_overlay(
-        observations=pd.DataFrame(columns=["x", "signed_impact"]),
-        equal_count_bins=bins,
-        lowess_curve=pd.DataFrame(columns=["x", "lowess_impact"]),
-        output_path=output_path,
-        raw_x_col="x",
-        x_label=fit.x_col.replace("_", " "),
-        title="Power-law diagnostic",
-        fit=fit,
-    )

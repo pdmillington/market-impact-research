@@ -11,16 +11,16 @@ from typing import Literal
 
 import pandas as pd
 
-from crypto_impact.binning import PRIMARY_BIN_COLUMNS, bin_by_abs_signed_imbalance, bin_by_participation_ratio
+from crypto_impact.binning import PRIMARY_BIN_COLUMNS, bin_by_abs_signed_imbalance, bin_by_absolute_imbalance_ratio, imbalance_ratio_volume_heatmap
 from crypto_impact.config import PROCESSED_DATA_DIR, RAW_DATA_DIR
 from crypto_impact.data_download import download_agg_trades
 from crypto_impact.data_load import load_agg_trade_files
 from crypto_impact.impact import prepare_impact_observations
 from crypto_impact.imbalance import make_audit_sample
-from crypto_impact.plotting import plot_local_slopes, plot_shape_overlay
+from crypto_impact.plotting import plot_local_slopes, plot_imbalance_ratio_percentile_bands, plot_imbalance_ratio_volume_heatmap
 from crypto_impact.regression import RegressionFilters, fit_power_law, fit_to_summary_row
 from crypto_impact.sampling import aggregate_time_bars, aggregate_volume_bars
-from crypto_impact.shape import compute_local_loglog_slopes, compute_lowess_curve
+from crypto_impact.shape import compute_local_loglog_slopes
 from crypto_impact.trade_signing import add_signed_volume
 
 LOGGER = logging.getLogger(__name__)
@@ -88,8 +88,7 @@ def _write_report(
     volume_bar_size: float | None,
     n_observations: int,
     n_bins: int,
-    lowess_frac: float,
-    lowess_max_points: int,
+    heatmap_bins: int,
     filters: RegressionFilters,
     fit_mode: FitMode,
 ) -> None:
@@ -107,12 +106,12 @@ def _write_report(
 - number of bins: `{n_bins}`
 - primary binning: `equal_count`
 - diagnostic binning: `log`
-- LOWESS frac: `{lowess_frac}`
-- LOWESS max points: `{lowess_max_points}`
+- percentile plot: `median impact with 10-90 and 25-75 percentile bands`
+- heatmap bins per axis: `{heatmap_bins}`
 - fit mode: `{fit_mode}`
 - filters: `{json.dumps(asdict(filters), sort_keys=True)}`
 
-The main objective of this run is to inspect the shape of the impact function using equal-count bin averages, LOWESS smoothing, and adjacent-bin local slopes. Power-law fits, when requested, are secondary diagnostics for comparison with market-impact benchmarks such as the square-root law.
+The main objective of this run is to inspect the distribution and shape of impact using equal-count absolute imbalance ratio bins, percentile bands, local slopes, and a absolute-imbalance-ratio by gross-volume heatmap. Power-law fits, when requested, are secondary diagnostics for comparison with market-impact benchmarks such as the square-root law.
 """
     path.write_text(text, encoding="utf-8")
 
@@ -145,10 +144,9 @@ def run_pipeline(
     n_bins: int,
     fit_mode: FitMode,
     filters: RegressionFilters,
-    lowess_frac: float,
-    lowess_max_points: int,
     output_format: OutputFormat,
     save_observations: SaveObservations,
+    heatmap_bins: int,
 ) -> dict[str, Path]:
     """Run one robustness-focused empirical impact analysis."""
 
@@ -182,11 +180,11 @@ def run_pipeline(
             "equal": bin_by_abs_signed_imbalance(observations, n_bins=n_bins, method="equal_count"),
             "log": bin_by_abs_signed_imbalance(observations, n_bins=n_bins, method="log"),
         },
-        "participation_ratio": {
-            "raw_x_col": "participation_ratio",
-            "x_label": "Participation ratio |Q_T| / V_T",
-            "equal": bin_by_participation_ratio(observations, n_bins=n_bins, method="equal_count"),
-            "log": bin_by_participation_ratio(observations, n_bins=n_bins, method="log"),
+        "absolute_imbalance_ratio": {
+            "raw_x_col": "absolute_imbalance_ratio",
+            "x_label": "Absolute imbalance ratio |Q_T| / V_T",
+            "equal": bin_by_absolute_imbalance_ratio(observations, n_bins=n_bins, method="equal_count"),
+            "log": bin_by_absolute_imbalance_ratio(observations, n_bins=n_bins, method="log"),
         },
     }
 
@@ -203,32 +201,22 @@ def run_pipeline(
     for analysis_name, payload in analyses.items():
         equal_bins = payload["equal"]
         log_bins = payload["log"]
-        lowess_curve = compute_lowess_curve(observations, payload["raw_x_col"], frac=lowess_frac, max_points=lowess_max_points)
         slopes = compute_local_loglog_slopes(equal_bins, x_col="mean_x", impact_col="mean_impact")
         fit = _fit_if_requested(equal_bins, filters, fit_mode)
 
         paths[f"{analysis_name}_equal_count_bins"] = _table_path(processed_dir, run_name, f"{analysis_name}_equal_count_bins", output_format)
         paths[f"{analysis_name}_log_bins"] = _table_path(processed_dir, run_name, f"{analysis_name}_log_bins", output_format)
-        paths[f"{analysis_name}_lowess"] = _table_path(processed_dir, run_name, f"{analysis_name}_lowess", output_format)
         paths[f"{analysis_name}_local_slope"] = _table_path(processed_dir, run_name, f"{analysis_name}_local_slope", output_format)
-        paths[f"{analysis_name}_shape_plot"] = processed_dir / f"{run_name}_{analysis_name}_shape.png"
         paths[f"{analysis_name}_local_slope_plot"] = processed_dir / f"{run_name}_{analysis_name}_local_slope.png"
 
         _write_table(equal_bins[PRIMARY_BIN_COLUMNS], paths[f"{analysis_name}_equal_count_bins"], output_format)
         _write_table(log_bins, paths[f"{analysis_name}_log_bins"], output_format)
-        _write_table(lowess_curve, paths[f"{analysis_name}_lowess"], output_format)
         _write_table(slopes, paths[f"{analysis_name}_local_slope"], output_format)
-        plot_shape_overlay(
-            observations,
-            equal_bins,
-            lowess_curve,
-            paths[f"{analysis_name}_shape_plot"],
-            raw_x_col=payload["raw_x_col"],
-            x_label=payload["x_label"],
-            title=f"{symbol} impact shape: {analysis_name}",
-            fit=fit if fit_mode in {"powerlaw", "both"} else None,
-        )
         plot_local_slopes(slopes, paths[f"{analysis_name}_local_slope_plot"], payload["x_label"], f"{symbol} local slopes: {analysis_name}")
+
+        if analysis_name == "absolute_imbalance_ratio":
+            paths["imbalance_ratio_percentile_plot"] = processed_dir / f"{run_name}_imbalance_ratio_percentile_bands.png"
+            plot_imbalance_ratio_percentile_bands(equal_bins, paths["imbalance_ratio_percentile_plot"], fit if fit_mode in {"powerlaw", "both"} else None)
 
         if fit is not None:
             fit_path = processed_dir / f"{run_name}_{analysis_name}_powerlaw_fit.json"
@@ -243,6 +231,12 @@ def run_pipeline(
             paths[f"{analysis_name}_powerlaw_fit"] = fit_path
             fit_rows.append(fit_payload | {"run_name": run_name})
 
+    heatmap = imbalance_ratio_volume_heatmap(observations, imbalance_ratio_bins=heatmap_bins, volume_bins=heatmap_bins)
+    paths["imbalance_ratio_volume_heatmap"] = _table_path(processed_dir, run_name, "imbalance_ratio_volume_heatmap", output_format)
+    paths["imbalance_ratio_volume_heatmap_plot"] = processed_dir / f"{run_name}_imbalance_ratio_volume_heatmap.png"
+    _write_table(heatmap, paths["imbalance_ratio_volume_heatmap"], output_format)
+    plot_imbalance_ratio_volume_heatmap(heatmap, paths["imbalance_ratio_volume_heatmap_plot"])
+
     append_powerlaw_summary(processed_dir / "powerlaw_fit_summary.csv", fit_rows)
     _write_report(
         paths["report"],
@@ -255,8 +249,7 @@ def run_pipeline(
         volume_bar_size=volume_bar_size,
         n_observations=len(observations),
         n_bins=n_bins,
-        lowess_frac=lowess_frac,
-        lowess_max_points=lowess_max_points,
+        heatmap_bins=heatmap_bins,
         filters=filters,
         fit_mode=fit_mode,
     )
@@ -282,10 +275,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--processed-dir", type=Path, default=PROCESSED_DATA_DIR)
     parser.add_argument("--n-bins", type=int, default=12)
     parser.add_argument("--fit", choices=["none", "powerlaw", "both"], default="both")
-    parser.add_argument("--lowess-frac", type=float, default=0.3)
-    parser.add_argument("--lowess-max-points", type=int, default=50_000)
+    parser.add_argument("--heatmap-bins", type=int, default=20, help="Number of equal-count bins per heatmap axis.")
     parser.add_argument("--min-abs-signed-imbalance", type=float, default=None)
-    parser.add_argument("--min-participation-ratio", type=float, default=None)
+    parser.add_argument("--min-absolute-imbalance-ratio", type=float, default=None)
     parser.add_argument("--min-mean-impact", type=float, default=None)
     parser.add_argument("--min-signed-impact", type=float, default=None, help="Backward-compatible alias for --min-mean-impact.")
     parser.add_argument("--min-obs-per-bin", type=int, default=None)
@@ -304,7 +296,7 @@ def main() -> None:
     filters = RegressionFilters(
         min_abs_signed_imbalance=args.min_abs_signed_imbalance,
         min_mean_impact=min_mean_impact,
-        min_participation_ratio=args.min_participation_ratio,
+        min_absolute_imbalance_ratio=args.min_absolute_imbalance_ratio,
         min_obs_per_bin=args.min_obs_per_bin,
     )
     run_pipeline(
@@ -320,10 +312,9 @@ def main() -> None:
         n_bins=args.n_bins,
         fit_mode=args.fit,
         filters=filters,
-        lowess_frac=args.lowess_frac,
-        lowess_max_points=args.lowess_max_points,
         output_format=args.output_format,
         save_observations=args.save_observations,
+        heatmap_bins=args.heatmap_bins,
     )
 
 

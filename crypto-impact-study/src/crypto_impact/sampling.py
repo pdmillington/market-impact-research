@@ -13,7 +13,7 @@ def _finalize_observations(windows: pd.DataFrame) -> pd.DataFrame:
 
     windows = windows.dropna(subset=["start_price", "end_price"]).copy()
     windows["abs_signed_imbalance"] = windows["signed_imbalance"].abs()
-    windows["participation_ratio"] = windows["abs_signed_imbalance"] / windows["gross_volume"]
+    windows["absolute_imbalance_ratio"] = windows["abs_signed_imbalance"] / windows["gross_volume"]
     windows["log_return"] = np.log(windows["end_price"] / windows["start_price"])
     windows["signed_impact"] = np.sign(windows["signed_imbalance"]) * windows["log_return"]
     windows["abs_log_return"] = windows["log_return"].abs()
