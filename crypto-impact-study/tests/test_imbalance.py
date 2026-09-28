@@ -48,7 +48,7 @@ def test_compute_window_fields_are_hand_calculable() -> None:
     assert first["abs_signed_imbalance"] == 1.0
     assert first["gross_volume"] == 5.0
     assert first["absolute_volume"] == 5.0
-    assert first["participation_ratio"] == 0.2
+    assert first["absolute_imbalance_ratio"] == 0.2
     assert first["start_price"] == 100.0
     assert first["end_price"] == 110.0
     assert first["n_trades"] == 2
@@ -64,7 +64,7 @@ def test_filter_valid_windows_removes_zero_imbalance_and_zero_volume() -> None:
         {
             "signed_imbalance": [1.0, 0.0, 2.0, 1.0],
             "gross_volume": [10.0, 10.0, 0.0, 0.0],
-            "participation_ratio": [0.1, 0.0, np.inf, np.nan],
+            "absolute_imbalance_ratio": [0.1, 0.0, np.inf, np.nan],
         }
     )
 

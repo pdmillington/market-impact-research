@@ -29,7 +29,7 @@ def test_rolling_time_bars_use_window_length_and_step() -> None:
     first = bars.iloc[0]
     assert first["signed_imbalance"] == -1.0
     assert first["gross_volume"] == 5.0
-    assert first["participation_ratio"] == 0.2
+    assert first["absolute_imbalance_ratio"] == 0.2
     assert np.isclose(first["log_return"], np.log(101.0 / 100.0))
 
 
