@@ -1,0 +1,57 @@
+"""Filesystem layout for shared market data."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+
+
+@dataclass(frozen=True)
+class DataLayout:
+    """Resolve all paths belonging to one shared-data root."""
+
+    root: Path
+
+    def temporary_root(self) -> Path:
+        """Workspace for large transient files on the data volume itself."""
+
+        return self.root / ".tmp" / "crypto-market-data"
+
+    def source_archive(self, symbol: str, month: str) -> Path:
+        return (
+            self.root
+            / "source"
+            / "binance"
+            / "futures"
+            / "um"
+            / "trades"
+            / symbol
+            / f"{symbol}-trades-{month}.zip"
+        )
+
+    def canonical_month(self, symbol: str, month: str) -> Path:
+        year, month_number = month.split("-")
+        return (
+            self.root
+            / "canonical"
+            / "fills"
+            / f"symbol={symbol}"
+            / f"year={year}"
+            / f"month={month_number}"
+            / "part-000.parquet"
+        )
+
+    def event_month(self, symbol: str, month: str) -> Path:
+        year, month_number = month.split("-")
+        return (
+            self.root
+            / "events"
+            / "timestamp_direction_v1"
+            / f"symbol={symbol}"
+            / f"year={year}"
+            / f"month={month_number}"
+            / "part-000.parquet"
+        )
+
+    def report_month(self, symbol: str, month: str) -> Path:
+        return self.root / "metadata" / symbol / f"{month}.json"

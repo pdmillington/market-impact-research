@@ -1,0 +1,31 @@
+{
+  "experiment_id": "rolling_pb_residual_response_v2",
+  "cache_version": "impact_research_v2",
+  "symbol": "BTCUSDT",
+  "event_sizes": [200, 500, 1000, 2000, 4000, 8000],
+  "reference_events": 1000,
+  "model_family": "pb_activity",
+  "surface": {
+    "imbalance_bins": 12,
+    "activity_bins": 6,
+    "fit_target": "equal_weight_training_cell_means"
+  },
+  "training_windows_months": [6, 12],
+  "calibration_start": "2022-01-01",
+  "calibration_end": "2026-05-01",
+  "future_horizons_seconds": [30, 60, 120, 300, 600, 900, 1800, 3600],
+  "future_price_clock": "event_200_first_endpoint_at_or_after_horizon",
+  "standardisation_lookback_months": 3,
+  "standardisation_pressure_bins": 5,
+  "multi_starts": 5,
+  "holdout_months_excluded": ["2026-06", "2026-07", "2026-08"],
+  "notes": [
+    "This experiment extends v1 without overwriting its tables.",
+    "Each impact model is fitted using bars strictly before the calendar-month boundary.",
+    "Residuals are contemporaneous errors on the same event bar as the decision clock.",
+    "The conditional z-score uses only the preceding three months and is robustly centred and scaled within side and scaled-pressure quintile.",
+    "Future returns begin at the completed bar endpoint; 30 seconds is the shortest observation horizon.",
+    "Buy and sell observations are reported separately as well as pooled.",
+    "A negative residual/future-return IC indicates mean reversion after excess impact."
+  ]
+}

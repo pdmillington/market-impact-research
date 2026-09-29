@@ -1,0 +1,18 @@
+{
+  "experiment_id": "pb_residual_activity_diagnostics_v1",
+  "scaling_experiment": "pb_activity_vertical_extension_v2",
+  "scaling_config": "alpha-search/configs/pb_activity_vertical_extension_v2.json",
+  "cache_version": "impact_research_v2",
+  "symbol": "BTCUSDT",
+  "model_family": "pb_activity",
+  "activity_bins": 10,
+  "pressure_bins": 5,
+  "minimum_group_observations": 100,
+  "holdout_months_excluded": ["2026-06", "2026-07", "2026-08"],
+  "notes": [
+    "All activity and pressure cuts are estimated from the corresponding training sample and frozen for the following test fold.",
+    "Cell diagnostics reproduce the equal-weight surface-cell residual relationship.",
+    "Bar diagnostics establish whether the same pattern is economically relevant at observation level.",
+    "Standard errors in binned curves are descriptive and do not correct for serial dependence. Monthly relations provide the stability diagnostic."
+  ]
+}

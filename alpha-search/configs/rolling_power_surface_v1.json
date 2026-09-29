@@ -1,0 +1,35 @@
+{
+  "experiment_id": "rolling_power_surface_v1",
+  "cache_version": "impact_research_v2",
+  "symbol": "BTCUSDT",
+  "constructions": [
+    "event_200",
+    "event_500",
+    "event_1000",
+    "time_1m",
+    "time_2m",
+    "time_5m"
+  ],
+  "model": "surface_power",
+  "surface": {
+    "imbalance_bins": 12,
+    "activity_bins": 6,
+    "side_specific": true,
+    "fit_target": "equal_weight_training_cell_means",
+    "zero_origin": true
+  },
+  "training_windows_months": [6, 12, 18, 24, 36, "expanding"],
+  "calibration_start": "2021-01-01",
+  "calibration_end": "2026-05-01",
+  "maximum_calibration_age_months": 3,
+  "cadences_months": [1, 2, 3],
+  "cadence_comparison_start": "2022-01-01",
+  "common_window_comparison_start": "2022-10-01",
+  "holdout_months_excluded": ["2026-06", "2026-07", "2026-08"],
+  "notes": [
+    "A model is fitted at every calendar-month boundary using data strictly before that boundary.",
+    "Calibration age 1 is the first month after fitting; age 2 and age 3 retain the same frozen fit.",
+    "Cadence summaries retain non-overlapping operational origins aligned to January 2022.",
+    "June-August 2026 remain absent from the cache and untouched."
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "experiment_name": "sandbox_impact_residual_multiscale_v1",
+  "shared_data_root": null,
+  "symbol": "BTCUSDT",
+  "event_rule": "timestamp_direction_v1",
+  "require_contiguous": true,
+  "event_bar_sizes": [200, 500, 1000],
+  "impact_residual_event_windows": ["same_bar", 1000, 4000],
+  "impact_curve_calibration": "non_overlapping_measurement_blocks",
+  "clock_horizons_minutes": [10, 15],
+  "quantiles": 5,
+  "walk_forward": {
+    "minimum_train_months": 12,
+    "rolling_train_months": 12,
+    "test_months": 3,
+    "step_months": 3,
+    "embargo_days": 1
+  }
+}

@@ -1,0 +1,82 @@
+# Notebook map
+
+This directory contains only the notebooks that define the current research path.
+Historical notebooks are preserved under `archive/`; reusable demonstrations live
+under `tools/`.
+
+## Active research notebooks
+
+### `PBScaleFreeImpactWorkbench.ipynb`
+
+This is the canonical impact notebook for both alpha research and conditioning
+other factors. The preferred specification is the activity-adjusted
+Patzelt--Bouchaud collapse,
+
+$$
+z=|Q|/V,\qquad a=V/V_{24},\qquad x^*=z a^\gamma,
+$$
+
+with event-count power laws used to collapse the horizontal and response scales.
+The impact function must be calibrated only on data available before the decision
+date. Its side-aligned, same-bar error is the canonical `excess_impact` factor.
+The rolling sections show its 30-second to 60-minute response path, past-only
+conditional standardisation and buy/sell symmetry. Use them to choose and monitor
+calibration history.
+
+The same notebook documents the rejected nested vertical-activity extension. It
+slightly improves cell RMSE but does not remove the residual/activity relationship;
+the simpler activity-adjusted model therefore remains the base specification while
+activity-neutral residual tests are developed. Cell-level, bar-level,
+pressure-controlled and monthly residual/activity diagnostics are shown before any
+neutralisation rule is selected.
+
+The activity-dependent-concavity extension and its low/middle/high-activity
+conditional response curves are also included. The unrestricted extension is a
+documented negative result rather than the new canonical residual model.
+
+This residual can be tested directly as an alpha or used as a conditioner for a
+different primary factor. In either case, thresholds and any secondary model must
+also be fitted on past data only.
+
+### `EventSweepDecayWorkbenchV2.ipynb`
+
+This is the active, separate decay notebook. It studies total, post-event and
+incremental response paths for individual reconstructed events. The main aggression
+classification is the side-aligned first-to-last execution-price displacement;
+fill and price-level counts are secondary diagnostics.
+
+## Reusable notebook tools
+
+- `tools/WalkForwardConditionerToolDemo.ipynb` demonstrates the generic
+  walk-forward conditioner outputs. It is a software example, not a source of
+  empirical conclusions.
+
+## Archived research notebooks
+
+No notebook in `archive/` has been deleted or invalidated. These files preserve the
+development trail and may be useful as benchmarks, but they are no longer the
+default entry points.
+
+| Notebook | Historical role | Current replacement or status |
+| --- | --- | --- |
+| `ImpactAlphaEventVsTime.ipynb` | Initial event-bar versus time-bar planning notebook | Superseded by the scale-free workbench and current cache builders |
+| `ImpactAlphaWorkbench.ipynb` | Early manual impact and alpha workbench | Superseded by `PBScaleFreeImpactWorkbench.ipynb` |
+| `ShortEventFeatureWorkbench.ipynb` | Systematic 200/500/1,000-event feature screen | Retained as factor-discovery evidence; recalibrate impact-derived factors with the scale-free model |
+| `ExcessImpactAndDecayWorkbench.ipynb` | First excess-impact conditioner and coarse decay analysis | Impact work moves to the scale-free workbench; decay work moves to `EventSweepDecayWorkbenchV2.ipynb` |
+| `MultiscaleImpactResidualWorkbench.ipynb` | Trailing 1,000/4,000-event residuals on shorter decision clocks | Historical benchmark; any revival should use a past-only scale-free calibration |
+| `ImpactFunctionWorkbenchV2.ipynb` | One-dimensional and short-bar impact fits | Superseded by the cross-scale collapsed model |
+| `ImpactSurfaceAndResidualAlpha.ipynb` | Independently fitted power surfaces, stability and symmetry | Retained as the main benchmark against the scale-free model |
+
+## Working convention
+
+1. Begin new impact analysis in `PBScaleFreeImpactWorkbench.ipynb` or in scripts
+   that implement the same scale-free specification.
+2. Treat `excess_impact` as a factor: report its out-of-sample correlation with
+   future returns before constructing a trading rule.
+3. When conditioning another factor, report both the unconditioned factor and the
+   incremental result after adding `excess_impact`.
+4. Keep all calibration rolling or expanding and strictly chronological. Do not
+   use June--August 2026 until the final holdout decision.
+5. Keep generated features below `shared-data/features/alpha`; notebooks should
+   consume caches and compact reports rather than duplicate parsing logic.
+6. Preserve archived notebooks and their result directories for reproducibility.

@@ -1,0 +1,27 @@
+{
+  "experiment_name": "sandbox_pretrend_conditioners_v1",
+  "shared_data_root": null,
+  "symbol": "BTCUSDT",
+  "event_rule": "timestamp_direction_v1",
+  "require_contiguous": true,
+  "event_bar_sizes": [200, 500, 1000],
+  "clock_horizons_minutes": [10, 15],
+  "primary_feature": "aligned_pretrend_12000_events",
+  "conditioners": [
+    "impact_residual",
+    "normalised_signed_impact",
+    "normalised_range",
+    "relative_flow_rate",
+    "aligned_flow_persistence_12000_events",
+    "fills_per_event",
+    "price_levels_per_event"
+  ],
+  "quantiles": 5,
+  "walk_forward": {
+    "minimum_train_months": 12,
+    "rolling_train_months": 12,
+    "test_months": 3,
+    "step_months": 3,
+    "embargo_days": 1
+  }
+}

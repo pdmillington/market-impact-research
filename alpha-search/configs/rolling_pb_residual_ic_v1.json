@@ -1,0 +1,26 @@
+{
+  "experiment_id": "rolling_pb_residual_ic_v1",
+  "cache_version": "impact_research_v2",
+  "symbol": "BTCUSDT",
+  "event_sizes": [200, 500, 1000, 2000, 4000, 8000],
+  "reference_events": 1000,
+  "model_family": "pb_activity",
+  "surface": {
+    "imbalance_bins": 12,
+    "activity_bins": 6,
+    "fit_target": "equal_weight_training_cell_means"
+  },
+  "training_windows_months": [6, 12],
+  "calibration_start": "2022-01-01",
+  "calibration_end": "2026-05-01",
+  "future_horizons_minutes": [5, 10, 15, 30],
+  "future_price_clock": "event_200_first_endpoint_at_or_after_horizon",
+  "multi_starts": 5,
+  "holdout_months_excluded": ["2026-06", "2026-07", "2026-08"],
+  "notes": [
+    "Each model is fitted using bars strictly before the calendar-month boundary.",
+    "Residuals are contemporaneous errors on the same event bar as the decision clock.",
+    "No longer overlapping impact-measurement window is used in this experiment.",
+    "A negative residual/future-return IC indicates mean reversion after excess impact."
+  ]
+}

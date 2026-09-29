@@ -1,0 +1,43 @@
+{
+  "experiment_id": "impact_surface_residual_alpha_v1",
+  "cache_version": "impact_research_v2",
+  "symbol": "BTCUSDT",
+  "constructions": [
+    "event_200",
+    "event_500",
+    "event_1000",
+    "time_1m",
+    "time_2m",
+    "time_5m"
+  ],
+  "surface": {
+    "imbalance_bins": 12,
+    "activity_bins": 6,
+    "models": [
+      "relative_imbalance_power",
+      "normalised_flow_power",
+      "normalised_flow_log",
+      "surface_power",
+      "surface_log_activity"
+    ],
+    "side_specific": true,
+    "fit_target": "equal_weight_training_cell_means",
+    "zero_origin": true
+  },
+  "folds": [
+    {"fold": 1, "train_end": "2022-01-01", "test_start": "2022-01-01", "test_end": "2023-01-01"},
+    {"fold": 2, "train_end": "2023-01-01", "test_start": "2023-01-01", "test_end": "2024-01-01"},
+    {"fold": 3, "train_end": "2024-01-01", "test_start": "2024-01-01", "test_end": "2025-01-01"},
+    {"fold": 4, "train_end": "2025-01-01", "test_start": "2025-01-01", "test_end": "2026-01-01"},
+    {"fold": 5, "train_end": "2026-01-01", "test_start": "2026-01-01", "test_end": "2026-06-01"}
+  ],
+  "future_horizons_minutes": [5, 10, 15, 30],
+  "residual_quantiles": 5,
+  "inference_block": "UTC day",
+  "holdout_months_excluded": ["2026-06", "2026-07", "2026-08"],
+  "notes": [
+    "Every fit, surface cut and residual quantile cut is estimated using only observations before that fold's test_start.",
+    "Returns begin at the completed bar endpoint and use the first completed bar endpoint at or after the requested clock horizon.",
+    "This is a gross predictability screen, not a profitability backtest."
+  ]
+}

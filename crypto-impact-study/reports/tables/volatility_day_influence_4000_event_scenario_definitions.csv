@@ -1,0 +1,14 @@
+scenario,selection_rule,excluded_day_count,excluded_dates
+all_days,none,0,
+drop_2025-10-10,single day; daily-range rank 1,1,2025-10-10
+drop_2026-02-06,single day; daily-range rank 2,1,2026-02-06
+drop_2026-02-05,single day; daily-range rank 3,1,2026-02-05
+drop_2025-02-03,single day; daily-range rank 4,1,2025-02-03
+drop_2025-04-09,single day; daily-range rank 5,1,2025-04-09
+drop_2025-03-02,single day; daily-range rank 6,1,2025-03-02
+drop_2026-01-31,single day; daily-range rank 7,1,2026-01-31
+drop_2025-03-03,single day; daily-range rank 8,1,2025-03-03
+drop_2025-01-20,single day; daily-range rank 9,1,2025-01-20
+drop_2026-03-04,single day; daily-range rank 10,1,2026-03-04
+drop_largest_3_range_days,largest 3 daily ranges,3,2025-10-10;2026-02-05;2026-02-06
+drop_upper_1pct_range_days,intraday range at or above full-sample 99th percentile,6,2025-02-03;2025-03-02;2025-04-09;2025-10-10;2026-02-05;2026-02-06

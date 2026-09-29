@@ -1,0 +1,19 @@
+{
+  "experiment_id": "rolling_pb_residual_response_v2",
+  "config": "/Users/petermillington/research/market-impact-research/alpha-search/configs/rolling_pb_residual_response_v2.json",
+  "cache_root": "/Volumes/Crypto Research Data/market-impact-research/shared-data/features/alpha/symbol=BTCUSDT/impact_research_v2",
+  "reuse_cells_from": "/Users/petermillington/research/market-impact-research/alpha-search/reports/rolling_pb_residual_ic_v1/rolling_training_cells.parquet",
+  "reuse_fits_from": "/Users/petermillington/research/market-impact-research/alpha-search/reports/rolling_pb_residual_ic_v1/rolling_fits.csv",
+  "outputs": [
+    "rolling_training_cells.parquet",
+    "rolling_fits.csv",
+    "monthly_residual_ic.csv",
+    "monthly_residual_quantiles.csv",
+    "residual_ic_summary.csv"
+  ],
+  "holdout_months_excluded": [
+    "2026-06",
+    "2026-07",
+    "2026-08"
+  ]
+}

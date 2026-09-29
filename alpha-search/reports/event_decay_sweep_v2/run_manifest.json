@@ -1,0 +1,45 @@
+{
+  "version": "event_decay_sweep_v2",
+  "symbol": "BTCUSDT",
+  "event_rule": "timestamp_direction_v1",
+  "first_month": "2019-09",
+  "last_month": "2026-05",
+  "calibration_end_month": "2022-12",
+  "calibration_positive_sweep_events": 399803,
+  "sample_modulus": 500,
+  "horizons_ms": [
+    100,
+    250,
+    500,
+    1000,
+    2000,
+    5000,
+    10000,
+    15000,
+    30000,
+    60000,
+    120000,
+    300000,
+    600000,
+    900000,
+    1800000
+  ],
+  "sweep_quantiles": [
+    0.25,
+    0.5,
+    0.75
+  ],
+  "sweep_cuts_bps": [
+    0.09517935095902053,
+    0.29960617558970826,
+    0.6857707744908033
+  ],
+  "primary_classification": "side_aligned_first_to_last_execution_price_displacement",
+  "secondary_diagnostics": [
+    "quantity",
+    "fill_count",
+    "price_level_count",
+    "min_max_execution_span"
+  ],
+  "holdout_note": "Jun-Aug 2026 excluded by default and not inspected."
+}

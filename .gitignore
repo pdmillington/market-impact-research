@@ -1,0 +1,51 @@
+# Shared market-data lake and local migration backup.
+# `shared-data` is normally a symlink to the external SSD; neither the link nor
+# any accidentally local copy belongs in Git.
+/shared-data
+/shared-data.internal-backup/
+
+# Generated alpha experiment runs.  Version the reusable experiment inputs in
+# alpha-search/configs instead; manifests contain machine-specific paths and
+# results are reproducible from the configs and scripts.
+/alpha-search/experiments/
+
+# Large, regenerable diagnostic panels.  Keep the compact summaries, fitted
+# parameters, initial readings and notebooks in version control.
+/alpha-search/reports/**/decay_daily.csv
+/alpha-search/reports/**/monthly_residual_ic.csv
+/alpha-search/reports/**/monthly_residual_quantiles.csv
+/alpha-search/reports/**/rolling_training_cells.parquet
+
+# One-off academic plotting scratch file.  The curated figures and tables in
+# crypto-impact-study/reports remain trackable.
+/crypto-impact-study/scatter.pdf
+
+# Python environments, build products and tool caches
+.venv/
+venv/
+**/.venv/
+**/venv/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+__pycache__/
+*.py[cod]
+.coverage
+htmlcov/
+
+# Jupyter transient files (completed research notebooks remain trackable)
+.ipynb_checkpoints/
+*.executed.tmp.ipynb
+
+# Local OS/editor/runtime artifacts
+.DS_Store
+*.log
+*.tmp
+*.swp
+*~
+.env
+.env.*
+!.env.example

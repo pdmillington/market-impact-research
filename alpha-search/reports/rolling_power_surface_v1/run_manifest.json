@@ -1,0 +1,98 @@
+{
+  "experiment_id": "rolling_power_surface_v1",
+  "created_utc": "2026-09-28T14:28:13.018032+00:00",
+  "config_path": "/Users/petermillington/research/market-impact-research/alpha-search/configs/rolling_power_surface_v1.json",
+  "config": {
+    "experiment_id": "rolling_power_surface_v1",
+    "cache_version": "impact_research_v2",
+    "symbol": "BTCUSDT",
+    "constructions": [
+      "event_200",
+      "event_500",
+      "event_1000",
+      "time_1m",
+      "time_2m",
+      "time_5m"
+    ],
+    "model": "surface_power",
+    "surface": {
+      "imbalance_bins": 12,
+      "activity_bins": 6,
+      "side_specific": true,
+      "fit_target": "equal_weight_training_cell_means",
+      "zero_origin": true
+    },
+    "training_windows_months": [
+      6,
+      12,
+      18,
+      24,
+      36,
+      "expanding"
+    ],
+    "calibration_start": "2021-01-01",
+    "calibration_end": "2026-05-01",
+    "maximum_calibration_age_months": 3,
+    "cadences_months": [
+      1,
+      2,
+      3
+    ],
+    "cadence_comparison_start": "2022-01-01",
+    "common_window_comparison_start": "2022-10-01",
+    "holdout_months_excluded": [
+      "2026-06",
+      "2026-07",
+      "2026-08"
+    ],
+    "notes": [
+      "A model is fitted at every calendar-month boundary using data strictly before that boundary.",
+      "Calibration age 1 is the first month after fitting; age 2 and age 3 retain the same frozen fit.",
+      "Cadence summaries retain non-overlapping operational origins aligned to January 2022.",
+      "June-August 2026 remain absent from the cache and untouched."
+    ]
+  },
+  "cache_manifest": {
+    "cache_version": "impact_research_v2",
+    "symbol": "BTCUSDT",
+    "event_rule": "timestamp_direction_v1",
+    "shared_data_root": "/Volumes/Crypto Research Data/market-impact-research/shared-data",
+    "data_fingerprint": "d9713389b4df7c42441eec4f417284f3957c376024ad727d7860390315029139",
+    "coverage": {
+      "months": 81,
+      "first_month": "2019-09",
+      "last_month": "2026-05",
+      "missing_months": [],
+      "fill_rows": 7697264050,
+      "event_rows": 2422612186,
+      "source_bytes": 66210450466,
+      "canonical_bytes": 38154728414,
+      "event_bytes": 30679068859
+    },
+    "holdout_months_excluded": [
+      "2026-06",
+      "2026-07",
+      "2026-08"
+    ],
+    "event_bar_sizes": [
+      200,
+      500,
+      1000
+    ],
+    "time_bars": [
+      "1m",
+      "2m",
+      "30s",
+      "5m"
+    ],
+    "trailing_window": "1d",
+    "impact_axes": {
+      "relative_imbalance": "abs(signed_imbalance) / gross_volume",
+      "relative_activity": "gross_volume / preceding_24h_gross_volume",
+      "normalised_net_flow": "abs(signed_imbalance) / preceding_24h_gross_volume",
+      "normalised_response": "side_aligned_bar_return / preceding_24h_realised_volatility"
+    }
+  },
+  "status": "complete",
+  "summary_refreshed_utc": "2026-09-28T16:26:24.312568+00:00"
+}

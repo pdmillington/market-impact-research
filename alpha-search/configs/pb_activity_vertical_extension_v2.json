@@ -1,0 +1,39 @@
+{
+  "experiment_id": "pb_activity_vertical_extension_v2",
+  "cache_version": "impact_research_v2",
+  "symbol": "BTCUSDT",
+  "event_sizes": [200, 500, 1000, 2000, 4000, 8000],
+  "reference_events": 1000,
+  "surface": {
+    "imbalance_bins": 12,
+    "activity_bins": 6,
+    "fit_target": "equal_weight_training_cell_means"
+  },
+  "model_families": [
+    "pb_classic",
+    "pb_activity",
+    "pb_activity_vertical",
+    "pb_activity_generalised"
+  ],
+  "samples": [
+    {"name": "full_history", "start": "2019-09-01"},
+    {"name": "post_2021", "start": "2021-01-01"}
+  ],
+  "folds": [
+    {"fold": 1, "train_end": "2023-01-01", "test_start": "2023-01-01", "test_end": "2024-01-01"},
+    {"fold": 2, "train_end": "2024-01-01", "test_start": "2024-01-01", "test_end": "2025-01-01"},
+    {"fold": 3, "train_end": "2025-01-01", "test_start": "2025-01-01", "test_end": "2026-01-01"},
+    {"fold": 4, "train_end": "2026-01-01", "test_start": "2026-01-01", "test_end": "2026-06-01"}
+  ],
+  "descriptive_fit_end": "2026-06-01",
+  "multi_starts": 10,
+  "holdout_months_excluded": ["2026-06", "2026-07", "2026-08"],
+  "notes": [
+    "This extends the v1 scale-free comparison without overwriting it.",
+    "The vertical model multiplies the response by centred relative activity raised to delta.",
+    "The centring activity scale is estimated from training cells as a power of event count.",
+    "Delta=0 exactly nests the activity-adjusted P&B model.",
+    "The extension is judged by chronological RMSE, residual/log-activity correlation and parameter stability.",
+    "The post-2021 sample is evaluated on exactly the same test periods as full history."
+  ]
+}
