@@ -15,6 +15,7 @@
 /alpha-search/reports/**/monthly_residual_ic.csv
 /alpha-search/reports/**/monthly_residual_quantiles.csv
 /alpha-search/reports/**/rolling_training_cells.parquet
+/alpha-search/reports/**/candidates.parquet
 
 # One-off academic plotting scratch file.  The curated figures and tables in
 # crypto-impact-study/reports remain trackable.

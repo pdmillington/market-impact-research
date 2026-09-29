@@ -29,6 +29,27 @@ class DataLayout:
             / f"{symbol}-trades-{month}.zip"
         )
 
+    def source_metrics_day(self, symbol: str, day: str) -> Path:
+        return (
+            self.root
+            / "source"
+            / "binance"
+            / "futures"
+            / "um"
+            / "metrics"
+            / symbol
+            / f"{symbol}-metrics-{day}.zip"
+        )
+
+    def metrics_table(self, symbol: str) -> Path:
+        return (
+            self.root
+            / "canonical"
+            / "metrics"
+            / f"symbol={symbol}"
+            / "metrics_5m.parquet"
+        )
+
     def canonical_month(self, symbol: str, month: str) -> Path:
         year, month_number = month.split("-")
         return (

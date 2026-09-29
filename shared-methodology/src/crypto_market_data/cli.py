@@ -9,6 +9,7 @@ from pathlib import Path
 
 from .download import download_archive, download_range
 from .layout import DataLayout
+from .metrics import download_metrics_range, parse_metrics
 from .months import iter_months
 from .parsing import parse_month_archive
 
@@ -24,6 +25,13 @@ def build_parser() -> argparse.ArgumentParser:
         child.add_argument("--start-month", required=True)
         child.add_argument("--end-month", required=True)
         child.add_argument("--overwrite", action="store_true")
+
+    metrics = subparsers.add_parser("download-and-parse-metrics")
+    metrics.add_argument("--root", type=Path, required=True)
+    metrics.add_argument("--symbol", default="BTCUSDT")
+    metrics.add_argument("--start-day", required=True)
+    metrics.add_argument("--end-day", required=True)
+    metrics.add_argument("--overwrite", action="store_true")
 
     status = subparsers.add_parser("status")
     status.add_argument("--root", type=Path, required=True)
@@ -73,6 +81,18 @@ def main(argv: list[str] | None = None) -> int:
                 overwrite=args.overwrite,
             )
             print(json.dumps(asdict(report), indent=2))
+
+    if args.command == "download-and-parse-metrics":
+        paths = download_metrics_range(
+            root=args.root,
+            symbol=args.symbol,
+            start_day=args.start_day,
+            end_day=args.end_day,
+            overwrite=args.overwrite,
+        )
+        print(f"{len(paths)} metrics archives present")
+        report = parse_metrics(root=args.root, symbol=args.symbol)
+        print(json.dumps(asdict(report), indent=2))
 
     if args.command == "status":
         report_dir = args.root / "metadata" / args.symbol

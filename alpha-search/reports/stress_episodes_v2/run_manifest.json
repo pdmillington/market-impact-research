@@ -1,0 +1,15 @@
+{
+  "experiment_id": "stress_episodes_v2",
+  "config": "/Users/petermillington/research/market-impact-research/alpha-search/configs/stress_episodes_v2.json",
+  "thresholds_z": {
+    "50": 9.15810997947995,
+    "100": 7.430494113488649,
+    "200": 6.008257306031286
+  },
+  "holdout_months_excluded": [
+    "2026-06",
+    "2026-07",
+    "2026-08"
+  ],
+  "created_utc": "2026-09-29T15:53:01+00:00"
+}

@@ -139,13 +139,31 @@ def download_archive(
 ) -> Path:
     """Download one archive resumably and verify Binance's checksum."""
 
+    return download_verified(
+        url=archive_url(symbol, month),
+        destination=destination,
+        overwrite=overwrite,
+        timeout_seconds=timeout_seconds,
+        max_attempts=max_attempts,
+    )
+
+
+def download_verified(
+    *,
+    url: str,
+    destination: Path,
+    overwrite: bool = False,
+    timeout_seconds: int = 120,
+    max_attempts: int = DEFAULT_MAX_ATTEMPTS,
+) -> Path:
+    """Download any Binance public archive resumably and verify its checksum."""
+
     destination = Path(destination)
     if destination.exists() and not overwrite:
         return destination
 
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = destination.with_suffix(destination.suffix + ".part")
-    url = archive_url(symbol, month)
 
     _download_with_retries(
         url=url,

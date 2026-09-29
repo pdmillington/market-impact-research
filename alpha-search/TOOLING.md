@@ -35,6 +35,23 @@ command, changing only the root:
 Run `status` and the alpha audit after ingestion. Preserve the downloaded ZIPs as
 audit evidence.
 
+### Futures metrics (open interest, long/short ratios)
+
+Daily Binance USD-M `metrics` archives (5-minute snapshots, available from
+2020-09-01) use the same shared package. Archives are checksum-verified and kept
+as source evidence; the consolidated, de-duplicated table is written to
+`canonical/metrics/symbol=BTCUSDT/metrics_5m.parquet`:
+
+```bash
+./shared-methodology/.venv/bin/crypto-market-data download-and-parse-metrics \
+  --root "/Volumes/YOUR_SSD/shared-data" \
+  --symbol BTCUSDT \
+  --start-day 2020-09-01 \
+  --end-day YYYY-MM-DD
+```
+
+Zero open-interest rows mark Binance outages and should be treated as missing.
+
 ## 3. Build portable short-event caches
 
 ```bash
