@@ -1,0 +1,30 @@
+{
+  "experiment_id": "pb_lagged_impact_extension_v4",
+  "cache_version": "impact_research_v2",
+  "symbol": "BTCUSDT",
+  "base_scaling_config": "alpha-search/configs/pb_surface_scaling_v1.json",
+  "base_scaling_experiment": "pb_surface_scaling_v1",
+  "base_model_family": "pb_activity",
+  "event_sizes": [200, 500, 1000, 2000, 4000, 8000],
+  "models": [
+    "frozen_pb",
+    "bias_only",
+    "lag_impact",
+    "lag_activity",
+    "lag_activity_duration"
+  ],
+  "calibration_weighting": "equal_total_weight_per_calendar_month",
+  "lag_impulse_bins": 10,
+  "previous_activity_bands": 3,
+  "minimum_bin_observations": 100,
+  "holdout_months_excluded": ["2026-06", "2026-07", "2026-08"],
+  "notes": [
+    "For every chronological fold, the existing pb_activity surface is loaded from the base experiment and frozen before any lag coefficient is estimated.",
+    "The lag layer is calibrated on bars ending before that fold's train_end and then applied unchanged throughout the fold's test interval.",
+    "The signed lag impulse is the previous bar's frozen P&B predicted impact multiplied by current-side times previous-side, so it is positive for same-sign pressure and negative for opposite-sign pressure.",
+    "bias_only estimates separate buy and sell mean residuals so that a level correction cannot be misattributed to lagged impact.",
+    "lag_activity interacts lagged impact with previous log activity relative to the normal activity level already fitted in the frozen P&B calibration.",
+    "lag_activity_duration additionally interacts lagged impact with current log duration centred on a training-only median.",
+    "June-August 2026 remain untouched holdout months."
+  ]
+}

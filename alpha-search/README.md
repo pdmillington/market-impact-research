@@ -217,6 +217,17 @@ inconsistent OOS RMSE gain, does not solve full-history residual/activity
 correlation and develops compensating, economically implausible parameters in the
 post-2021 sample. It is therefore documented but not promoted.
 
+The previous-bar dynamic hypothesis is tested in
+`configs/pb_lagged_impact_extension_v4.json`, with results in
+`reports/pb_lagged_impact_extension_v4`. For every chronological fold, it loads
+the already calibrated `pb_activity` surface, freezes all of its nonlinear
+parameters, and then estimates only a nested lag correction from the same
+training period's bar residuals. The simple previous-impact coefficient is
+negative in every sample/fold/scale fit and improves every OOS fold; interacting
+it with previous activity adds little and is poorly identified. Exact calibration
+dates and stages are recorded in `calibration_ledger.csv`, and the initial reading
+is in `reports/pb_lagged_impact_extension_v4/initial-reading.md`.
+
 The same notebook displays the active residual-response experiment configured by
 `configs/rolling_pb_residual_response_v2.json` and run with
 `scripts/run_rolling_pb_residual_ic.py`. The preferred activity-adjusted model is

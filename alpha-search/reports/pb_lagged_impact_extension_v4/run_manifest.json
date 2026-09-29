@@ -1,0 +1,27 @@
+{
+  "experiment_id": "pb_lagged_impact_extension_v4",
+  "config": "/Users/petermillington/research/market-impact-research/alpha-search/configs/pb_lagged_impact_extension_v4.json",
+  "base_scaling_config": "/Users/petermillington/research/market-impact-research/alpha-search/configs/pb_surface_scaling_v1.json",
+  "base_scaling_results": "/Users/petermillington/research/market-impact-research/alpha-search/reports/pb_surface_scaling_v1",
+  "cache_root": "/Volumes/Crypto Research Data/market-impact-research/shared-data/features/alpha/symbol=BTCUSDT/impact_research_v2",
+  "calibration_sequence": [
+    "Load the chronological pb_activity fit for the sample and fold.",
+    "Freeze every P&B shape, scale, side and activity parameter.",
+    "Calculate training-bar residuals from that frozen prediction.",
+    "Fit only the linear lag-layer coefficients on those training residuals, with equal total weight per calendar month.",
+    "Freeze the lag coefficients and training duration centre.",
+    "Apply both frozen layers unchanged from test_start through test_end."
+  ],
+  "outputs": [
+    "calibration_ledger.csv",
+    "lag_coefficients.csv",
+    "oos_evaluation.csv",
+    "monthly_evaluation.csv",
+    "lag_diagnostic_curves.csv"
+  ],
+  "holdout_months_excluded": [
+    "2026-06",
+    "2026-07",
+    "2026-08"
+  ]
+}

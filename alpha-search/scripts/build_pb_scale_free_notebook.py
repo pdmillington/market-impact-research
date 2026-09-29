@@ -136,6 +136,22 @@ monthly_activity = pl.read_csv(
     infer_schema_length=None,
 ).with_columns(pl.col('fold').cast(pl.Utf8))
 
+LAG_RESULTS = REPO / 'alpha-search' / 'reports' / 'pb_lagged_impact_extension_v4'
+LAG_CONFIG = REPO / 'alpha-search' / 'configs' / 'pb_lagged_impact_extension_v4.json'
+lag_config = json.loads(LAG_CONFIG.read_text())
+lag_evaluation = pl.read_csv(
+    LAG_RESULTS / 'oos_evaluation.csv', infer_schema_length=None
+).with_columns(pl.col('fold').cast(pl.Utf8))
+lag_coefficients = pl.read_csv(
+    LAG_RESULTS / 'lag_coefficients.csv', infer_schema_length=None
+).with_columns(pl.col('fold').cast(pl.Utf8))
+lag_curves = pl.read_csv(
+    LAG_RESULTS / 'lag_diagnostic_curves.csv', infer_schema_length=None
+).with_columns(pl.col('fold').cast(pl.Utf8))
+calibration_ledger = pl.read_csv(
+    LAG_RESULTS / 'calibration_ledger.csv', infer_schema_length=None
+).with_columns(pl.col('fold').cast(pl.Utf8))
+
 plt.style.use('seaborn-v0_8-whitegrid')
 plt.rcParams.update({
     'figure.dpi': 115,
@@ -185,6 +201,7 @@ DIAGNOSTIC_FOLD = OOS_FOLD
 DIAGNOSTIC_SIDE = 'all'             # all, buy, or sell
 DIAGNOSTIC_RESIDUAL = 'scaled_residual'  # scaled_residual or raw_residual
 DIAGNOSTIC_EVENT_SIZE = 1000        # detailed pressure/activity heatmap
+LAG_MODEL = 'lag_impact'             # lag_impact, lag_activity, or lag_activity_duration
 
 assert SAMPLE in {'full_history', 'post_2021'}
 assert FAMILY in set(config['model_families'])
@@ -200,6 +217,7 @@ assert DIAGNOSTIC_FOLD in {'1', '2', '3', '4'}
 assert DIAGNOSTIC_SIDE in {'all', 'buy', 'sell'}
 assert DIAGNOSTIC_RESIDUAL in {'scaled_residual', 'raw_residual'}
 assert DIAGNOSTIC_EVENT_SIZE in set(DISPLAY_SCALES)
+assert LAG_MODEL in {'lag_impact', 'lag_activity', 'lag_activity_duration'}
 
 fold_definition = next(
     row for row in config['folds'] if str(row['fold']) == OOS_FOLD
@@ -988,6 +1006,264 @@ plt.tight_layout()
 plt.show()
 """
     ),
+    md(
+        r"""
+## Dynamic extension: can the previous bar explain the residual?
+
+This is a deliberately nested extension of the preferred `pb_activity` surface.
+It does **not** refit the P&B model after seeing the lag variables.
+
+For each sample and chronological fold, the calibration sequence is:
+
+1. fit the P&B surface on observations strictly before the fold's training
+   cutoff, using the existing equal-weight surface-cell procedure;
+2. freeze every P&B parameter: shape, activity exponent, event-count scaling,
+   buy/sell response levels and normal activity scale;
+3. evaluate that frozen model on the same training bars and calculate its
+   residuals;
+4. fit only the incremental lag coefficients to those training residuals, giving
+   every training calendar month equal total weight;
+5. freeze the lag coefficients and the training-only duration centre;
+6. apply both layers unchanged throughout the following test period.
+
+Thus, for fold 3, for example, the P&B calibration and the lag calibration both
+end before 1 January 2025. Neither layer is updated while the 2025 test data are
+evaluated. The precise dates and counts for the selected view are printed below.
+
+Let $A_t$ be the side-aligned response predicted by the frozen P&B surface. The
+previous-bar impulse, expressed in the direction of the current bar, is
+
+$$
+H_{t-1}=s_ts_{t-1}A_{t-1}.
+$$
+
+$H_{t-1}$ is positive when the two bars have the same pressure direction and
+negative when their directions oppose. The simple dynamic model is
+
+$$
+y_t=A_t+c_{s_t}+\kappa H_{t-1}+\varepsilon_t.
+$$
+
+`bias_only` contains only the two nuisance means $c_{buy}$ and $c_{sell}$.
+`lag_impact` adds $\kappa$. `lag_activity` then allows
+
+$$
+\kappa_t=\kappa_0+\kappa_a
+\log\left(\frac{a_{t-1}}{a_N^*}\right),
+$$
+
+and `lag_activity_duration` adds a final interaction with current bar duration.
+A negative $\kappa$ is counterreaction or decay; a positive value is continuation.
+"""
+    ),
+    code(
+        r"""
+selected_ledger = calibration_ledger.filter(
+    (pl.col('sample') == SAMPLE) &
+    (pl.col('fold') == OOS_FOLD) &
+    (pl.col('n_events') == DIAGNOSTIC_EVENT_SIZE)
+).select(
+    'sample', 'fold', 'n_events', 'pb_family', 'pb_source_experiment',
+    'train_start', 'pb_calibration_end', 'lag_calibration_end',
+    'test_start', 'test_end', 'pb_parameters_frozen_before_lag_fit',
+    'pb_fit_target', 'lag_fit_target', 'lag_weighting',
+    'training_observations', 'test_observations',
+    'duration_reference_seconds'
+)
+display(selected_ledger)
+
+ledger_row = selected_ledger.row(0, named=True)
+display(Markdown(
+    f"**Selected calibration:** the P&B parameters were estimated using "
+    f"`{ledger_row['train_start']}` through the last observation before "
+    f"`{ledger_row['pb_calibration_end']}` and were then frozen. The lag layer "
+    f"used residuals over that same past-only interval and was frozen at "
+    f"`{ledger_row['lag_calibration_end']}`. Both layers were applied unchanged "
+    f"from `{ledger_row['test_start']}` to `{ledger_row['test_end']}`."
+))
+"""
+    ),
+    md("### Out-of-period error and coefficient stability"),
+    code(
+        r"""
+lag_base = lag_evaluation.filter(
+    pl.col('model') == 'frozen_pb'
+).select(
+    'sample', 'fold', 'n_events',
+    pl.col('mean_monthly_rmse').alias('frozen_pb_rmse')
+)
+lag_comparison = lag_evaluation.join(
+    lag_base, on=['sample', 'fold', 'n_events']
+).with_columns(
+    (100 * (1 - pl.col('mean_monthly_rmse') / pl.col('frozen_pb_rmse')))
+    .alias('rmse_improvement_pct')
+)
+
+lag_summary = (
+    lag_comparison.filter(pl.col('sample') == SAMPLE)
+    .group_by('n_events', 'model')
+    .agg(
+        pl.col('mean_monthly_rmse').mean().alias('mean_oos_monthly_rmse'),
+        pl.col('rmse_improvement_pct').mean().alias('mean_rmse_improvement_pct'),
+        pl.col('rmse_improvement_pct').min().alias('worst_fold_improvement_pct'),
+        pl.col('mean_monthly_pressure_controlled_activity_correlation').mean()
+        .alias('mean_pressure_controlled_activity_correlation'),
+        pl.col('mean_monthly_residual_lag_impulse_correlation').mean()
+        .alias('mean_residual_lag_correlation'),
+    )
+    .sort(['n_events', 'model'])
+)
+display(lag_summary)
+
+fig, axes = plt.subplots(1, 2, figsize=(14, 4.9))
+lag_colours = {
+    'lag_impact': '#2563eb',
+    'lag_activity': '#d97706',
+    'lag_activity_duration': '#7c3aed',
+}
+for model, colour in lag_colours.items():
+    part = lag_summary.filter(pl.col('model') == model).sort('n_events')
+    axes[0].plot(
+        part['n_events'], part['mean_rmse_improvement_pct'], 'o-',
+        color=colour, label=model
+    )
+axes[0].axhline(0, color='black', lw=.8)
+axes[0].set_xscale('log')
+axes[0].set_xticks(DISPLAY_SCALES, [f'{n:,}' for n in DISPLAY_SCALES])
+axes[0].set_xlabel('events per bar')
+axes[0].set_ylabel('mean OOS monthly RMSE improvement, %')
+axes[0].set_title(f'Improvement over the untouched frozen P&B: {SAMPLE}')
+axes[0].legend(fontsize=8)
+
+coefficient_path = lag_coefficients.filter(
+    (pl.col('sample') == SAMPLE) &
+    (pl.col('model') == 'lag_impact')
+).sort(['fold', 'n_events'])
+for fold_value, colour in zip(['1', '2', '3', '4'], plt.cm.viridis(np.linspace(0, 1, 4))):
+    part = coefficient_path.filter(pl.col('fold') == fold_value).sort('n_events')
+    axes[1].plot(
+        part['n_events'], part['lag_impulse'], 'o-', color=colour,
+        label=f'fold {fold_value}'
+    )
+axes[1].axhline(0, color='black', lw=.8)
+axes[1].set_xscale('log')
+axes[1].set_xticks(DISPLAY_SCALES, [f'{n:,}' for n in DISPLAY_SCALES])
+axes[1].set_xlabel('events per bar')
+axes[1].set_ylabel(r'previous-impact coefficient $\kappa$')
+axes[1].set_title('Negative means counterreaction during the next bar')
+axes[1].legend(fontsize=8)
+plt.tight_layout()
+plt.show()
+
+identification = (
+    lag_coefficients.filter(pl.col('sample') == SAMPLE)
+    .group_by('model')
+    .agg(
+        pl.col('scaled_condition_number').mean().alias('mean_condition_number'),
+        pl.col('scaled_condition_number').max().alias('maximum_condition_number'),
+        pl.col('lag_impulse').min().alias('minimum_lag_coefficient'),
+        pl.col('lag_impulse').max().alias('maximum_lag_coefficient'),
+    )
+    .sort('mean_condition_number')
+)
+display(identification)
+"""
+    ),
+    md(
+        r"""
+### What does the lag relationship look like?
+
+The x-axis below is the previous bar's frozen predicted impact aligned with the
+current side. Negative values are therefore opposite-sign consecutive bars and
+positive values are same-sign bars. Activity bands use cuts estimated from the
+corresponding training period and then frozen. Faint solid lines show the original
+P&B residual; dashed lines show the residual after the selected lag correction.
+"""
+    ),
+    code(
+        r"""
+selected_lag_curves = lag_curves.filter(
+    (pl.col('sample') == SAMPLE) &
+    (pl.col('fold') == OOS_FOLD)
+)
+activity_colours = ['#2563eb', '#64748b', '#d97706']
+
+fig, axes = plt.subplots(2, 3, figsize=(15, 9), sharex=False, sharey=False)
+for ax, n_events in zip(axes.flat, DISPLAY_SCALES):
+    scale_part = selected_lag_curves.filter(
+        pl.col('n_events') == n_events
+    )
+    for band, colour in zip([1, 2, 3], activity_colours):
+        part = scale_part.filter(
+            pl.col('previous_activity_band') == band
+        ).sort('mean_lag_impulse')
+        ax.plot(
+            part['mean_lag_impulse'], part['mean_residual_frozen_pb'],
+            'o-', color=colour, alpha=.32
+        )
+        ax.plot(
+            part['mean_lag_impulse'], part[f'mean_residual_{LAG_MODEL}'],
+            'o--', color=colour, label=f'activity band {band}'
+        )
+    ax.axhline(0, color='black', lw=.8)
+    ax.axvline(0, color='0.45', lw=.8, ls=':')
+    ax.set_title(f'{n_events:,} events')
+    ax.set_xlabel(r'lag impulse $H_{t-1}$: opposite $\leftarrow$ / same $\rightarrow$')
+    ax.set_ylabel('mean current residual')
+axes.flat[0].legend(fontsize=8)
+fig.suptitle(
+    f'Out-of-period previous-impact diagnostic: {SAMPLE}, fold {OOS_FOLD}; '
+    f'dashed = {LAG_MODEL}'
+)
+plt.tight_layout()
+plt.show()
+"""
+    ),
+    md("### Does the lag layer also remove the activity residual?"),
+    code(
+        r"""
+activity_after_lag = (
+    lag_evaluation.filter(
+        (pl.col('sample') == SAMPLE) &
+        pl.col('model').is_in(['frozen_pb', 'lag_impact', 'lag_activity'])
+    )
+    .group_by('n_events', 'model')
+    .agg(
+        pl.col('mean_monthly_pressure_controlled_activity_correlation').mean()
+        .alias('mean_correlation')
+    )
+    .sort(['model', 'n_events'])
+)
+
+fig, ax = plt.subplots(figsize=(9.5, 4.8))
+for model, colour in [
+    ('frozen_pb', '#64748b'),
+    ('lag_impact', '#2563eb'),
+    ('lag_activity', '#d97706'),
+]:
+    part = activity_after_lag.filter(pl.col('model') == model).sort('n_events')
+    ax.plot(part['n_events'], part['mean_correlation'], 'o-', color=colour, label=model)
+ax.axhline(0, color='black', lw=.8)
+ax.set_xscale('log')
+ax.set_xticks(DISPLAY_SCALES, [f'{n:,}' for n in DISPLAY_SCALES])
+ax.set_xlabel('events per bar')
+ax.set_ylabel('mean monthly pressure-controlled residual/activity correlation')
+ax.set_title(f'Activity structure before and after the lag correction: {SAMPLE}')
+ax.legend()
+plt.show()
+
+selected_coefficients = lag_coefficients.filter(
+    (pl.col('sample') == SAMPLE) &
+    (pl.col('fold') == OOS_FOLD) &
+    (pl.col('n_events') == DIAGNOSTIC_EVENT_SIZE)
+).select(
+    'model', 'bias_buy', 'bias_sell', 'lag_impulse',
+    'lag_impulse_x_previous_activity', 'lag_impulse_x_duration',
+    'scaled_condition_number', 'training_observations', 'training_months'
+).sort('model')
+display(selected_coefficients)
+"""
+    ),
     md("## Quantitative reading of this run"),
     code(
         r"""
@@ -1367,11 +1643,20 @@ and an inverted event-count pressure exponent. The fitted $b_1$ is negative rath
 than the hypothesised positive value. These compensating parameters are evidence
 of weak identification and regime dependence, not a stable liquidity mechanism.
 
+The frozen-P&B lag experiment is more informative. The simple previous-impact
+coefficient is negative in every chronological calibration, improves every OOS
+fold at every event scale, and reduces residual/lag-impulse correlation from
+about -0.22 to approximately zero. This is consistent with counterreaction or
+decay of the preceding bar's impact. The gain peaks around 1,000--2,000 events and
+weakens at longer scales. Previous activity and duration interactions add almost
+nothing and are much less well identified, so `lag_impact` remains the preferred
+dynamic specification.
+
 The next checks should remain incremental:
 
-1. compare a simple linear activity correction with a small, shrinkage-stabilised
-   pressure-by-activity grid using chronological test months;
-2. compare the resulting neutral residual with raw impact, imbalance, pretrend and ordinary
+1. extend the one-lag result to a small distributed-lag/propagator specification
+   and plot the coefficient against both bar lag and elapsed clock time;
+2. compare the resulting dynamic residual with raw impact, imbalance, pretrend and ordinary
    short-horizon reversal on exactly the same observations;
 3. add calendar-block confidence intervals and control the finite family of
    scale/horizon/side comparisons;
