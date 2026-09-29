@@ -197,7 +197,8 @@ activity exponent while centring activity at its training-fitted normal level fo
 each event scale. The additional term produces only a small out-of-sample RMSE
 gain, does not materially reduce residual/log-activity correlation and is weakly
 identified against the original horizontal activity exponent. It is retained as a
-documented falsification, not promoted over the parsimonious `pb_activity` model.
+documented falsification, not promoted over the parsimonious `pb_activity` model,
+and is no longer expanded in the active workbench.
 
 The remaining pattern is exposed directly by
 `configs/pb_residual_activity_diagnostics_v1.json` and
@@ -211,11 +212,11 @@ later test folds, so neutralisation has deliberately not yet been imposed.
 The interpretable activity-dependent-concavity hypothesis is tested in
 `configs/pb_activity_beta_extension_v3.json`, with results in
 `reports/pb_activity_beta_extension_v3`. It allows the P&B beta parameter to vary
-logistically with relative activity and adds observed-versus-predicted conditional
-curves to the canonical workbench. The unrestricted model produces only a small,
+logistically with relative activity. The unrestricted model produces only a small,
 inconsistent OOS RMSE gain, does not solve full-history residual/activity
 correlation and develops compensating, economically implausible parameters in the
-post-2021 sample. It is therefore documented but not promoted.
+post-2021 sample. It is therefore documented but not promoted. Its detailed charts
+remain in the compact reports and Git history rather than the active workbench.
 
 The previous-bar dynamic hypothesis is tested in
 `configs/pb_lagged_impact_extension_v4.json`, with results in
@@ -246,6 +247,11 @@ The notebook index is now consolidated. Superseded exploratory notebooks are
 archived and labelled, not deleted, so the research trail and old results remain
 reproducible. Historical notebook builders also write to `notebooks/archive` so
 they cannot silently repopulate the active directory.
+
+The canonical P&B workbench is intentionally compact. It uses
+`pb_surface_scaling_v1` as the active model source, shows one model-selection audit
+table, and then focuses on the chosen collapse, calibration drift, remaining
+activity structure, the separate previous-bar reaction model and residual alpha.
 
 Generated alpha features and bar caches belong below
 `shared-data/features/alpha`; no new parser or independent trade store should be

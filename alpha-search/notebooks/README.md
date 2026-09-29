@@ -18,25 +18,20 @@ $$
 
 with event-count power laws used to collapse the horizontal and response scales.
 The impact function must be calibrated only on data available before the decision
-date. Its side-aligned, same-bar error is the canonical `excess_impact` factor.
-The rolling sections show its 30-second to 60-minute response path, past-only
-conditional standardisation and buy/sell symmetry. Use them to choose and monitor
-calibration history.
+date. The notebook contains one compact model-selection record, but detailed
+sections for the rejected vertical-activity, activity-dependent-beta and free
+central-exponent models have been removed. Their reports remain preserved.
 
-The same notebook documents the rejected nested vertical-activity extension. It
-slightly improves cell RMSE but does not remove the residual/activity relationship;
-the simpler activity-adjusted model therefore remains the base specification while
-activity-neutral residual tests are developed. Cell-level, bar-level,
-pressure-controlled and monthly residual/activity diagnostics are shown before any
-neutralisation rule is selected.
+The workbench now focuses on the selected collapse, chronological calibration
+drift, remaining residual/activity structure and the separate previous-bar
+reaction model. Its side-aligned same-bar error is converted back to signed price
+direction before current and lagged residuals are combined as alpha factors. The
+rolling section shows the existing 30-second to 60-minute residual response path.
 
-The activity-dependent-concavity extension and its low/middle/high-activity
-conditional response curves are also included. The unrestricted extension is a
-documented negative result rather than the new canonical residual model.
-
-This residual can be tested directly as an alpha or used as a conditioner for a
-different primary factor. In either case, thresholds and any secondary model must
-also be fitted on past data only.
+The static P&B residual, the ex-ante lagged decay factor and the dynamically
+adjusted reaction-function residual are distinct objects and must not overwrite
+one another. Thresholds, lag weights and any secondary model must be fitted on
+past data only.
 
 ### `EventSweepDecayWorkbenchV2.ipynb`
 
