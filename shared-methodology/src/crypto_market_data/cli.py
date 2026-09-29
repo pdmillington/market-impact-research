@@ -11,6 +11,7 @@ from .download import download_archive, download_range
 from .layout import DataLayout
 from .metrics import download_metrics_range, parse_metrics
 from .months import iter_months
+from .series import DATASETS, backfill_series, download_series_range, parse_series
 from .parsing import parse_month_archive
 
 
@@ -32,6 +33,19 @@ def build_parser() -> argparse.ArgumentParser:
     metrics.add_argument("--start-day", required=True)
     metrics.add_argument("--end-day", required=True)
     metrics.add_argument("--overwrite", action="store_true")
+
+    series = subparsers.add_parser("download-and-parse-series")
+    series.add_argument("--root", type=Path, required=True)
+    series.add_argument("--symbol", default="BTCUSDT")
+    series.add_argument("--dataset", choices=sorted(DATASETS), required=True)
+    series.add_argument("--start-month", required=True)
+    series.add_argument("--end-month", required=True)
+    series.add_argument("--overwrite", action="store_true")
+
+    backfill = subparsers.add_parser("backfill-series")
+    backfill.add_argument("--root", type=Path, required=True)
+    backfill.add_argument("--symbol", default="BTCUSDT")
+    backfill.add_argument("--dataset", choices=sorted(DATASETS), required=True)
 
     status = subparsers.add_parser("status")
     status.add_argument("--root", type=Path, required=True)
@@ -92,6 +106,25 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(f"{len(paths)} metrics archives present")
         report = parse_metrics(root=args.root, symbol=args.symbol)
+        print(json.dumps(asdict(report), indent=2))
+
+    if args.command == "download-and-parse-series":
+        paths = download_series_range(
+            root=args.root,
+            dataset=args.dataset,
+            symbol=args.symbol,
+            start_month=args.start_month,
+            end_month=args.end_month,
+            overwrite=args.overwrite,
+        )
+        print(f"{len(paths)} {args.dataset} archives present")
+        report = parse_series(root=args.root, dataset=args.dataset, symbol=args.symbol)
+        print(json.dumps(asdict(report), indent=2))
+
+    if args.command == "backfill-series":
+        result = backfill_series(root=args.root, dataset=args.dataset, symbol=args.symbol)
+        print(json.dumps(result, indent=2))
+        report = parse_series(root=args.root, dataset=args.dataset, symbol=args.symbol)
         print(json.dumps(asdict(report), indent=2))
 
     if args.command == "status":

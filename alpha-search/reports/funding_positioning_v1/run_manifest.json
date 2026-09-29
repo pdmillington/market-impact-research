@@ -1,0 +1,10 @@
+{
+  "experiment_id": "funding_positioning_v1",
+  "config": "/Users/petermillington/research/market-impact-research/alpha-search/configs/funding_positioning_v1.json",
+  "holdout_months_excluded": [
+    "2026-06",
+    "2026-07",
+    "2026-08"
+  ],
+  "created_utc": "2026-09-29T16:17:21+00:00"
+}

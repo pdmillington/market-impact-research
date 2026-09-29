@@ -1,0 +1,64 @@
+{
+  "experiment_id": "crowding_backtest_v1",
+  "panel_config": "alpha-search/configs/funding_positioning_v1.json",
+  "panel_experiment": "funding_positioning_v1",
+  "first_test_month": "2023-01",
+  "last_test_month": "2026-05",
+  "holdout_months_excluded": [
+    "2026-06",
+    "2026-07",
+    "2026-08"
+  ],
+  "models": [
+    "baseline",
+    "baseline_funding",
+    "baseline_basis",
+    "baseline_positioning",
+    "all"
+  ],
+  "horizons_hours": [
+    8,
+    24
+  ],
+  "position_rules": [
+    "tail",
+    "continuous"
+  ],
+  "training_windows_months": [
+    12,
+    6
+  ],
+  "tail_fraction": 0.2,
+  "costs_bps_per_side": {
+    "gross": 0.0,
+    "maker": 2.0,
+    "taker": 5.0
+  },
+  "primary": {
+    "model": "all",
+    "horizon_hours": 24,
+    "position_rule": "tail",
+    "training_window_months": 12
+  },
+  "notes": [
+    "Forecasts use the Step 4 feature panel and nested OLS, refitted monthly on the preceding window with a horizon embargo.",
+    "tail: unit signal sign(forecast) when |forecast| exceeds the training quantile for tail_fraction, else 0.",
+    "continuous: forecast divided by the same training threshold, clipped to [-1, 1].",
+    "The position is the mean of the last H hourly signals (H staggered tranches held H hours each).",
+    "Hourly P&L = position x next-hour perp return - position x funding settled in that hour - cost x |position change|.",
+    "The primary variant was named before the backtest was run; all others are reported as sensitivities.",
+    "baseline and baseline_positioning were added after the first run to attribute the combined model's performance; they are attribution checks, not candidates.",
+    "recent_* metrics cover 2025-06 to 2026-05; the attribution drops each positioning feature, then all three long/short ratio features, from baseline_positioning."
+  ],
+  "recent_start_month": "2025-06",
+  "attribution": {
+    "model": "baseline_positioning",
+    "position_rule": "tail",
+    "training_window_months": 12,
+    "ratio_features": [
+      "toptrader_ls_z30d",
+      "global_ls_z30d",
+      "taker_ls_1h"
+    ]
+  }
+}

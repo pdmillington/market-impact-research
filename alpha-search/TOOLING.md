@@ -52,6 +52,35 @@ as source evidence; the consolidated, de-duplicated table is written to
 
 Zero open-interest rows mark Binance outages and should be treated as missing.
 
+### Funding, premium, mark, index and spot price series
+
+Monthly archives (available from 2020-01 for the futures series) are handled by
+one command with a `--dataset` of `funding`, `premium_index`, `mark_price`,
+`index_price` or `spot_klines` (all klines are 1-minute):
+
+```bash
+./shared-methodology/.venv/bin/crypto-market-data download-and-parse-series \
+  --root "/Volumes/YOUR_SSD/shared-data" \
+  --symbol BTCUSDT \
+  --dataset funding \
+  --start-month 2020-01 \
+  --end-month YYYY-MM
+```
+
+Whole days missing from Binance's monthly kline archives can be filled from its
+daily archives, after which the table is re-consolidated (monthly rows take
+precedence):
+
+```bash
+./shared-methodology/.venv/bin/crypto-market-data backfill-series \
+  --root "/Volumes/YOUR_SSD/shared-data" --symbol BTCUSDT --dataset premium_index
+```
+
+Consolidated tables are written to
+`canonical/<dataset>/symbol=BTCUSDT/<interval=1m|all>/part-000.parquet` with
+millisecond timestamps. Older archives have no CSV header, and spot archives use
+microsecond timestamps from 2025; both are normalised during consolidation.
+
 ## 3. Build portable short-event caches
 
 ```bash

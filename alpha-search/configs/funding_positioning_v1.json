@@ -1,0 +1,48 @@
+{
+  "experiment_id": "funding_positioning_v1",
+  "symbol": "BTCUSDT",
+  "grid_version": "second_grid_v1",
+  "first_month": "2021-01",
+  "last_month": "2026-05",
+  "first_decision_day": "2021-02-01",
+  "first_test_month": "2023-01",
+  "last_test_month": "2026-05",
+  "data_end_exclusive": "2026-06-01",
+  "holdout_months_excluded": ["2026-06", "2026-07", "2026-08"],
+  "decision_interval_minutes": 60,
+  "entry_delay_minutes": 1,
+  "horizons_hours": [1, 4, 8, 24],
+  "regression_training_months": 12,
+  "winsor_quantiles": [0.005, 0.995],
+  "tail_fractions": [0.01, 0.05, 0.2],
+  "metrics_publication_lag_seconds": 300,
+  "metrics_max_age_seconds": 900,
+  "costs_bps_per_side": {"taker": 5.0, "maker": 2.0},
+  "feature_groups": {
+    "baseline": ["ret_1h", "ret_4h", "ret_24h", "rv_24h"],
+    "funding": ["funding_last", "funding_z30d", "premium_1h", "premium_8h", "premium_chg"],
+    "basis": ["basis_1h", "basis_chg"],
+    "positioning": ["oi_chg_1h", "oi_chg_24h", "oi_x_ret_24h", "toptrader_ls_z30d", "global_ls_z30d", "taker_ls_1h"]
+  },
+  "impute_zero_when_missing": ["toptrader_ls_z30d", "global_ls_z30d", "taker_ls_1h"],
+  "models": {
+    "baseline": ["baseline"],
+    "funding_only": ["funding"],
+    "basis_only": ["basis"],
+    "positioning_only": ["positioning"],
+    "baseline_funding": ["baseline", "funding"],
+    "baseline_basis": ["baseline", "basis"],
+    "baseline_positioning": ["baseline", "positioning"],
+    "all": ["baseline", "funding", "basis", "positioning"]
+  },
+  "notes": [
+    "Decisions are made at each UTC hour boundary using only data available by then.",
+    "Perp prices come from the 1-second event grid; spot, premium index and funding from Binance archives.",
+    "Metrics snapshots are used only if at least publication_lag old and at most max_age stale.",
+    "Entry is one minute after the decision; horizons are measured from entry.",
+    "Carry-inclusive targets subtract funding paid by a long position at settlements inside the holding window.",
+    "Returns and premium/basis/funding features are in bps; open-interest changes are in percent.",
+    "Binance's archive lacks the top-trader ratio for 87% of 2022 and the taker ratio for 35%; those ratio features are set to 0 (neutral) when missing.",
+    "Forecast regressions are fitted on the preceding 12 months with a horizon embargo and frozen for each test month."
+  ]
+}
