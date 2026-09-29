@@ -1,0 +1,43 @@
+{
+  "experiment_id": "residual_decomposition_v1",
+  "cache_version": "impact_research_v2",
+  "symbol": "BTCUSDT",
+  "event_sizes": [200, 500, 1000, 2000, 4000, 8000],
+  "impact_fits": "alpha-search/reports/rolling_pb_residual_response_v2/rolling_fits.csv",
+  "impact_training_window_months": 12,
+  "first_feature_month": "2022-01",
+  "first_test_month": "2023-01",
+  "last_test_month": "2026-05",
+  "data_end_exclusive": "2026-06-01",
+  "regression_training_months": 12,
+  "future_horizons_minutes": [5, 10, 15, 30],
+  "pretrend_lookbacks_minutes": [15, 60],
+  "entry_delay_ms": 1000,
+  "winsor_quantiles": [0.005, 0.995],
+  "tail_fractions": [0.01, 0.05, 0.2],
+  "costs_bps_per_side": {
+    "taker": 5.0,
+    "maker": 2.0
+  },
+  "holdout_months_excluded": ["2026-06", "2026-07", "2026-08"],
+  "models": {
+    "residual": ["X"],
+    "bar_return": ["R"],
+    "components": ["R", "P"],
+    "pretrend_only": ["pre15", "pre60"],
+    "return_pretrend": ["R", "pre15", "pre60"],
+    "return_pretrend_flow": ["R", "pre15", "pre60", "q"],
+    "full_impact": ["R", "P", "pre15", "pre60"],
+    "full_impact_flow": ["R", "P", "pre15", "pre60", "q"]
+  },
+  "notes": [
+    "All features are signed in price direction and known at the completed bar endpoint.",
+    "R is the bar return over trailing 24h volatility; P = s * pb_activity prediction; X = R - P is the signed residual.",
+    "q is the linear signed imbalance over trailing 24h volume, a naive flow benchmark for P.",
+    "pre15 and pre60 are clock-time returns ending at the bar start, over trailing volatility.",
+    "P uses the frozen rolling impact fit calibrated strictly before each month.",
+    "Forecast regressions are fitted on the preceding 12 months only and frozen for the test month.",
+    "Delayed targets enter at the first 200-event endpoint at least entry_delay_ms after the decision.",
+    "Costs are base-tier Binance USDT-M assumptions and should be replaced with the actual tier."
+  ]
+}

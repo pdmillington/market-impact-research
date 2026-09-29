@@ -1,0 +1,19 @@
+{
+  "experiment_id": "residual_decomposition_v1",
+  "config": "/Users/petermillington/research/market-impact-research/alpha-search/configs/residual_decomposition_v1.json",
+  "cache_root": "/Volumes/Crypto Research Data/market-impact-research/shared-data/features/alpha/symbol=BTCUSDT/impact_research_v2",
+  "event_sizes": [
+    200,
+    500,
+    1000,
+    2000,
+    4000,
+    8000
+  ],
+  "holdout_months_excluded": [
+    "2026-06",
+    "2026-07",
+    "2026-08"
+  ],
+  "created_utc": "2026-09-29T14:59:42+00:00"
+}
