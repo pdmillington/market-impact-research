@@ -121,6 +121,49 @@ A positive value means recent net order flow has the same sign as the current ba
 These are bar-level summaries. The separate dense-decay analysis retains explicit
 single-fill/single-price, multi-fill/single-price and multi-price event categories.
 
+## Trailing-window flow features
+
+These features are defined over a trailing **clock-time** window of length $W$
+ending at the decision time $t$, rather than over one bar. They are computed from
+reconstructed `timestamp_direction_v1` events via the 1-second grid
+(`second_grid_v1`), which sums event quantities by aggressor side each second.
+Because signed and gross volume are additive, the window totals are identical
+whether they are summed from fills, events, event bars or time bars; the parser
+verifies that events conserve fill volume exactly. What distinguishes the
+features below is the window, the normalisation and the transformation, not the
+bar construction.
+
+Notation, for events $i$ with aggressor sign $\epsilon_i\in\{-1,+1\}$ and
+quantity $q_i$ timestamped in $(t-W,\,t]$:
+
+$$
+Q_W(t)=\sum_{i}\epsilon_i q_i,\qquad V_W(t)=\sum_{i} q_i .
+$$
+
+The reference volume for a window of length $W$ is the typical gross volume of
+such a window over the preceding 30 days, excluding the current window:
+
+$$
+V^{\mathrm{ref}}_W(t)=\frac{W}{30\,\mathrm{d}-W}\,\sum_{i\,\in\,(t-30\,\mathrm{d},\;t-W]} q_i .
+$$
+
+| Name | Definition | Nearest bar feature | Interpretation |
+|---|---|---|---|
+| `window_imbalance_ratio_W` | $z_W=Q_W/V_W$ | signed `absolute_imbalance_ratio` (`relative_imbalance`) | One-sidedness of the window's flow, in $[-1,1]$. Ignores whether the window was busy or quiet. |
+| `window_relative_activity_W` | $a_W=V_W/V^{\mathrm{ref}}_W$ | `bar_volume_fraction_24h` (`relative_activity`) | Window volume relative to a typical window of the same length. |
+| `window_normalised_imbalance_W` | $x_W=z_W\,a_W=Q_W/V^{\mathrm{ref}}_W$ | signed `normalised_imbalance` | Net demand in units of typical market capacity; the metaorder-size variable of the square-root-law literature. |
+| `window_scaled_pressure_W` | $x^*_W=z_W\,a_W^{\gamma}$, $\gamma$ fixed at the canonical `pb_activity` value (about 0.55) | collapse coordinate $x^*=z a^{\gamma}$ | The impact research's price-relevant pressure, evaluated on the window. $\gamma$ is not re-fitted. |
+| `window_sign_persistence_W_h` | $P_{W,h}=\frac{1}{n}\sum_{k=1}^{n}\mathbf 1\{\operatorname{sign}Q_h(t-(k-1)h)=\operatorname{sign}Q_W(t)\}$, $n=W/h$ | none (closest: `abs_event_sign_imbalance`) | Share of the $n$ sub-windows of length $h$ whose net flow has the same sign as the whole window. High values mean steady rather than bursty flow. |
+
+Transformation used with these features:
+
+| Name | Definition | Interpretation |
+|---|---|---|
+| `z30(f)` | $\dfrac{f(t)-\operatorname{mean}_{30\,\mathrm d}(f)}{\operatorname{sd}_{30\,\mathrm d}(f)}$ over the values of $f$ at earlier decision times in $[t-30\,\mathrm d,\,t)$ | Time-series standardisation that removes slow drifts in a feature's level and scale. Uses strictly earlier observations only. |
+
+All window features are known at $t$ (strictly prior flow), and the decision is
+assumed to execute after $t$ with the entry delay registered in the hypothesis.
+
 ## Using the catalogue in an experiment
 
 The generic conditioner runner accepts one `primary_feature` and a list of
