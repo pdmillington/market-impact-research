@@ -1,0 +1,11 @@
+{
+  "experiment_id": "intraday_flow_v1",
+  "hypothesis": "H-012",
+  "config": "/Users/petermillington/research/market-impact-research/alpha-search/configs/intraday_flow_v1.json",
+  "holdout_months_excluded": [
+    "2026-06",
+    "2026-07",
+    "2026-08"
+  ],
+  "created_utc": "2026-09-30T10:50:22+00:00"
+}

@@ -1,0 +1,39 @@
+{
+  "experiment_id": "intraday_flow_v1",
+  "hypothesis": "H-012",
+  "symbol": "BTCUSDT",
+  "grid_version": "second_grid_v1",
+  "first_month": "2021-01",
+  "last_month": "2026-05",
+  "first_decision_day": "2021-02-01",
+  "first_test_month": "2023-01",
+  "last_test_month": "2026-05",
+  "holdout_months_excluded": ["2026-06", "2026-07", "2026-08"],
+  "decision_interval_seconds": 300,
+  "windows_minutes": [15, 60, 240],
+  "horizons_minutes": [5, 15, 30],
+  "primary": {"window_minutes": 60, "horizon_minutes": 15},
+  "persistence_subwindow_minutes": 1,
+  "reference_days": 30,
+  "zscore_days": 30,
+  "volatility_minutes": 1440,
+  "regression_training_months": 12,
+  "embargo_extra_minutes": 5,
+  "winsor_quantiles": [0.005, 0.995],
+  "tail_fractions": [0.01, 0.05, 0.2],
+  "primary_tail_fraction": 0.05,
+  "execution": {
+    "passive_timeout_seconds": 60,
+    "passive_costs_bps": {"entry_maker": 2.0, "exit_taker": 5.0},
+    "taker_entry_delay_seconds": 1,
+    "taker_costs_bps": {"entry": 5.0, "exit": 5.0}
+  },
+  "notes": [
+    "Registered in HYPOTHESIS_LEDGER.md as H-012 before any results were computed.",
+    "Features are defined in FEATURE_CATALOGUE.md under 'Trailing-window flow features'.",
+    "Benchmark: returns over the last 5, 15 and 60 minutes divided by trailing-24h realised volatility, plus that volatility.",
+    "Registered cells: benchmark + z30(x_W) for W x H; at the primary only, the persistence interaction, the z30(z_60) scaling check and a spaced (non-overlapping) check.",
+    "Passive fill: limit at the last trade price at t; filled only if a later trade prints strictly through it within the timeout; otherwise no trade.",
+    "The benchmark model's tails are reported for economic comparison; it is not a new cell."
+  ]
+}

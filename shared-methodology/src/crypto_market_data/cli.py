@@ -7,6 +7,7 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
+from .book_ticker import download_and_parse_month
 from .download import download_archive, download_range
 from .layout import DataLayout
 from .metrics import download_metrics_range, parse_metrics
@@ -41,6 +42,13 @@ def build_parser() -> argparse.ArgumentParser:
     series.add_argument("--start-month", required=True)
     series.add_argument("--end-month", required=True)
     series.add_argument("--overwrite", action="store_true")
+
+    book = subparsers.add_parser("download-and-parse-book-ticker")
+    book.add_argument("--root", type=Path, required=True)
+    book.add_argument("--symbol", default="BTCUSDT")
+    book.add_argument("--start-month", required=True)
+    book.add_argument("--end-month", required=True)
+    book.add_argument("--overwrite", action="store_true")
 
     backfill = subparsers.add_parser("backfill-series")
     backfill.add_argument("--root", type=Path, required=True)
@@ -120,6 +128,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{len(paths)} {args.dataset} archives present")
         report = parse_series(root=args.root, dataset=args.dataset, symbol=args.symbol)
         print(json.dumps(asdict(report), indent=2))
+
+    if args.command == "download-and-parse-book-ticker":
+        for month in iter_months(args.start_month, args.end_month):
+            report = download_and_parse_month(
+                root=args.root, symbol=args.symbol, month=month, overwrite=args.overwrite
+            )
+            print(json.dumps(asdict(report)), flush=True)
 
     if args.command == "backfill-series":
         result = backfill_series(root=args.root, dataset=args.dataset, symbol=args.symbol)
