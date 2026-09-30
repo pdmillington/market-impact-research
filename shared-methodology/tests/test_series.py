@@ -108,3 +108,16 @@ def test_funding_parse(tmp_path):
     assert table.columns == ["time_ms", "funding_interval_hours", "funding_rate"]
     assert table["funding_rate"].to_list() == [-0.00012359, 0.0001]
     assert report.missing_minutes is None
+
+
+def test_hourly_and_daily_datasets_are_separate_from_minute_tables(tmp_path):
+    hourly = series.DATASETS["perp_klines_1h"]
+    daily = series.DATASETS["perp_klines_1d"]
+    premium = series.DATASETS["premium_index_1h"]
+    assert hourly.url("XRPUSDT", "2022-03").endswith("/futures/um/monthly/klines/XRPUSDT/1h/XRPUSDT-1h-2022-03.zip")
+    assert premium.url("XRPUSDT", "2022-03").endswith(
+        "/futures/um/monthly/premiumIndexKlines/XRPUSDT/1h/XRPUSDT-1h-2022-03.zip"
+    )
+    tables = {spec.table(tmp_path, "XRPUSDT") for spec in (hourly, daily, series.DATASETS["perp_klines"])}
+    assert len(tables) == 3
+    assert hourly.table(tmp_path, "XRPUSDT").parent.name == "interval=1h"

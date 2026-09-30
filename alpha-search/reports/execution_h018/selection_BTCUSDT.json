@@ -1,0 +1,72 @@
+{
+  "symbol": "BTCUSDT",
+  "run": "E2_m10_T5_k12",
+  "m_ticks": 10,
+  "T_s": 5,
+  "k": 12,
+  "calibration_mean_is_bps": 3.6047680483127076,
+  "calibration_orders": 914,
+  "frozen_at": "2026-09-30T18:20:14+00:00",
+  "grid_ranking": [
+    {
+      "run": "E2_m10_T5_k12",
+      "mean_is_bps": 3.6047680483127076,
+      "orders": 914
+    },
+    {
+      "run": "E2_m10_T2_k12",
+      "mean_is_bps": 3.6047680483127076,
+      "orders": 914
+    },
+    {
+      "run": "E2_m5_T2_k12",
+      "mean_is_bps": 3.621711185721502,
+      "orders": 914
+    },
+    {
+      "run": "E2_m5_T5_k12",
+      "mean_is_bps": 3.621711185721502,
+      "orders": 914
+    },
+    {
+      "run": "E2_m2_T5_k12",
+      "mean_is_bps": 3.6374335857938678,
+      "orders": 914
+    },
+    {
+      "run": "E2_m2_T2_k12",
+      "mean_is_bps": 3.6374335857938678,
+      "orders": 914
+    },
+    {
+      "run": "E2_m10_T2_k6",
+      "mean_is_bps": 3.962456049738468,
+      "orders": 914
+    },
+    {
+      "run": "E2_m10_T5_k6",
+      "mean_is_bps": 3.962456049738469,
+      "orders": 914
+    },
+    {
+      "run": "E2_m5_T5_k6",
+      "mean_is_bps": 3.9718351915269983,
+      "orders": 914
+    },
+    {
+      "run": "E2_m5_T2_k6",
+      "mean_is_bps": 3.9718351915269983,
+      "orders": 914
+    },
+    {
+      "run": "E2_m2_T2_k6",
+      "mean_is_bps": 3.979139950995243,
+      "orders": 914
+    },
+    {
+      "run": "E2_m2_T5_k6",
+      "mean_is_bps": 3.979139950995243,
+      "orders": 914
+    }
+  ]
+}

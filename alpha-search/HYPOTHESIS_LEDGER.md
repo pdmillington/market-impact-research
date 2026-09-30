@@ -48,7 +48,9 @@ specification → walk-forward validation → replication → single locked test
 | BTCUSDT 2026-09 onward | **Prospective** | Accumulates as a genuine forward sample. |
 | BTCUSDT `bookTicker` 2023-05 to 2023-07 | **Order-book exploration** (decision 2026-09-30) | Used for E-004 (order-book features) and for mid-proxy validation. Trade-based hypotheses tested on 2023–26 include these months; that overlap is limited to order-book exploration and is noted. |
 | BTCUSDT `bookTicker` 2023-08 to 2024-04 | **Order-book test** | Reserved for registered order-book hypotheses. |
-| ETHUSDT, SOLUSDT (all periods) | **Untouched confirmation set** | Built 2026-09-30: trades, canonical fills, events, 1-second grid (to 2026-05), price series and metrics (from 2021-12). Only data-quality checks have read them; no return analysis. Used to replicate hypotheses frozen on BTC. Correlated with BTC, so strong but not fully independent evidence. |
+| ETHUSDT, SOLUSDT (all periods) | **Used for confirmation** | Built 2026-09-30. Seconds-scale returns used by the H-014 to H-016 confirmations; hourly/daily returns used by C-010 and E-004; `bookTicker` 2023-05 to 2024-03 used by H-017/H-018. No longer untouched. |
+| Alt USDT perps (all except BTC, ETH, SOL), 2020-01 to 2026-05 | **H-019 test panel** (registered 2026-09-30) | No return has been examined. Warm-up 2021, test 2022-01 to 2026-05. |
+| Alt USDT perps, 2026-06 to 2026-08 | **Locked, single use** | Downloaded with the panel; no analysis may read them before H-019's test verdict. Joint confirmation with the BTC holdout. |
 
 ## Frozen economic assumptions
 
@@ -89,10 +91,11 @@ statistic). These are the denominators for later corrections.
 | H-010 | `crowding_backtest_v1` | 40 variants + 10 attribution variants + 16 drop-one |
 | H-012 | `intraday_flow_v1` (rejected) | 12 cells + 4 benchmark cells, × 3 tail fractions × 2 execution models |
 | E-001 to E-003, V-001 | exploration and validation | logged in the exploration log (descriptive slices, not tests) |
-| H-014 to H-016 | `seconds_signals_test_v1` (proxy run complete; true-mid pending) | 8 + 7 + 7 = 22 cells |
+| H-014 to H-016 | `seconds_signals_test_v1` (complete, including true-mid and ETH/SOL confirmation) | 8 + 7 + 7 = 22 cells |
 | H-017 | quoting simulation (registered) | 12-combination calibration grid + 2 strategies × 2 instruments + 3 sensitivities |
 | C-010 | H-010 confirmation on ETH and SOL (failed; H-010 retired) | 2 symbols × 1 frozen primary |
 | H-018 | execution simulation (registered) | 12-combination calibration grid per instrument + 4 strategies × 3 instruments + 4 sensitivities |
+| H-019 | alt-panel crowding (registered) | 4 primary conditions + 2 tested secondaries + 2 descriptive |
 | | **Total (enumerated rows)** | **about 9,000 cells, plus H-001** |
 
 Impact-model selection experiments (`pb_surface_scaling_v1`, the v2–v4
@@ -376,7 +379,10 @@ lagged residual used in H-005 and H-006.
     drifted from a 2022 median of about −0.35 to about −0.70 in 2025.
   - Protective value (diagnostic): same-side fills within 5 s after a 5+ level
     sweep have maker markout −0.33 bps, against −0.09 bps otherwise.
-  - True-mid robustness: pending (`bookTicker` download in progress).
+  - True-mid robustness (2023-08 to 2024-03, 9 months, real quote mids):
+    **pass.** IC at 5 s is 0.141 against 0.175 with the proxy on the same
+    months (about 20% smaller, as V-001 predicted). Positive at every
+    horizon in 9 of 9 months. Activity interaction +0.18 bps.
   - Report: `reports/seconds-signals-test-v1-results.md`.
 
   - **Confirmation (ETHUSDT, SOLUSDT; frozen BTC specification, same 38
@@ -422,7 +428,9 @@ lagged residual used in H-005 and H-006.
     **It is strengthening:** yearly means 0.14 (2023), 0.24, 0.28, 0.40 (2026).
   - Protective value (diagnostic): after 6+ hit runs, markout −0.26 against
     −0.23 bps otherwise, a small difference.
-  - True-mid robustness: pending.
+  - True-mid robustness (9 months): **pass.** IC at 5 s is 0.088 against
+    0.111 with the proxy. The absorption interaction is *stronger* with
+    real quotes (+0.21 against +0.13 bps), 9 of 9 months.
 
   - **Confirmation: replicated** on ETH and SOL (all three conditions).
     - Main-effect IC at 5 s: ETH 0.108, SOL 0.150 (38 of 38 months).
@@ -465,7 +473,7 @@ lagged residual used in H-005 and H-006.
     recorded, not re-registered under a new name.
 
 ### H-017 · Signal-protected passive quoting (economic test)
-- **Status:** registered (2026-09-30).
+- **Status:** registered (2026-09-30); **tested 2026-09-30: fails** (SOL; ETH control pending).
 - **Economic hypothesis:** a small passive quoter earns the spread but is
   adversely selected. The confirmed seconds-scale signals identify moments
   when resting quotes are about to be picked off, and pulling the at-risk side
@@ -518,7 +526,67 @@ lagged residual used in H-005 and H-006.
   tick size move together.
 - **Confirmation:** time-based, on prospectively captured live quotes (capture
   to be built).
-- **Outcome:** pending.
+- **Premise correction (2026-09-30, before any simulation):** the
+  registration assumed SOL's tick was 0.01 (about 5 bps at $20). In the
+  2023–24 quote year SOLUSDT's tick was **0.001**: 0.53 bps at about $19
+  (June 2023), falling to about 0.05 bps at $200. Binance has since raised it
+  to 0.01. Spread capture per round trip is therefore at most about 0.5 bps,
+  far below the 4 bps maker round trip, so pass condition 2 is expected to
+  fail on SOL. Condition 1 (signals add value) remains informative. The
+  registration is unchanged; the error is recorded here. Wide-tick contracts
+  (current ticks: ADA about 4 bps, DOGE about 1 bp, XRP about 0.7 bp; the
+  2023 values must be measured from data) would need a separate
+  registration.
+- **Run notes (2026-09-30; implementation choices, recorded before any test
+  day was simulated):**
+  - Unit size is $20 notional (Binance USD-M minimum order notional). P&L is
+    reported in bps of that unit per day and as net bps per fill.
+  - The inventory starts flat each UTC day and is marked to the last quote
+    mid at day end. Funding is charged at the 08:00 and 16:00 settlements on
+    the inventory held (the 00:00 settlement falls at a flat start).
+  - S1 is selected per instrument on that instrument's calibration days.
+  - The first calibration selection was invalid: the bookTicker archive
+    starts at 11:49 on 2023-05-16, so funding at 08:00 was NaN and the NaN
+    ranked first. Funding now skips settlements with no position or no
+    quote, and selection refuses NaN. Calibration was rerun on the same
+    calibration days; no test day was involved.
+  - The optimistic queue sensitivity is implemented as registered:
+    displayed-quantity drops not explained by executions are cancellations
+    spread pro rata across the queue. An interim cap-at-displayed version
+    was replaced before any test run used it.
+  - SOL calibration selection: **D = 2 bps, T = 5 s, k = 3**. In calibration,
+    net P&L per fill was about −3.1 bps for S0 and all 12 S1 configurations;
+    S1 differs from S0 mainly by quoting 40% rather than 84% of the time.
+- **Outcome (2026-09-30, SOL; ETH control pending its quotes): H-017 fails.**
+  Condition 1 passes as written; condition 2 fails.
+
+  | SOL test, 244 days | S0 | S1 (D2/T5/k3) |
+  |---|---:|---:|
+  | Fills per day | 63,400 | 22,900 |
+  | Time quoting | 73% | 32% |
+  | Net P&L per fill | −2.98 bps | −2.98 bps |
+  | Spread capture per fill | −0.24 bps | −0.25 bps |
+  | 60 s markout per fill | −0.99 bps | −1.00 bps |
+  | Net per day (bps of unit) | −188,900 | −68,200 |
+
+  - **Condition 1 (S1 − S0 > 0):** +120,700 bps of unit per day, t 30,
+    8 of 8 months. It also holds under latency 250 ms, the optimistic queue
+    and inventory ±2. **The pass is degenerate, as V-002 anticipated before
+    the test:** net per fill is identical (−2.98 vs −2.98 bps), and S1
+    loses less only because it quotes less than half as often. The pulls do
+    not select better fills; the 1 s markout is slightly worse under S1.
+  - **Condition 2 (S1 profitable) fails:** t −32, 0 of 8 months positive, as
+    the premise correction predicted (tick 0.06–0.5 bps against a 2 bps
+    fee).
+  - **Break-even tick (reported):** about 5.5 bps, holding the measured
+    adverse selection fixed. Current ADA (about 4 bps) is below this, and
+    adverse selection probably grows with the tick.
+  - **Conclusion:** at base-tier fees, the confirmed seconds-scale signals
+    do not make passive quoting pay on SOL or on any sub-bp-tick contract.
+    A wide-tick contract would need its own registration, and the evidence
+    here gives little reason to expect a pass.
+  - Outputs: `reports/quoting_h017/`, results
+    `reports/quoting-h017-results.md`.
 
 ### C-010 · Confirmation of H-010 (crowding and positioning) on ETHUSDT and SOLUSDT
 - **Status:** registered (2026-09-30), before any ETH or SOL hourly return is
@@ -567,7 +635,7 @@ lagged residual used in H-005 and H-006.
     `reports/crowding_confirmation_c010_*`.
 
 ### H-018 · Signal-timed execution (implementation shortfall)
-- **Status:** registered (2026-09-30).
+- **Status:** registered (2026-09-30); **tested 2026-09-30: condition 1 passes, E2 fails** (BTC, SOL; ETH pending).
 - **Economic hypothesis:** at base-tier fees, crossing costs about 5 bps plus
   half the spread per child order. Passive execution saves fees but suffers
   adverse selection and timing risk. The confirmed seconds-scale signals
@@ -625,6 +693,192 @@ lagged residual used in H-005 and H-006.
 - **Build note:** the shared fill model is validated on H-017/H-018
   calibration months (fill rates and queue times plausible) before either
   registered test simulates a test month.
+- **Pre-test amendment (2026-09-30, researcher-approved, before any H-018
+  calibration or test simulation).** Justified by trigger-coverage
+  measurements on calibration days (V-002), not by any execution outcome:
+  - (a) Run-away bursts use only the extreme deciles: 10 when buying and 1
+    when selling (was 7–9 and 2–4). H-016 showed extreme bursts continue.
+  - (b) Sweep thresholds are in **ticks**: a sweep of ≥ m ticks, m ∈ {2, 5, 10}
+    (was D ∈ {2, 5, 10} bps, which almost never fires on BTC). This applies to
+    both the run-away and the adverse rule.
+  - (c) Level-run threshold k ∈ {6, 12} (was {3, 6}).
+  - The calibration grid is therefore m ∈ {2, 5, 10} × T ∈ {2, 5} s ×
+    k ∈ {6, 12}. Everything else is unchanged.
+- **Run notes (2026-09-30; implementation choices, recorded before any test
+  day was simulated except where stated):**
+  - Parent orders: 12 per UTC day (one per 2-hour block), arrival time
+    uniform within the block, side from a fair coin. The stream is keyed by
+    (seed 20260930, day number), so orders are identical across
+    strategies, instruments and runs.
+  - Passive fills are all-or-nothing. The order fills when executions at our
+    price beyond the queue ahead reach the full parent size, or when the
+    price trades through our level (the whole level is consumed). Partial
+    fills are ignored, which is conservative.
+  - Sweep depth in ticks is sweep_bps × price / tick, using the day's
+    inferred tick. The level-run trigger uses single-level runs of ≥ k hits
+    by aggressors in our direction, with no absorption condition (none is
+    registered for H-018).
+  - IS is decomposed into spread (fill price versus the quote mid at fill),
+    drift (mid at fill versus mid at arrival) and fee.
+  - The optimistic queue model is as in the H-017 run notes. The BTC test
+    was first run with an interim cap-at-displayed version, then rerun with
+    the registered version before any result was recorded. The frozen E2
+    selection was unaffected.
+  - E3 (secondary) is not built. It is deferred unless E2 passes.
+  - Calibration selections (lowest mean IS): **BTC m = 10, T = 5 s, k = 12;
+    SOL m = 10, T = 5 s, k = 12**. Every E2 grid point had higher mean IS
+    than E1 in calibration.
+- **Outcome (2026-09-30, BTC and SOL; ETH pending its quotes, which cannot
+  change either verdict): condition 1 passes; E2 fails and is significantly
+  harmful.**
+
+  | Test, 2,925 orders each | BTC E0 | BTC E1 | BTC E2 | SOL E0 | SOL E1 | SOL E2 |
+  |---|---:|---:|---:|---:|---:|---:|
+  | Mean IS (bps) | 5.01 | 3.09 | 3.68 | 5.25 | 3.25 | 3.56 |
+  | IS 95th percentile | 5.02 | 7.07 | 7.19 | 5.79 | 8.90 | 9.49 |
+  | Drift (bps) | 0.0 | 1.01 | 0.45 | 0.0 | 0.91 | 0.75 |
+  | Fee (bps) | 5.0 | 2.0 | 3.18 | 5.0 | 2.0 | 2.49 |
+  | Passive share | 0 | 100% | 61% | 0 | 100% | 84% |
+
+  - **Condition 1 (E0 − E1 > 0) passes:** BTC +1.92 bps (t 52), SOL
+    +2.00 bps (t 35), 8 of 8 months each. It holds under every
+    sensitivity: +1.85 to +2.32 bps on BTC, +1.96 to +2.07 bps on SOL. The
+    optimistic queue raises the BTC saving to 2.32 bps.
+    Passive $10k orders fill within 30 minutes every time (median 7 s on
+    BTC, 2.5 s on SOL), mostly by trade-through.
+  - **Condition 2 (E1 − E2 > 0) fails and is significantly negative:**
+    BTC −0.60 bps (t −21), SOL −0.32 bps (t −8), 0 of 8 months positive on
+    either. It is negative under every sensitivity. The run-away triggers
+    do avoid drift (BTC 1.01 → 0.45 bps), but each cross adds 3 bps of fee,
+    and the avoided drift is far smaller than that.
+  - **Condition 3 (tail) passes:** E2's 95th percentile is +0.12 (BTC) and
+    +0.59 (SOL) bps worse than E1's.
+  - E3 is not run (deferred because E2 failed).
+  - **Economic translation:** switching from taker to patient passive
+    execution saves about 2 bps per side, about 4 bps per round trip. Any
+    signal that grosses more than about 6 bps per round trip (taker 10 minus
+    4) with passive entry is worth re-testing under E1 execution. Adding the
+    seconds-scale signals to the executor makes it worse.
+  - **Caveat:** random-direction orders. Alpha-driven orders trade with
+    momentum and would face more drift under E1. The 30-minute E1 drift of
+    about 1 bp is the relevant figure to stress.
+  - Outputs: `reports/execution_h018/`, results
+    `reports/execution-h018-results.md`.
+
+### H-019 · Crowding contrarian on a pooled alt-perp panel
+- **Status:** registered (2026-09-30), before any alt-perp return was
+  examined. Revives the economic idea of H-009 and H-010 (retired) under rule
+  2, with a new argument (E-004).
+- **Origin:** E-004. H-010's long/short-ratio features have no consistent
+  sign across instruments. The crowding features (funding, premium and past
+  return) were contrarian on BTC, ETH and SOL through 2023 and have faded
+  since. BTC alone gives t ≈ 1.3, so a pooled panel is needed for power.
+- **Economic hypothesis:** leveraged perp demand that runs ahead of spot
+  (high funding, a rich premium, a strong run-up) is crowded and mean
+  reverts over about a day, because arbitrage capital is limited.
+- **Arbitrage-capacity prediction:** if institutional basis capital (spot
+  ETFs from January 2024, CME) compressed the premium in the majors, the
+  effect persists longer in smaller, less-arbitraged perps.
+- **Universe (point-in-time, no survivorship):**
+  - *Candidates:* Binance USD-M USDT perpetuals, including those since
+    delisted, each only while it trades (hourly klines present).
+  - *Excluded:* BTC, ETH and SOL; stablecoin bases and index contracts
+    (USDC, BUSD, TUSD, FDUSD, USDP, DAI, DEFI, BTCDOM, FOOTBALL,
+    BLUEBIRD and similar).
+  - *Monthly membership:* on the first day of each month, the **30** most
+    liquid eligible perps by trailing 30-day quote volume (daily klines).
+    A perp is eligible once it has at least 12 months of kline history.
+- **Data per member:** hourly perp klines (close, quote volume), hourly
+  premium-index klines, and funding settlements at any funding interval.
+- **Signal (fixed signs, nothing fitted).** At each hour t, for each member,
+  with every input known at t:
+  - z_F: the last settled funding rate against its trailing **30-day** mean
+    and standard deviation (by time, not settlement count);
+  - z_P: the mean of the last 8 hourly premium-index closes, z-scored
+    against its own trailing 30 days of hourly values;
+  - z_R: the 24-hour log return, z-scored against its own trailing 30 days
+    of hourly values;
+  - **C = −(z_F + z_P + z_R) / 3**, each input winsorised at ±4. A missing
+    input is dropped from the mean; C is undefined if all three are missing.
+- **Positions:**
+  - *Tail rule:* sign(C) when |C| is at or above the member's
+    trailing-365-day 80th percentile of |C|, otherwise 0.
+  - *Holding:* staggered 24-hour tranches (the mean of the last 24 hourly
+    signals), as in H-010.
+  - *Risk scaling:* × 20% / trailing 30-day annualised volatility of hourly
+    returns, capped at 3×.
+  - *Portfolio:* equal-weighted mean across current members. Membership
+    changes flatten at the month boundary.
+- **P&L:** hourly, position × next-hour return − position × funding
+  settled that hour − cost × |position change|.
+- **Costs:** the **gate is 6 bps per side** (5 bps taker plus 1 bp alt
+  half-spread allowance). 3 bps per side (H-018 E1) and gross are reported.
+- **Samples:** warm-up 2021-01 to 2021-12; **test 2022-01 to 2026-05**;
+  locked confirmation 2026-06 to 2026-08 (alt panel plus the BTC holdout),
+  after the test verdict. The confirmation can only reject.
+- **Pass conditions (all on the test sample; all four required):**
+  1. *Existence:* portfolio net Sharpe at 6 bps > 0, with Newey–West
+     (24-hour lag) t on daily P&L > 2.
+  2. *Not beta:* alpha from regressing daily portfolio P&L on the
+     equal-weighted member return > 0, t > 2.
+  3. *Breadth:* net P&L positive for more than 55% of instruments that were
+     members for 12 months or more.
+  4. *Current:* portfolio net Sharpe at 6 bps > 0 over 2024-06 to 2026-05
+     (sign only).
+- **Secondary** (reported; S1 and S2 judged by t > 2):
+  - S1, arbitrage capacity: each month, split members at the median trailing
+    volume. Mean gross daily P&L of the low-volume half minus the
+    high-volume half > 0, over the full test and over the last 24 months.
+  - S2, cross-sectional neutral: each hour, rank C across members; long the
+    top quintile, short the bottom, equal risk, dollar-neutral, 24-hour
+    tranches, same costs. Condition 1 applied.
+  - S3: drop one of z_F, z_P, z_R at a time (descriptive).
+  - S4: year-by-year portfolio Sharpe (descriptive).
+- **Frozen by the researcher (2026-09-30):** gate cost 6 bps per side;
+  universe top 30. The long/short-ratio features are excluded; they need a
+  separate entry (H-020) if pursued.
+- **Limitations:**
+  - Hourly klines have no spread, so costs are allowances.
+  - Ranks 25–30 can be thin.
+  - Crowding is correlated across alts, so the panel is less diverse than 30
+    names suggest; condition 2 addresses this.
+  - Delisted contracts are held until their last kline.
+- **Run notes (2026-09-30; implementation choices, before any alt return
+  was read):**
+  - Data: `scripts/download_alt_panel.py` downloads daily klines for all 852
+    candidates, then hourly perp klines, hourly premium and funding for every
+    symbol that is ever a member. Membership is at
+    `shared-data/features/alpha/alt_panel_v1/membership.parquet`.
+    - Eligibility: first daily kline at least 365 days before the month, and
+      trading within the last 2 days before it.
+    - Ranking: summed quote volume over the 30 days before the month start.
+  - Runner: `scripts/run_crowding_panel_h019.py`. It truncates every input
+    before 2026-06-01, so the locked months are never read.
+  - Decision hours are hourly kline close times. Hour h's P&L is realised
+    over (T_h, T_h + 1 h]. Funding settlements are assigned with a 1 s
+    tolerance, because they are stamped a few ms after the hour.
+  - Minimum samples:
+    - rolling z: 360 of 720 hourly values;
+    - funding z: 20 settlements within 30 days;
+    - |C| threshold: trailing 365 days excluding the current hour, at least
+      180 days;
+    - volatility: 360 of 720 hours.
+  - Hours with no kline close have zero position; nothing is carried
+    through gaps.
+  - The tranche average uses signals generated while a member, and the
+    position is zero outside membership.
+  - Portfolio P&L is the sum over members divided by the number tradable
+    that hour.
+  - Condition 2's market return is the equal-weighted next-hour return of
+    tradable members, summed daily.
+  - Newey–West uses lag 1 on daily P&L (the 24-hour holding overlap).
+  - S1 halves are membership ranks 1–15 (high volume) and 16–30 (low
+    volume).
+  - S2 requires at least 10 members with a defined C that hour. The top and
+    bottom quintiles are each normalised to one unit of risk-scaled gross
+    exposure.
+  - A synthetic look-ahead check passed: changing all data after hour k
+    leaves every C and position at or before k unchanged.
 - **Outcome:** pending.
 
 ## Exploration log
@@ -637,6 +891,9 @@ origin known and the slices counted.
     (ETH +0.19, SOL +0.29 bps at 5 s, 38 of 38 months). Extreme bursts also
     continue (60 s: ETH +0.22, SOL +0.53 bps), so the inverted U is rejected
     on all three instruments. The activity interaction passes on both.
+  - True-mid robustness (9 months): moderate-burst continuation +0.12 bps at
+    5 s (9 of 9 months); extreme bursts +0.06 bps at 60 s (44% negative).
+    The verdicts are unchanged.
 ### E-001 · H-012 diagnostics (2026-09-30)
 - **Script:** `scripts/explore_intraday_flow.py`; outputs in
   `reports/intraday_flow_v1/exploration/`; notebook
@@ -769,6 +1026,40 @@ origin known and the slices counted.
   one-interaction choice is between activity (E-002) and resiliency (A2);
   the choice is the researcher's.
 
+### E-004 · Why did H-010 fail on ETH and SOL? (2026-09-30)
+- **Data:** the existing C-010 outputs, plus yearly Spearman ICs of each
+  hourly-panel feature against 24-hour forward returns. Samples are daily at
+  00:00 UTC to avoid overlap (about 365 a year, so SE ≈ 0.05 per yearly IC).
+  BTC, ETH and SOL, 2021–2026. All of these returns were already used in
+  H-009, H-010 and C-010, so this is diagnosis, not evidence.
+- **Slices examined:** 8 features × 6 years × 3 instruments. Primary-variant
+  Sharpe by year and instrument. Model attribution (BTC only).
+- **Observations:**
+  - *BTC's H-010 result is not statistically strong on its own.* Taker Sharpe
+    0.69 over 3.4 years is t ≈ 1.3; beta-adjusted alpha t ≈ 1.0.
+  - *ETH shared BTC's 2023.* Primary gross Sharpe in 2023 was BTC 2.02, ETH
+    1.28, SOL −0.27. After 2023: BTC 0.48 / 0.13 / 0.88 (2024 / 2025 /
+    2026 YTD); ETH −0.01 / −0.07 / −0.90. The instruments differ mainly
+    after the effect weakened. Per-year Sharpe SE is about 1, so these gaps
+    are consistent with one weak common effect (pooled taker Sharpe about
+    0.2) plus noise.
+  - *The crowding features have a consistent sign across instruments,
+    fading over time.* Funding z, premium and 24-hour return are negative
+    (contrarian) for all three in 2021–2023. BTC premium: −0.16 (2022),
+    −0.05 (2023). ETH funding: −0.14 (2023). From 2024 they are about zero
+    or mixed.
+  - *The long/short ratio features, which drove BTC's backtest, show no
+    consistent univariate IC on any instrument:* |IC| < 0.05 in most
+    instrument-years, with signs that vary. Their BTC contribution came
+    through the multivariate refit, a fragile source.
+- **Leads (not results):**
+  - (a) The crowding premium is a common cross-asset effect that has
+    decayed since 2024. One possible cause is institutional cash-and-carry
+    capital (spot ETFs from January 2024, CME basis) compressing funding
+    extremes.
+  - (b) If (a) holds, the effect should survive longer in less-arbitraged
+    perps, which calls for a pooled, cross-sectional test on untouched alts.
+
 ### V-001 · Mid-proxy validation against bookTicker (2023-05-16 to 2023-05-31)
 - **Type:** measurement validation, inside the order-book exploration window.
 - **Script:** `scripts/validate_mid_proxy.py`; outputs in
@@ -795,6 +1086,42 @@ origin known and the slices counted.
   continuation. Registered tests should use true quote mids wherever
   `bookTicker` exists, and the proxy (with this bias noted) elsewhere.
   Resiliency is mostly an activity state.
+
+### V-002 · Simulator fill-model validation (calibration days only, 2026-09-30)
+- **Type:** measurement validation. No test month was simulated.
+- **Code:** `src/alpha_search/simulator.py` (10 unit tests in
+  `tests/test_simulator.py`), `scripts/build_quote_triggers.py`,
+  `scripts/validate_simulator.py`; outputs in `reports/simulator_validation/`.
+- **Naive quoter S0** (unit $1,000, inventory ±5, 100 ms latency), 77
+  calibration days each:
+
+  | | BTC | SOL |
+  |---|---:|---:|
+  | Tick | 0.03 bps | 0.50 bps |
+  | Fills per day | 22,157 | 32,585 |
+  | Filled by trade-through | 51% | 73% |
+  | Median wait in queue | 1.2 s | 0.9 s |
+  | Spread capture at the fill | 0.00 bps | −0.26 bps |
+  | Markout 1 s / 60 s | −0.60 / −0.80 bps | −1.10 / −1.17 bps |
+  | Net per fill after the 2 bps fee (60 s) | −2.80 bps | −3.17 bps |
+  | Days with positive 60 s markout | 1% | 1% |
+
+  Back-of-queue fills are far more adversely selected than the average maker
+  fill in E-002 (about −0.1 bps). That is plausible, since the last order in
+  the queue fills mainly when the level is swept.
+- **Design findings for H-017 and H-018, before any test:**
+  1. *H-017 condition 2 is arithmetically unattainable on BTC, ETH and SOL.*
+     Even with zero adverse selection, a fill earns at most half a tick
+     (about 0.25 bps on SOL) against a 2 bps fee.
+  2. *H-017 condition 1 (S1 − S0 net P&L per day) is degenerate.* S0 loses on
+     almost every fill, so any rule that quotes less "improves" P&L. It
+     rewards not trading rather than better selection.
+  3. *Trigger coverage:* the registered burst rule (deciles 1–4 and 7–10)
+     keeps each side pulled 46–66% of the day. The sweep rule rarely fires
+     (under 1% on BTC, 1–7% on SOL, even at D = 2 bps), so the D grid is
+     nearly inert. The k = 3 level rule pulls 50–72% of the day on BTC.
+     H-018's run-away rule (burst deciles 2–4 and 7–9) fires similarly
+     often.
 
 ## Template for new entries
 

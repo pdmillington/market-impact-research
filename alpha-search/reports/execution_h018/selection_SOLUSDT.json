@@ -1,0 +1,72 @@
+{
+  "symbol": "SOLUSDT",
+  "run": "E2_m10_T5_k12",
+  "m_ticks": 10,
+  "T_s": 5,
+  "k": 12,
+  "calibration_mean_is_bps": 3.7181473952446216,
+  "calibration_orders": 914,
+  "frozen_at": "2026-09-30T18:20:21+00:00",
+  "grid_ranking": [
+    {
+      "run": "E2_m10_T5_k12",
+      "mean_is_bps": 3.7181473952446216,
+      "orders": 914
+    },
+    {
+      "run": "E2_m10_T2_k12",
+      "mean_is_bps": 3.718147395244622,
+      "orders": 914
+    },
+    {
+      "run": "E2_m5_T2_k12",
+      "mean_is_bps": 3.770512256712916,
+      "orders": 914
+    },
+    {
+      "run": "E2_m5_T5_k12",
+      "mean_is_bps": 3.770512256712916,
+      "orders": 914
+    },
+    {
+      "run": "E2_m10_T5_k6",
+      "mean_is_bps": 3.79136901808496,
+      "orders": 914
+    },
+    {
+      "run": "E2_m10_T2_k6",
+      "mean_is_bps": 3.7913690180849606,
+      "orders": 914
+    },
+    {
+      "run": "E2_m5_T5_k6",
+      "mean_is_bps": 3.8363842950541627,
+      "orders": 914
+    },
+    {
+      "run": "E2_m5_T2_k6",
+      "mean_is_bps": 3.836384295054163,
+      "orders": 914
+    },
+    {
+      "run": "E2_m2_T2_k12",
+      "mean_is_bps": 3.8680151410989763,
+      "orders": 914
+    },
+    {
+      "run": "E2_m2_T5_k12",
+      "mean_is_bps": 3.868015141098977,
+      "orders": 914
+    },
+    {
+      "run": "E2_m2_T5_k6",
+      "mean_is_bps": 3.933100725417649,
+      "orders": 914
+    },
+    {
+      "run": "E2_m2_T2_k6",
+      "mean_is_bps": 3.933100725417649,
+      "orders": 914
+    }
+  ]
+}

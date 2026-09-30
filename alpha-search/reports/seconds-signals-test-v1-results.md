@@ -104,3 +104,20 @@ should use sweep depth in bps (scale-free) rather than a level count.
 Effect sizes grow with the instrument's tick and volatility: SOL's absorption
 interaction is 1.0 bps against 0.25 bps for BTC, which matters for the
 economics stage.
+
+## True-mid robustness (August 2023 to March 2024, real quote mids)
+
+Every effect keeps its sign in 100% of the 9 months. Magnitudes are about 20%
+smaller than with the trade-based mid over the same months, matching V-001:
+
+| Metric | True mid | Proxy, same months |
+|---|---:|---:|
+| H-014 IC at 5 s | 0.141 | 0.175 |
+| H-014 activity interaction (bps) | 0.179 | 0.195 |
+| H-015 IC at 5 s | 0.088 | 0.111 |
+| H-015 absorption interaction (bps) | 0.208 | 0.133 |
+| H-016 moderate bursts at 5 s (bps) | 0.118 | 0.146 |
+| H-016 extreme bursts at 60 s (bps) | 0.060 | 0.320 |
+
+The verdicts are unchanged: H-014 and H-015 pass; H-016's inverted U is
+rejected (extreme bursts do not reverse).

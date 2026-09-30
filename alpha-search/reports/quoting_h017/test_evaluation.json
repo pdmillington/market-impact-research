@@ -1,0 +1,722 @@
+{
+  "SOLUSDT": {
+    "summary": [
+      {
+        "run": "S0",
+        "days": 244,
+        "pnl_per_day_bps_of_unit": -188899.58886618607,
+        "t_daily": -31.457187321878514,
+        "months_positive_share": 0.0,
+        "pnl_ex_best_worst_10": -187939.26112166402,
+        "sharpe_daily_ann": -38.47436028741878,
+        "max_drawdown_bps_of_unit": 45995133.050433934,
+        "fills_per_day": 63441.889344262294,
+        "quoting_share": 0.7298210644590544,
+        "net_per_fill_bps": -2.977521489644447,
+        "spread_per_day": -15919.328658022469,
+        "mark_per_day": -46127.8454300728,
+        "fees_per_day": 126852.26462147277,
+        "funding_per_day": -0.15015661803128877,
+        "markout_1s_bps": -0.9226540626449843,
+        "markout_5s_bps": -0.9743170002593293,
+        "markout_60s_bps": -0.986748551916485,
+        "spread_capture_bps": -0.2390704615677157
+      },
+      {
+        "run": "S0_inventory_2",
+        "days": 244,
+        "pnl_per_day_bps_of_unit": -163134.13751318795,
+        "t_daily": -30.930298584991533,
+        "months_positive_share": 0.0,
+        "pnl_ex_best_worst_10": -162277.8305928574,
+        "sharpe_daily_ann": -37.82993817532888,
+        "max_drawdown_bps_of_unit": 39722477.1076747,
+        "fills_per_day": 55293.79098360656,
+        "quoting_share": 0.669643329989185,
+        "net_per_fill_bps": -2.9503156613290225,
+        "spread_per_day": -13799.78086911199,
+        "mark_per_day": -38773.63765598604,
+        "fees_per_day": 110560.65274964835,
+        "funding_per_day": -0.06623844155405134,
+        "markout_1s_bps": -0.9074910024795445,
+        "markout_5s_bps": -0.9524978377174967,
+        "markout_60s_bps": -0.9563033093010758,
+        "spread_capture_bps": -0.23788319111663694
+      },
+      {
+        "run": "S0_latency_250",
+        "days": 244,
+        "pnl_per_day_bps_of_unit": -121047.76035973629,
+        "t_daily": -44.046586354227415,
+        "months_positive_share": 0.0,
+        "pnl_ex_best_worst_10": -122448.33411686063,
+        "sharpe_daily_ann": -53.87208384154576,
+        "max_drawdown_bps_of_unit": 29458197.57517378,
+        "fills_per_day": 39992.95081967213,
+        "quoting_share": 0.6078551066095551,
+        "net_per_fill_bps": -3.0267274076759074,
+        "spread_per_day": -10130.227821757,
+        "mark_per_day": -30958.84299313882,
+        "fees_per_day": 79957.09928546027,
+        "funding_per_day": -1.5902593802088323,
+        "markout_1s_bps": -0.9598011303043381,
+        "markout_5s_bps": -1.016971207243006,
+        "markout_60s_bps": -1.0368032697561858,
+        "spread_capture_bps": -0.2445328102581304
+      },
+      {
+        "run": "S0_optimistic_queue",
+        "days": 244,
+        "pnl_per_day_bps_of_unit": -212756.02348678248,
+        "t_daily": -34.75825026319043,
+        "months_positive_share": 0.0,
+        "pnl_ex_best_worst_10": -212383.29547686412,
+        "sharpe_daily_ann": -42.511793247839506,
+        "max_drawdown_bps_of_unit": 51793859.26209488,
+        "fills_per_day": 74243.81147540984,
+        "quoting_share": 0.7261574969404596,
+        "net_per_fill_bps": -2.8656398325838786,
+        "spread_per_day": -12982.587723279792,
+        "mark_per_day": -51318.27686704857,
+        "fees_per_day": 148455.18219639233,
+        "funding_per_day": 0.02329993820571697,
+        "markout_1s_bps": -0.7859564437634525,
+        "markout_5s_bps": -0.8396417591907824,
+        "markout_60s_bps": -0.8529517132567198,
+        "spread_capture_bps": -0.1468863082954323
+      },
+      {
+        "run": "S1",
+        "days": 244,
+        "pnl_per_day_bps_of_unit": -68165.07063136075,
+        "t_daily": -32.42694441808075,
+        "months_positive_share": 0.0,
+        "pnl_ex_best_worst_10": -67421.36016904975,
+        "sharpe_daily_ann": -39.66044165981842,
+        "max_drawdown_bps_of_unit": 16599566.07804215,
+        "fills_per_day": 22859.262295081968,
+        "quoting_share": 0.32199370529276705,
+        "net_per_fill_bps": -2.981945338018456,
+        "spread_per_day": -5919.692194465278,
+        "mark_per_day": -16560.13127836092,
+        "fees_per_day": 45683.36596593845,
+        "funding_per_day": -1.8811925961041258,
+        "markout_1s_bps": -0.9694702911605354,
+        "markout_5s_bps": -1.0135199575711265,
+        "markout_60s_bps": -1.0034067515680836,
+        "spread_capture_bps": -0.2527341832506512
+      },
+      {
+        "run": "S1_inventory_2",
+        "days": 244,
+        "pnl_per_day_bps_of_unit": -55739.16253486352,
+        "t_daily": -34.528035832808854,
+        "months_positive_share": 0.0,
+        "pnl_ex_best_worst_10": -55391.046813877554,
+        "sharpe_daily_ann": -42.230224751354655,
+        "max_drawdown_bps_of_unit": 13571838.457539786,
+        "fills_per_day": 18677.717213114753,
+        "quoting_share": 0.2829485549009563,
+        "net_per_fill_bps": -2.9842599017253404,
+        "spread_per_day": -4800.220137115329,
+        "mark_per_day": -13613.398701620546,
+        "fees_per_day": 37324.81076811221,
+        "funding_per_day": -0.7329280154168674,
+        "markout_1s_bps": -0.9684918064479219,
+        "markout_5s_bps": -1.0122146012965172,
+        "markout_60s_bps": -1.0099638669251312,
+        "spread_capture_bps": -0.2510530401842219
+      },
+      {
+        "run": "S1_latency_250",
+        "days": 244,
+        "pnl_per_day_bps_of_unit": -51932.70916371538,
+        "t_daily": -41.58614608066629,
+        "months_positive_share": 0.0,
+        "pnl_ex_best_worst_10": -52048.820535520375,
+        "sharpe_daily_ann": -50.8627917334485,
+        "max_drawdown_bps_of_unit": 12641607.212250248,
+        "fills_per_day": 17068.950819672133,
+        "quoting_share": 0.2914383788469566,
+        "net_per_fill_bps": -3.0425249748720593,
+        "spread_per_day": -4557.461371242392,
+        "mark_per_day": -13261.339417997011,
+        "fees_per_day": 34112.00219498865,
+        "funding_per_day": -1.9061794873080429,
+        "markout_1s_bps": -1.0044693446914783,
+        "markout_5s_bps": -1.0562447009319096,
+        "markout_60s_bps": -1.0541361425970064,
+        "spread_capture_bps": -0.26275094249151765
+      },
+      {
+        "run": "S1_optimistic_queue",
+        "days": 244,
+        "pnl_per_day_bps_of_unit": -76751.67050289123,
+        "t_daily": -36.22480909808663,
+        "months_positive_share": 0.0,
+        "pnl_ex_best_worst_10": -76304.73139357576,
+        "sharpe_daily_ann": -44.30549821005175,
+        "max_drawdown_bps_of_unit": 18687251.188178,
+        "fills_per_day": 26599.56557377049,
+        "quoting_share": 0.3210233499117715,
+        "net_per_fill_bps": -2.8854482713272245,
+        "spread_per_day": -4921.99970009629,
+        "mark_per_day": -18668.805419680382,
+        "fees_per_day": 53159.80360462037,
+        "funding_per_day": -1.061778494191872,
+        "markout_1s_bps": -0.8443990092181514,
+        "markout_5s_bps": -0.8924288986035609,
+        "markout_60s_bps": -0.8891014373591684,
+        "spread_capture_bps": -0.16238065576107594
+      }
+    ],
+    "break_even_tick_bps": {
+      "S0": 5.495356180697538,
+      "S0_inventory_2": 5.436840236368877,
+      "S0_latency_250": 5.58454091899611,
+      "S0_optimistic_queue": 5.412130809922575,
+      "S1": 5.501345136634865,
+      "S1_inventory_2": 5.517821653481819,
+      "S1_latency_250": 5.582770400210977,
+      "S1_optimistic_queue": 5.453441563196185
+    },
+    "condition_1": {
+      "diff_per_day": 120734.51823482533,
+      "t_daily": 29.98105262142005,
+      "months_positive_share": 1.0,
+      "pass": true
+    },
+    "condition_2": {
+      "pass": false
+    },
+    "condition_1_latency_250": {
+      "diff_per_day": 69115.05119602094,
+      "t_daily": 42.816335484472994,
+      "months_positive_share": 1.0
+    },
+    "condition_1_optimistic_queue": {
+      "diff_per_day": 136004.3529838912,
+      "t_daily": 32.79971896378379,
+      "months_positive_share": 1.0
+    },
+    "condition_1_inventory_2": {
+      "diff_per_day": 107394.97497832442,
+      "t_daily": 28.674190411497772,
+      "months_positive_share": 1.0
+    },
+    "monthly": [
+      {
+        "month": "2023-08",
+        "run": "S0",
+        "pnl_bps_of_unit": -77950.49197521282,
+        "tick_bps": 0.44594488492452905,
+        "fills": 25861.354838709678,
+        "net_per_fill_bps": -3.00060499958345
+      },
+      {
+        "month": "2023-08",
+        "run": "S0_inventory_2",
+        "pnl_bps_of_unit": -66610.38763058804,
+        "tick_bps": 0.44594488492452905,
+        "fills": 22251.709677419356,
+        "net_per_fill_bps": -2.9804269225970903
+      },
+      {
+        "month": "2023-08",
+        "run": "S0_latency_250",
+        "pnl_bps_of_unit": -64114.80270439664,
+        "tick_bps": 0.44594488492452905,
+        "fills": 21088.870967741936,
+        "net_per_fill_bps": -3.025692742136424
+      },
+      {
+        "month": "2023-08",
+        "run": "S0_optimistic_queue",
+        "pnl_bps_of_unit": -97963.54617107952,
+        "tick_bps": 0.44594488492452905,
+        "fills": 34524.51612903226,
+        "net_per_fill_bps": -2.8192611069688445
+      },
+      {
+        "month": "2023-08",
+        "run": "S1",
+        "pnl_bps_of_unit": -30280.66503485899,
+        "tick_bps": 0.44594488492452905,
+        "fills": 9802.0,
+        "net_per_fill_bps": -3.076630101739621
+      },
+      {
+        "month": "2023-08",
+        "run": "S1_inventory_2",
+        "pnl_bps_of_unit": -26017.352008577385,
+        "tick_bps": 0.44594488492452905,
+        "fills": 8375.354838709678,
+        "net_per_fill_bps": -3.0970616311463064
+      },
+      {
+        "month": "2023-08",
+        "run": "S1_latency_250",
+        "pnl_bps_of_unit": -27574.943812535512,
+        "tick_bps": 0.44594488492452905,
+        "fills": 8838.870967741936,
+        "net_per_fill_bps": -3.106439866670992
+      },
+      {
+        "month": "2023-08",
+        "run": "S1_optimistic_queue",
+        "pnl_bps_of_unit": -37781.26995498481,
+        "tick_bps": 0.44594488492452905,
+        "fills": 12802.838709677419,
+        "net_per_fill_bps": -2.932706496958729
+      },
+      {
+        "month": "2023-09",
+        "run": "S0",
+        "pnl_bps_of_unit": -73423.50667708706,
+        "tick_bps": 0.5173745981043713,
+        "fills": 23895.9,
+        "net_per_fill_bps": -3.0580394927944217
+      },
+      {
+        "month": "2023-09",
+        "run": "S0_inventory_2",
+        "pnl_bps_of_unit": -62615.60391028028,
+        "tick_bps": 0.5173745981043713,
+        "fills": 20499.0,
+        "net_per_fill_bps": -3.037116646825296
+      },
+      {
+        "month": "2023-09",
+        "run": "S0_latency_250",
+        "pnl_bps_of_unit": -61473.49037621383,
+        "tick_bps": 0.5173745981043713,
+        "fills": 19907.866666666665,
+        "net_per_fill_bps": -3.0731232230966103
+      },
+      {
+        "month": "2023-09",
+        "run": "S0_optimistic_queue",
+        "pnl_bps_of_unit": -91410.60650356566,
+        "tick_bps": 0.5173745981043713,
+        "fills": 31738.6,
+        "net_per_fill_bps": -2.859639856613797
+      },
+      {
+        "month": "2023-09",
+        "run": "S1",
+        "pnl_bps_of_unit": -28163.864190184828,
+        "tick_bps": 0.5173745981043713,
+        "fills": 9181.2,
+        "net_per_fill_bps": -3.05676886785145
+      },
+      {
+        "month": "2023-09",
+        "run": "S1_inventory_2",
+        "pnl_bps_of_unit": -24323.65899437202,
+        "tick_bps": 0.5173745981043713,
+        "fills": 7838.8,
+        "net_per_fill_bps": -3.100801896353035
+      },
+      {
+        "month": "2023-09",
+        "run": "S1_latency_250",
+        "pnl_bps_of_unit": -26160.69925187508,
+        "tick_bps": 0.5173745981043713,
+        "fills": 8453.8,
+        "net_per_fill_bps": -3.0777509625922774
+      },
+      {
+        "month": "2023-09",
+        "run": "S1_optimistic_queue",
+        "pnl_bps_of_unit": -34955.2083688995,
+        "tick_bps": 0.5173745981043713,
+        "fills": 11940.433333333332,
+        "net_per_fill_bps": -2.915570663061851
+      },
+      {
+        "month": "2023-10",
+        "run": "S0",
+        "pnl_bps_of_unit": -146390.54357720067,
+        "tick_bps": 0.39122260418732546,
+        "fills": 48781.77419354839,
+        "net_per_fill_bps": -2.9999699980833516
+      },
+      {
+        "month": "2023-10",
+        "run": "S0_inventory_2",
+        "pnl_bps_of_unit": -126573.88498318408,
+        "tick_bps": 0.39122260418732546,
+        "fills": 42601.096774193546,
+        "net_per_fill_bps": -2.9738202278636012
+      },
+      {
+        "month": "2023-10",
+        "run": "S0_latency_250",
+        "pnl_bps_of_unit": -106715.70636543942,
+        "tick_bps": 0.39122260418732546,
+        "fills": 35200.58064516129,
+        "net_per_fill_bps": -3.0284297972027323
+      },
+      {
+        "month": "2023-10",
+        "run": "S0_optimistic_queue",
+        "pnl_bps_of_unit": -169935.36062522404,
+        "tick_bps": 0.39122260418732546,
+        "fills": 58836.096774193546,
+        "net_per_fill_bps": -2.8736328220226066
+      },
+      {
+        "month": "2023-10",
+        "run": "S1",
+        "pnl_bps_of_unit": -53467.41686927672,
+        "tick_bps": 0.39122260418732546,
+        "fills": 17996.0,
+        "net_per_fill_bps": -2.9801707705481904
+      },
+      {
+        "month": "2023-10",
+        "run": "S1_inventory_2",
+        "pnl_bps_of_unit": -45223.22685417457,
+        "tick_bps": 0.39122260418732546,
+        "fills": 15054.064516129032,
+        "net_per_fill_bps": -3.0184782599118716
+      },
+      {
+        "month": "2023-10",
+        "run": "S1_latency_250",
+        "pnl_bps_of_unit": -44682.44382292546,
+        "tick_bps": 0.39122260418732546,
+        "fills": 14884.709677419354,
+        "net_per_fill_bps": -3.0101015512921143
+      },
+      {
+        "month": "2023-10",
+        "run": "S1_optimistic_queue",
+        "pnl_bps_of_unit": -61829.33675191137,
+        "tick_bps": 0.39122260418732546,
+        "fills": 21456.25806451613,
+        "net_per_fill_bps": -2.882638194089412
+      },
+      {
+        "month": "2023-11",
+        "run": "S0",
+        "pnl_bps_of_unit": -266682.97715392505,
+        "tick_bps": 0.1936671906350956,
+        "fills": 92094.23333333334,
+        "net_per_fill_bps": -2.8877760073446113
+      },
+      {
+        "month": "2023-11",
+        "run": "S0_inventory_2",
+        "pnl_bps_of_unit": -233114.14667623266,
+        "tick_bps": 0.1936671906350956,
+        "fills": 81378.6,
+        "net_per_fill_bps": -2.857222402708857
+      },
+      {
+        "month": "2023-11",
+        "run": "S0_latency_250",
+        "pnl_bps_of_unit": -152244.84050275525,
+        "tick_bps": 0.1936671906350956,
+        "fills": 51328.26666666667,
+        "net_per_fill_bps": -2.960746059131231
+      },
+      {
+        "month": "2023-11",
+        "run": "S0_optimistic_queue",
+        "pnl_bps_of_unit": -283148.99735827796,
+        "tick_bps": 0.1936671906350956,
+        "fills": 99855.3,
+        "net_per_fill_bps": -2.825769935591209
+      },
+      {
+        "month": "2023-11",
+        "run": "S1",
+        "pnl_bps_of_unit": -101091.28299267121,
+        "tick_bps": 0.1936671906350956,
+        "fills": 34468.5,
+        "net_per_fill_bps": -2.916002021604043
+      },
+      {
+        "month": "2023-11",
+        "run": "S1_inventory_2",
+        "pnl_bps_of_unit": -79728.81925487299,
+        "tick_bps": 0.1936671906350956,
+        "fills": 27479.0,
+        "net_per_fill_bps": -2.8902401115025866
+      },
+      {
+        "month": "2023-11",
+        "run": "S1_latency_250",
+        "pnl_bps_of_unit": -70038.8921526367,
+        "tick_bps": 0.1936671906350956,
+        "fills": 23192.766666666666,
+        "net_per_fill_bps": -3.0093651155209957
+      },
+      {
+        "month": "2023-11",
+        "run": "S1_optimistic_queue",
+        "pnl_bps_of_unit": -106751.25656343026,
+        "tick_bps": 0.1936671906350956,
+        "fills": 37150.63333333333,
+        "net_per_fill_bps": -2.8558740613328437
+      },
+      {
+        "month": "2023-12",
+        "run": "S0",
+        "pnl_bps_of_unit": -257566.1282617569,
+        "tick_bps": 0.12805373423780148,
+        "fills": 86514.70967741935,
+        "net_per_fill_bps": -2.977792687874854
+      },
+      {
+        "month": "2023-12",
+        "run": "S0_inventory_2",
+        "pnl_bps_of_unit": -224651.0894447077,
+        "tick_bps": 0.12805373423780148,
+        "fills": 75927.51612903226,
+        "net_per_fill_bps": -2.959698661440176
+      },
+      {
+        "month": "2023-12",
+        "run": "S0_latency_250",
+        "pnl_bps_of_unit": -155573.5176990915,
+        "tick_bps": 0.12805373423780148,
+        "fills": 51233.45161290323,
+        "net_per_fill_bps": -3.0349714695166514
+      },
+      {
+        "month": "2023-12",
+        "run": "S0_optimistic_queue",
+        "pnl_bps_of_unit": -281295.28124846576,
+        "tick_bps": 0.12805373423780148,
+        "fills": 97230.54838709677,
+        "net_per_fill_bps": -2.8902862120611266
+      },
+      {
+        "month": "2023-12",
+        "run": "S1",
+        "pnl_bps_of_unit": -89614.86681006778,
+        "tick_bps": 0.12805373423780148,
+        "fills": 30101.58064516129,
+        "net_per_fill_bps": -2.986248656244215
+      },
+      {
+        "month": "2023-12",
+        "run": "S1_inventory_2",
+        "pnl_bps_of_unit": -72498.27097273662,
+        "tick_bps": 0.12805373423780148,
+        "fills": 24322.8064516129,
+        "net_per_fill_bps": -2.9863470417571016
+      },
+      {
+        "month": "2023-12",
+        "run": "S1_latency_250",
+        "pnl_bps_of_unit": -66279.6200302413,
+        "tick_bps": 0.12805373423780148,
+        "fills": 21670.612903225807,
+        "net_per_fill_bps": -3.0618549025947415
+      },
+      {
+        "month": "2023-12",
+        "run": "S1_optimistic_queue",
+        "pnl_bps_of_unit": -97915.08068522696,
+        "tick_bps": 0.12805373423780148,
+        "fills": 33767.903225806454,
+        "net_per_fill_bps": -2.903444485057815
+      },
+      {
+        "month": "2024-01",
+        "run": "S0",
+        "pnl_bps_of_unit": -246012.47520083035,
+        "tick_bps": 0.10443272183542605,
+        "fills": 84776.12903225806,
+        "net_per_fill_bps": -2.894272724535146
+      },
+      {
+        "month": "2024-01",
+        "run": "S0_inventory_2",
+        "pnl_bps_of_unit": -214759.38911376375,
+        "tick_bps": 0.10443272183542605,
+        "fills": 74685.0,
+        "net_per_fill_bps": -2.86926021643425
+      },
+      {
+        "month": "2024-01",
+        "run": "S0_latency_250",
+        "pnl_bps_of_unit": -150143.09193111976,
+        "tick_bps": 0.10443272183542605,
+        "fills": 50936.67741935484,
+        "net_per_fill_bps": -2.9429885307012733
+      },
+      {
+        "month": "2024-01",
+        "run": "S0_optimistic_queue",
+        "pnl_bps_of_unit": -270459.4818471445,
+        "tick_bps": 0.10443272183542605,
+        "fills": 96300.93548387097,
+        "net_per_fill_bps": -2.799876694993759
+      },
+      {
+        "month": "2024-01",
+        "run": "S1",
+        "pnl_bps_of_unit": -94878.14143554427,
+        "tick_bps": 0.10443272183542605,
+        "fills": 32613.129032258064,
+        "net_per_fill_bps": -2.9046467078276867
+      },
+      {
+        "month": "2024-01",
+        "run": "S1_inventory_2",
+        "pnl_bps_of_unit": -76801.21103246299,
+        "tick_bps": 0.10443272183542605,
+        "fills": 26431.064516129034,
+        "net_per_fill_bps": -2.9027758797486003
+      },
+      {
+        "month": "2024-01",
+        "run": "S1_latency_250",
+        "pnl_bps_of_unit": -69630.99137435095,
+        "tick_bps": 0.10443272183542605,
+        "fills": 23458.548387096773,
+        "net_per_fill_bps": -2.9655314736831366
+      },
+      {
+        "month": "2024-01",
+        "run": "S1_optimistic_queue",
+        "pnl_bps_of_unit": -104337.21426916153,
+        "tick_bps": 0.10443272183542605,
+        "fills": 36930.32258064516,
+        "net_per_fill_bps": -2.8205075651144584
+      },
+      {
+        "month": "2024-02",
+        "run": "S0",
+        "pnl_bps_of_unit": -181093.49402615934,
+        "tick_bps": 0.09455488374122344,
+        "fills": 61270.275862068964,
+        "net_per_fill_bps": -2.945922932945464
+      },
+      {
+        "month": "2024-02",
+        "run": "S0_inventory_2",
+        "pnl_bps_of_unit": -152765.4051126767,
+        "tick_bps": 0.09455488374122344,
+        "fills": 52196.55172413793,
+        "net_per_fill_bps": -2.919520456123868
+      },
+      {
+        "month": "2024-02",
+        "run": "S0_latency_250",
+        "pnl_bps_of_unit": -127252.92633816108,
+        "tick_bps": 0.09455488374122344,
+        "fills": 42538.03448275862,
+        "net_per_fill_bps": -2.985005871797887
+      },
+      {
+        "month": "2024-02",
+        "run": "S0_optimistic_queue",
+        "pnl_bps_of_unit": -214361.21021255344,
+        "tick_bps": 0.09455488374122344,
+        "fills": 76857.4827586207,
+        "net_per_fill_bps": -2.7778066599359366
+      },
+      {
+        "month": "2024-02",
+        "run": "S1",
+        "pnl_bps_of_unit": -62006.71858494651,
+        "tick_bps": 0.09455488374122344,
+        "fills": 20961.103448275862,
+        "net_per_fill_bps": -2.9587807696562907
+      },
+      {
+        "month": "2024-02",
+        "run": "S1_inventory_2",
+        "pnl_bps_of_unit": -51498.6274614958,
+        "tick_bps": 0.09455488374122344,
+        "fills": 17322.275862068964,
+        "net_per_fill_bps": -2.971300997733553
+      },
+      {
+        "month": "2024-02",
+        "run": "S1_latency_250",
+        "pnl_bps_of_unit": -51158.019403891514,
+        "tick_bps": 0.09455488374122344,
+        "fills": 16947.862068965518,
+        "net_per_fill_bps": -3.0185692257025027
+      },
+      {
+        "month": "2024-02",
+        "run": "S1_optimistic_queue",
+        "pnl_bps_of_unit": -73827.39560467111,
+        "tick_bps": 0.09455488374122344,
+        "fills": 26217.758620689656,
+        "net_per_fill_bps": -2.8130160375552538
+      },
+      {
+        "month": "2024-03",
+        "run": "S0",
+        "pnl_bps_of_unit": -260357.58168372232,
+        "tick_bps": 0.061652146878281605,
+        "fills": 83849.2258064516,
+        "net_per_fill_bps": -3.0817309920254985
+      },
+      {
+        "month": "2024-03",
+        "run": "S0_inventory_2",
+        "pnl_bps_of_unit": -222329.12906500956,
+        "tick_bps": 0.061652146878281605,
+        "fills": 72330.06451612903,
+        "net_per_fill_bps": -3.050507702970316
+      },
+      {
+        "month": "2024-03",
+        "run": "S0_latency_250",
+        "pnl_bps_of_unit": -150348.64702898223,
+        "tick_bps": 0.061652146878281605,
+        "fills": 47591.8064516129,
+        "net_per_fill_bps": -3.1516325516644788
+      },
+      {
+        "month": "2024-03",
+        "run": "S0_optimistic_queue",
+        "pnl_bps_of_unit": -291933.6371647172,
+        "tick_bps": 0.061652146878281605,
+        "fills": 98230.67741935483,
+        "net_per_fill_bps": -2.9502045655643587
+      },
+      {
+        "month": "2024-03",
+        "run": "S1",
+        "pnl_bps_of_unit": -85192.07048260365,
+        "tick_bps": 0.061652146878281605,
+        "fills": 27561.387096774193,
+        "net_per_fill_bps": -3.0682502440775434
+      },
+      {
+        "month": "2024-03",
+        "run": "S1_inventory_2",
+        "pnl_bps_of_unit": -69309.00734643456,
+        "tick_bps": 0.061652146878281605,
+        "fills": 22445.1935483871,
+        "net_per_fill_bps": -3.0714723852122647
+      },
+      {
+        "month": "2024-03",
+        "run": "S1_latency_250",
+        "pnl_bps_of_unit": -59638.798737312674,
+        "tick_bps": 0.061652146878281605,
+        "fills": 19016.25806451613,
+        "net_per_fill_bps": -3.131070613292483
+      },
+      {
+        "month": "2024-03",
+        "run": "S1_optimistic_queue",
+        "pnl_bps_of_unit": -96047.39453871868,
+        "tick_bps": 0.061652146878281605,
+        "fills": 32373.225806451614,
+        "net_per_fill_bps": -2.9470571917939155
+      }
+    ]
+  }
+}

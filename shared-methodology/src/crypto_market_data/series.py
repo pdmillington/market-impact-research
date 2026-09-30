@@ -5,7 +5,9 @@ Supported datasets:
 - ``funding``: USD-M funding settlements (time, interval hours, rate);
 - ``premium_index``, ``mark_price``, ``index_price``: USD-M 1-minute klines;
 - ``perp_klines``: USD-M traded-price 1-minute klines (with taker-buy volume);
-- ``spot_klines``: spot 1-minute klines.
+- ``spot_klines``: spot 1-minute klines;
+- ``perp_klines_1h``, ``perp_klines_1d``, ``premium_index_1h``: coarser USD-M
+  klines for multi-instrument panels (stored under ``interval=1h``/``1d``).
 
 Monthly ZIPs are kept as immutable source evidence. Consolidation normalises
 two archive quirks: older CSVs have no header row, and Binance spot archives
@@ -123,6 +125,27 @@ DATASETS = {
         "futures/um/klines/{symbol}/{interval}",
         KLINE_COLUMNS,
         "1m",
+    ),
+    "perp_klines_1h": Dataset(
+        "perp_klines",
+        "futures/um/monthly/klines/{symbol}/{interval}",
+        "futures/um/klines/{symbol}/{interval}",
+        KLINE_COLUMNS,
+        "1h",
+    ),
+    "perp_klines_1d": Dataset(
+        "perp_klines",
+        "futures/um/monthly/klines/{symbol}/{interval}",
+        "futures/um/klines/{symbol}/{interval}",
+        KLINE_COLUMNS,
+        "1d",
+    ),
+    "premium_index_1h": Dataset(
+        "premium_index",
+        "futures/um/monthly/premiumIndexKlines/{symbol}/{interval}",
+        "futures/um/premiumIndexKlines/{symbol}/{interval}",
+        KLINE_COLUMNS,
+        "1h",
     ),
     "spot_klines": Dataset(
         "spot_klines",

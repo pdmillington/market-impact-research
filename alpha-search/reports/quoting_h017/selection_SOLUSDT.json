@@ -1,0 +1,72 @@
+{
+  "symbol": "SOLUSDT",
+  "run": "S1_D2_T5_k3",
+  "D_bps": 2,
+  "T_s": 5,
+  "k": 3,
+  "calibration_mean_pnl_bps_per_day": -40554.899554251424,
+  "calibration_days": 77,
+  "frozen_at": "2026-09-30T18:17:15+00:00",
+  "grid_ranking": [
+    {
+      "run": "S1_D2_T5_k3",
+      "mean_pnl_bps_per_day": -40554.899554251424,
+      "days": 77
+    },
+    {
+      "run": "S1_D10_T5_k3",
+      "mean_pnl_bps_per_day": -40621.0352159319,
+      "days": 77
+    },
+    {
+      "run": "S1_D5_T5_k3",
+      "mean_pnl_bps_per_day": -40663.634839537975,
+      "days": 77
+    },
+    {
+      "run": "S1_D2_T5_k6",
+      "mean_pnl_bps_per_day": -43019.12351665838,
+      "days": 77
+    },
+    {
+      "run": "S1_D10_T5_k6",
+      "mean_pnl_bps_per_day": -43041.39187637468,
+      "days": 77
+    },
+    {
+      "run": "S1_D5_T5_k6",
+      "mean_pnl_bps_per_day": -43177.05041937804,
+      "days": 77
+    },
+    {
+      "run": "S1_D10_T2_k3",
+      "mean_pnl_bps_per_day": -58145.01903427531,
+      "days": 77
+    },
+    {
+      "run": "S1_D2_T2_k3",
+      "mean_pnl_bps_per_day": -58154.87886582527,
+      "days": 77
+    },
+    {
+      "run": "S1_D5_T2_k3",
+      "mean_pnl_bps_per_day": -58195.93320339962,
+      "days": 77
+    },
+    {
+      "run": "S1_D5_T2_k6",
+      "mean_pnl_bps_per_day": -60536.42700443809,
+      "days": 77
+    },
+    {
+      "run": "S1_D2_T2_k6",
+      "mean_pnl_bps_per_day": -60545.40511323282,
+      "days": 77
+    },
+    {
+      "run": "S1_D10_T2_k6",
+      "mean_pnl_bps_per_day": -60549.0976757653,
+      "days": 77
+    }
+  ]
+}
