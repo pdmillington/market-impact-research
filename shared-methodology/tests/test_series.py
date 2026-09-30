@@ -23,6 +23,13 @@ def test_urls_and_source_paths(tmp_path):
     assert funding.url("BTCUSDT", "2020-01").endswith(
         "/futures/um/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-2020-01.zip"
     )
+    perp = series.DATASETS["perp_klines"]
+    assert perp.url("ETHUSDT", "2024-01").endswith(
+        "/futures/um/monthly/klines/ETHUSDT/1m/ETHUSDT-1m-2024-01.zip"
+    )
+    assert perp.daily_url("ETHUSDT", "2024-01-02").endswith(
+        "/futures/um/daily/klines/ETHUSDT/1m/ETHUSDT-1m-2024-01-02.zip"
+    )
     spot = series.DATASETS["spot_klines"]
     assert spot.url("BTCUSDT", "2025-03").endswith(
         "/spot/monthly/klines/BTCUSDT/1m/BTCUSDT-1m-2025-03.zip"

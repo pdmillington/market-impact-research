@@ -4,6 +4,7 @@ Supported datasets:
 
 - ``funding``: USD-M funding settlements (time, interval hours, rate);
 - ``premium_index``, ``mark_price``, ``index_price``: USD-M 1-minute klines;
+- ``perp_klines``: USD-M traded-price 1-minute klines (with taker-buy volume);
 - ``spot_klines``: spot 1-minute klines.
 
 Monthly ZIPs are kept as immutable source evidence. Consolidation normalises
@@ -113,6 +114,13 @@ DATASETS = {
         "index_price",
         "futures/um/monthly/indexPriceKlines/{symbol}/{interval}",
         "futures/um/indexPriceKlines/{symbol}/{interval}",
+        KLINE_COLUMNS,
+        "1m",
+    ),
+    "perp_klines": Dataset(
+        "perp_klines",
+        "futures/um/monthly/klines/{symbol}/{interval}",
+        "futures/um/klines/{symbol}/{interval}",
         KLINE_COLUMNS,
         "1m",
     ),

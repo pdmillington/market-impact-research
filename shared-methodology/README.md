@@ -58,8 +58,18 @@ crypto-market-data download-and-parse \
 
 The parser removes only immediately adjacent records that are identical across
 all canonical fields, and records the count in
-`exact_duplicate_rows_removed`. Any conflicting reuse of a trade ID remains a
-validation failure.
+`exact_duplicate_rows_removed`. Conflicting reuse of a trade ID remains a
+validation failure, with one documented exception.
+
+**Trade-ID reuse after an outage.** Binance has restarted its trade-ID counter a
+few IDs early when trading resumed after a halt. In ETHUSDT on 2025-08-29,
+trading stopped at 06:18:03 UTC, resumed at 06:37:04, and IDs 6299136398–6299136400
+were issued twice, to six genuine, distinct fills. A duplicated ID is accepted as
+*reused* only when it has exactly two records at least 60 seconds apart. When a
+month contains reused IDs, its canonical fills and event reconstruction are ordered
+by `(timestamp_ms, trade_id)` rather than `trade_id`, which restores the true
+sequence. The count is recorded in `reused_trade_ids`. Months without reuse are
+unaffected and keep trade-ID ordering. Any other duplicate still fails.
 
 Check current coverage and storage without scanning the Parquet files:
 

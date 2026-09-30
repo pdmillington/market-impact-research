@@ -50,6 +50,7 @@ class ParseReport:
     last_timestamp_ms: int
     event_rule: str = "timestamp_direction_v1"
     exact_duplicate_rows_removed: int = 0
+    reused_trade_ids: int = 0
 
 
 def _csv_member(archive: zipfile.ZipFile) -> str:
@@ -151,6 +152,50 @@ def _remove_adjacent_exact_duplicates(canonical_path: Path) -> int:
     return removed
 
 
+REUSE_MINIMUM_GAP_MS = 60_000
+REUSE_ORDER = ("timestamp_ms", "trade_id")
+
+
+def _reused_trade_ids(canonical_path: Path) -> int:
+    """Count trade IDs the exchange reused after a trading gap.
+
+    Binance has occasionally restarted its trade-ID counter a few IDs early when
+    trading resumed after an outage (for example ETHUSDT, 2025-08-29 06:18–06:37
+    UTC). Each reused ID then appears on two genuine, distinct fills. An ID
+    counts as reused only when its records differ and are at least
+    `REUSE_MINIMUM_GAP_MS` apart; any other duplicate still fails validation.
+    """
+
+    duplicates = (
+        pl.scan_parquet(canonical_path)
+        .group_by("trade_id")
+        .agg(
+            pl.len().alias("records"),
+            (pl.col("timestamp_ms").max() - pl.col("timestamp_ms").min()).alias("span_ms"),
+        )
+        .filter(pl.col("records") > 1)
+        .collect()
+    )
+    reused = duplicates.filter(
+        (pl.col("records") == 2) & (pl.col("span_ms") >= REUSE_MINIMUM_GAP_MS)
+    )
+    return reused.height
+
+
+def _sort_canonical(canonical_path: Path, order_by: tuple[str, ...]) -> None:
+    temporary_path = canonical_path.with_suffix(".sorted.parquet.part")
+    temporary_path.unlink(missing_ok=True)
+    pl.scan_parquet(canonical_path).sort(list(order_by), maintain_order=True).sink_parquet(
+        temporary_path,
+        compression="zstd",
+        compression_level=6,
+        statistics=True,
+        row_group_size=250_000,
+        maintain_order=True,
+    )
+    temporary_path.replace(canonical_path)
+
+
 def _build_report(
     *,
     symbol: str,
@@ -159,6 +204,7 @@ def _build_report(
     canonical_path: Path,
     event_path: Path,
     exact_duplicate_rows_removed: int = 0,
+    reused_trade_ids: int = 0,
 ) -> ParseReport:
     fills = pl.scan_parquet(canonical_path)
     events = pl.scan_parquet(event_path)
@@ -207,7 +253,8 @@ def _build_report(
     duplicate_trade_ids = fill_rows - int(fill_summary["unique_trade_ids"][0])
     invalid_fill_rows = int(fill_summary["invalid_rows"][0])
 
-    if duplicate_trade_ids or invalid_fill_rows or event_fill_count != fill_rows:
+    unexplained_duplicates = duplicate_trade_ids - reused_trade_ids
+    if unexplained_duplicates or invalid_fill_rows or event_fill_count != fill_rows:
         raise ValueError(
             "Parsed data failed identity, positivity, or fill-count validation."
         )
@@ -239,6 +286,7 @@ def _build_report(
         first_timestamp_ms=int(fill_summary["first_timestamp_ms"][0]),
         last_timestamp_ms=int(fill_summary["last_timestamp_ms"][0]),
         exact_duplicate_rows_removed=exact_duplicate_rows_removed,
+        reused_trade_ids=reused_trade_ids,
     )
 
 
@@ -287,7 +335,14 @@ def parse_month_archive(
         canonical_path
     )
 
-    reconstruct_timestamp_direction_events(canonical_path, event_path)
+    reused_trade_ids = _reused_trade_ids(canonical_path)
+    order_by = ("trade_id",)
+    if reused_trade_ids:
+        # Trade-ID order interleaves fills from before and after the outage.
+        order_by = REUSE_ORDER
+        _sort_canonical(canonical_path, order_by)
+
+    reconstruct_timestamp_direction_events(canonical_path, event_path, order_by)
     report = _build_report(
         symbol=symbol,
         month=month,
@@ -295,6 +350,7 @@ def parse_month_archive(
         canonical_path=canonical_path,
         event_path=event_path,
         exact_duplicate_rows_removed=exact_duplicate_rows_removed,
+        reused_trade_ids=reused_trade_ids,
     )
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(asdict(report), indent=2) + "\n")

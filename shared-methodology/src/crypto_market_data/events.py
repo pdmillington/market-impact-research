@@ -23,15 +23,22 @@ EVENT_COLUMNS = [
 ]
 
 
-def timestamp_direction_events(lazy_fills: pl.LazyFrame) -> pl.LazyFrame:
+def timestamp_direction_events(
+    lazy_fills: pl.LazyFrame,
+    order_by: tuple[str, ...] = ("trade_id",),
+) -> pl.LazyFrame:
     """Combine consecutive fills sharing timestamp and aggressor direction.
 
     Price is deliberately not a grouping key: a single aggressive sweep may execute
     against several price levels. A direction change at the same timestamp starts a
     new event, and a later return to the original direction starts another event.
+
+    Fills are processed in exchange sequence, normally trade-ID order. A month in
+    which the exchange reused trade IDs after an outage is processed in
+    (timestamp, trade ID) order instead, which restores the true sequence.
     """
 
-    ordered = lazy_fills.sort("trade_id")
+    ordered = lazy_fills.sort(list(order_by), maintain_order=True)
     is_new_event = (
         (pl.col("timestamp_ms") != pl.col("timestamp_ms").shift(1))
         | (pl.col("aggressor_sign") != pl.col("aggressor_sign").shift(1))
@@ -65,6 +72,7 @@ def timestamp_direction_events(lazy_fills: pl.LazyFrame) -> pl.LazyFrame:
 def reconstruct_timestamp_direction_events(
     canonical_path: Path,
     output_path: Path,
+    order_by: tuple[str, ...] = ("trade_id",),
 ) -> Path:
     """Write `timestamp_direction_v1` events from canonical fills."""
 
@@ -72,7 +80,7 @@ def reconstruct_timestamp_direction_events(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     temporary_path = output_path.with_suffix(output_path.suffix + ".part")
     temporary_path.unlink(missing_ok=True)
-    events = timestamp_direction_events(pl.scan_parquet(canonical_path))
+    events = timestamp_direction_events(pl.scan_parquet(canonical_path), order_by)
     events.sink_parquet(
         temporary_path,
         compression="zstd",

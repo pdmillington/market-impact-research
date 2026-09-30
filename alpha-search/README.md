@@ -10,6 +10,11 @@ turnover assumptions. Explanatory results from the academic work can generate al
 hypotheses; alpha discoveries can generate robustness questions for the paper, but
 the reporting and validation standards remain separate.
 
+Every predictive hypothesis, including failures, is recorded in
+[`HYPOTHESIS_LEDGER.md`](HYPOTHESIS_LEDGER.md) before it is run. The ledger also
+holds the sample register (which periods are development, locked or untouched)
+and the frozen cost assumptions.
+
 ## Project terminology
 
 The project uses the following vocabulary consistently:
