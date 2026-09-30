@@ -64,6 +64,27 @@ def test_chunked_grid_resolves_seconds_split_across_chunks():
     assert grid["updates"].to_list() == [3, 1]
 
 
+def test_sort_month_by_time_orders_rows_across_days_and_chunks(tmp_path):
+    day = book_ticker.DAY_MS
+    frame = pl.DataFrame(
+        {
+            "update_id": [5, 1, 4, 2, 3],
+            "best_bid_price": [5.0, 1.0, 4.0, 2.0, 3.0],
+            "best_bid_qty": [1.0] * 5,
+            "best_ask_price": [6.0, 2.0, 5.0, 3.0, 4.0],
+            "best_ask_qty": [1.0] * 5,
+            "transaction_time": [day + 500, 100, day + 100, 200, 200],
+            "event_time": [0] * 5,
+        }
+    )
+    path = tmp_path / "month.parquet"
+    frame.write_parquet(path)
+    book_ticker.sort_month_by_time(path, tmp_path / "tmp", chunk_rows=2)
+    result = pl.read_parquet(path)
+    assert result["update_id"].to_list() == [1, 2, 3, 4, 5]
+    assert result["transaction_time"].is_sorted()
+
+
 def test_headerless_file(tmp_path):
     write_month(tmp_path, ["1,99.9,1.0,100.0,2.0,1000100,1000101"])
     report = book_ticker.parse_month(root=tmp_path, symbol="BTCUSDT", month="2023-05")

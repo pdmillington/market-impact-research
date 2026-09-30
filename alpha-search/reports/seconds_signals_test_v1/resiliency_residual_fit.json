@@ -1,0 +1,9 @@
+{
+  "intercept": -0.6863283359194625,
+  "slope_log_activity": 0.2593682583241164,
+  "residual_tercile_cuts": [
+    -0.0878433695174491,
+    0.20059436692572327
+  ],
+  "correlation_resiliency_log_activity": 0.469822419013203
+}

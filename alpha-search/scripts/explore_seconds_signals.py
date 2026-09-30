@@ -49,14 +49,14 @@ def previous_month(month: str) -> str:
     return f"{year - 1}-12" if number == 1 else f"{year}-{number - 1:02d}"
 
 
-def load_events(root: Path, month: str) -> pl.DataFrame:
+def load_events(root: Path, month: str, symbol: str = "BTCUSDT") -> pl.DataFrame:
     layout = DataLayout(root)
     start = month_start_ms(month)
     columns = ["timestamp_ms", "aggressor_sign", "quantity", "vwap", "first_price", "last_price",
                "price_level_count", "first_trade_id"]
-    previous = (pl.scan_parquet(layout.event_month("BTCUSDT", previous_month(month)))
+    previous = (pl.scan_parquet(layout.event_month(symbol, previous_month(month)))
                 .select(columns).filter(pl.col("timestamp_ms") >= start - DAY_MS))
-    current = pl.scan_parquet(layout.event_month("BTCUSDT", month)).select(columns)
+    current = pl.scan_parquet(layout.event_month(symbol, month)).select(columns)
     return pl.concat([previous, current]).sort("timestamp_ms", "first_trade_id").collect()
 
 

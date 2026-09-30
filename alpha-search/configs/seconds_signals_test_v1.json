@@ -1,0 +1,26 @@
+{
+  "experiment_id": "seconds_signals_test_v1",
+  "hypotheses": ["H-014", "H-015", "H-016"],
+  "symbol": "BTCUSDT",
+  "test_start_month": "2023-01",
+  "test_end_month": "2026-05",
+  "excluded_months": ["2023-05", "2023-06", "2023-07"],
+  "true_mid_months": ["2023-08", "2023-09", "2023-10", "2023-11", "2023-12", "2024-01", "2024-02", "2024-03", "2024-04"],
+  "residual_fit_months": ["2022-01", "2022-02", "2022-03", "2022-04", "2022-05", "2022-06", "2022-07", "2022-08", "2022-09", "2022-10", "2022-11", "2022-12"],
+  "taus": [1, 5, 15, 60],
+  "primary_tau": 5,
+  "ic_sample_per_month": 2000000,
+  "frozen_cuts": {
+    "activity": [0.8234, 1.5731],
+    "absorption": [0.2609, 1.6753],
+    "burst": [-0.582, -0.2771, -0.1446, -0.0625, 0.0, 0.0693, 0.1524, 0.2845, 0.5934]
+  },
+  "burst_moderate_deciles": [2, 3, 4, 7, 8, 9],
+  "burst_extreme_deciles": [1, 10],
+  "protective_value_flags": {"H-014_min_levels": 5, "H-015_min_hits": 6, "window_seconds": 5},
+  "notes": [
+    "Registered in HYPOTHESIS_LEDGER.md (common seconds-scale protocol, H-014 to H-016) on 2026-09-30.",
+    "Protective-value flag thresholds are diagnostic parameters, not gates.",
+    "The resiliency-on-log-activity regression and its residual tercile cuts are fitted on 2022 (exploration year) only."
+  ]
+}

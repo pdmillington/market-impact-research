@@ -1,0 +1,11 @@
+hypothesis,condition,passes
+H-014,"1 main effect (IC tau 5, >80% months)",true
+H-014,2 main effect positive at >=2 of 3 robustness horizons,true
+H-014,3 activity interaction (>60% months),true
+H-014,4 secondary: resiliency orthogonal to activity (>60% months),false
+H-015,"1 main effect (IC tau 5, >80% months)",true
+H-015,2 main effect positive at >=2 of 3 robustness horizons,true
+H-015,3 absorption interaction (>60% months),true
+H-016,1 primary A continuation (>70% months),true
+H-016,2 primary B exhaustion (>60% months),false
+H-016,3 activity interaction (>60% months),true

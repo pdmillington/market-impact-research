@@ -1,0 +1,50 @@
+{
+  "experiment_id": "crowding_confirmation_c010_SOLUSDT",
+  "panel_config": "alpha-search/configs/funding_positioning_v1_SOLUSDT.json",
+  "panel_experiment": "funding_positioning_v1_SOLUSDT",
+  "first_test_month": "2023-01",
+  "last_test_month": "2026-05",
+  "holdout_months_excluded": [
+    "2026-06",
+    "2026-07",
+    "2026-08"
+  ],
+  "models": [
+    "all"
+  ],
+  "horizons_hours": [
+    24
+  ],
+  "position_rules": [
+    "tail"
+  ],
+  "training_windows_months": [
+    12
+  ],
+  "tail_fraction": 0.2,
+  "costs_bps_per_side": {
+    "gross": 0.0,
+    "maker": 2.0,
+    "taker": 5.0
+  },
+  "primary": {
+    "model": "all",
+    "horizon_hours": 24,
+    "position_rule": "tail",
+    "training_window_months": 12
+  },
+  "notes": [
+    "C-010 (HYPOTHESIS_LEDGER.md): frozen H-010 primary on SOLUSDT; attribution reported, not a gate."
+  ],
+  "recent_start_month": "2025-06",
+  "attribution": {
+    "model": "baseline_positioning",
+    "position_rule": "tail",
+    "training_window_months": 12,
+    "ratio_features": [
+      "toptrader_ls_z30d",
+      "global_ls_z30d",
+      "taker_ls_1h"
+    ]
+  }
+}

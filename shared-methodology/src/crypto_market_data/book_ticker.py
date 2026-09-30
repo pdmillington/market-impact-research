@@ -85,6 +85,7 @@ class BookTickerReport:
     last_time_ms: int
     canonical_bytes: int
     grid_bytes: int
+    time_sorted: bool = False
 
 
 def _has_header(csv_path: Path) -> bool:
@@ -150,6 +151,65 @@ def quote_grid(quotes: pl.LazyFrame, chunk_rows: int = GRID_CHUNK_ROWS) -> pl.Da
     )
 
 
+DAY_MS = 86_400_000
+SORT_CHUNK_ROWS = 100_000_000
+
+
+def sort_month_by_time(canonical: Path, temporary_root: Path, chunk_rows: int = SORT_CHUNK_ROWS) -> None:
+    """Rewrite a canonical month in (transaction_time, update_id) order.
+
+    Months can hold ~1e9 rows, so rows are first partitioned into per-day files
+    chunk by chunk, each day is sorted in memory, and the days are concatenated
+    in order. Earlier parses wrote rows without preserving order; this makes
+    time order a guarantee of the canonical file.
+    """
+
+    temporary_root.mkdir(parents=True, exist_ok=True)
+    scan = pl.scan_parquet(canonical)
+    total = scan.select(pl.len()).collect().item()
+    with tempfile.TemporaryDirectory(prefix="book-ticker-sort-", dir=temporary_root) as temp:
+        temp_path = Path(temp)
+        for offset in range(0, total, chunk_rows):
+            chunk = scan.slice(offset, chunk_rows).collect()
+            for (day,), part in chunk.group_by((pl.col("transaction_time") // DAY_MS).alias("day")):
+                directory = temp_path / f"day={int(day)}"
+                directory.mkdir(exist_ok=True)
+                part.select(COLUMNS).write_parquet(directory / f"part-{offset}.parquet")
+            del chunk
+        sorted_days = []
+        for directory in sorted(temp_path.glob("day=*"), key=lambda p: int(p.name.split("=")[1])):
+            day_file = temp_path / f"sorted-{directory.name}.parquet"
+            (pl.read_parquet(sorted(directory.glob("*.parquet")))
+             .sort("transaction_time", "update_id")
+             .write_parquet(day_file, compression="zstd", row_group_size=500_000))
+            shutil.rmtree(directory)
+            sorted_days.append(day_file)
+        partial = canonical.with_suffix(".parquet.sorting")
+        pl.scan_parquet(sorted_days).sink_parquet(
+            partial, compression="zstd", compression_level=6, row_group_size=500_000,
+            maintain_order=True,
+        )
+        rows = pl.scan_parquet(partial).select(pl.len()).collect().item()
+        if rows != total:
+            partial.unlink(missing_ok=True)
+            raise ValueError(f"Sorting changed the row count of {canonical.name}: {total} -> {rows}.")
+        partial.replace(canonical)
+
+
+def ensure_time_sorted(*, root: Path, symbol: str, month: str) -> bool:
+    """Sort an already-parsed month in place if its report says it is unsorted."""
+
+    report_path = report_month(root, symbol, month)
+    report = json.loads(report_path.read_text())
+    if report.get("time_sorted"):
+        return False
+    sort_month_by_time(canonical_month(root, symbol, month), DataLayout(Path(root)).temporary_root())
+    report["time_sorted"] = True
+    report["canonical_bytes"] = canonical_month(root, symbol, month).stat().st_size
+    report_path.write_text(json.dumps(report, indent=2) + "\n")
+    return True
+
+
 def parse_month(*, root: Path, symbol: str, month: str, overwrite: bool = False) -> BookTickerReport:
     layout = DataLayout(Path(root))
     report_path = report_month(root, symbol, month)
@@ -171,9 +231,11 @@ def parse_month(*, root: Path, symbol: str, month: str, overwrite: bool = False)
                 shutil.copyfileobj(src, dst, length=8 * 1024 * 1024)
         partial = canonical.with_suffix(".parquet.part")
         scan_book_ticker_csv(csv_path).sink_parquet(
-            partial, compression="zstd", compression_level=6, row_group_size=500_000
+            partial, compression="zstd", compression_level=6, row_group_size=500_000,
+            maintain_order=True,
         )
         partial.replace(canonical)
+    sort_month_by_time(canonical, layout.temporary_root())
     quotes = pl.scan_parquet(canonical)
     summary = quotes.select(
         pl.len().alias("rows"),
@@ -199,6 +261,7 @@ def parse_month(*, root: Path, symbol: str, month: str, overwrite: bool = False)
         last_time_ms=int(summary["last"][0]),
         canonical_bytes=canonical.stat().st_size,
         grid_bytes=grid.stat().st_size,
+        time_sorted=True,
     )
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(asdict(report), indent=2) + "\n")

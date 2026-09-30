@@ -189,6 +189,71 @@ summarise(pl.read_parquet(D / 'S4_spread.parquet').filter(pl.col('state') > 0), 
           ['abs_response', 'markout'])
 """
     ),
+    md(
+        r"""
+# E-003: passive interest from trades
+
+- **A1 absorption:** volume executed at an unchanged price in the current run,
+  divided by typical depth per level (from recent same-side sweeps).
+- **A2 resiliency:** trailing share of recent sweeps' impact that reverted
+  within 5 s.
+- **A3 asymmetry:** (sell volume absorbed at the bid − buy volume absorbed at
+  the ask) ÷ total volume, over the last 5 minutes.
+"""
+    ),
+    code(
+        r"""
+E3 = D.parent / 'absorption_e003'
+ic3 = pl.read_parquet(E3 / 'IC.parquet')
+ic3.group_by('signal', 'tau').agg(pl.col('spearman_ic').mean().alias('mean_ic'),
+                                  (pl.col('spearman_ic') > 0).mean().alias('positive_months')).sort('signal', 'tau')
+"""
+    ),
+    md("## 7. A1: level depletion by absorption tercile (τ = 5 s)"),
+    code(
+        r"""
+a1 = summarise(pl.read_parquet(E3 / 'A1_hits_absorption.parquet').filter((pl.col('tau') == 5) & (pl.col('state') > 0)),
+               ['hit_class', 'state'], ['response', 'markout'])
+fig, axes = plt.subplots(1, 2, figsize=(12, 3.8))
+for ax, column, title in ((axes[0], 'response', 'Continuation (bps)'), (axes[1], 'markout', 'Maker markout (bps)')):
+    for colour, tercile in zip(SERIES, (1, 2, 3)):
+        s = a1.filter(pl.col('state') == tercile).sort('hit_class')
+        ax.errorbar(s['hit_class'] + (tercile - 2) * 0.12, s[column], yerr=2 * s[f'{column}_se'], fmt='-o',
+                    color=colour, capsize=2, markersize=4, label=f'absorption tercile {tercile}')
+    ax.axhline(0, color=MUTED, linewidth=1)
+    ax.set_xticks(range(5), HITS)
+    ax.set_xlabel('consecutive same-side hits at the level')
+    ax.set_title(title, loc='left')
+axes[0].legend(frameon=False, fontsize=8)
+plt.tight_layout()
+plt.show()
+"""
+    ),
+    md("## 8. A2: sweeps by resiliency tercile (τ = 5 s)"),
+    code(
+        r"""
+a2 = summarise(pl.read_parquet(E3 / 'A2_sweeps_resiliency.parquet').filter((pl.col('tau') == 5) & (pl.col('state') > 0)),
+               ['level_class', 'state'], ['response', 'markout'])
+fig, ax = plt.subplots(figsize=(7, 3.8))
+for colour, tercile in zip(SERIES, (1, 2, 3)):
+    s = a2.filter(pl.col('state') == tercile).sort('level_class')
+    ax.errorbar(s['level_class'] + (tercile - 2) * 0.12, s['markout'], yerr=2 * s['markout_se'], fmt='o',
+                color=colour, capsize=2, label=f'resiliency tercile {tercile}')
+ax.axhline(0, color=MUTED, linewidth=1)
+ax.set_xticks(range(1, 5), LEVELS[1:])
+ax.set_xlabel('price levels swept')
+ax.set_ylabel('maker markout (bps)')
+ax.legend(frameon=False, fontsize=8)
+plt.show()
+"""
+    ),
+    md("## 9. A3: future move by absorption-asymmetry decile"),
+    code(
+        r"""
+a3 = summarise(pl.read_parquet(E3 / 'A3_asymmetry.parquet'), ['tau', 'decile'], ['future_move'])
+a3.pivot(on='tau', index='decile', values='future_move')
+"""
+    ),
 ]
 
 notebook = nbf.v4.new_notebook(

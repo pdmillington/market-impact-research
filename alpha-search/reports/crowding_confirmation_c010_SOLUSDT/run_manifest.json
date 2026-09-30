@@ -1,0 +1,16 @@
+{
+  "experiment_id": "crowding_confirmation_c010_SOLUSDT",
+  "config": "/Users/petermillington/research/market-impact-research/alpha-search/configs/crowding_confirmation_c010_SOLUSDT.json",
+  "primary": {
+    "model": "all",
+    "horizon_hours": 24,
+    "position_rule": "tail",
+    "training_window_months": 12
+  },
+  "holdout_months_excluded": [
+    "2026-06",
+    "2026-07",
+    "2026-08"
+  ],
+  "created_utc": "2026-09-30T16:40:57+00:00"
+}
