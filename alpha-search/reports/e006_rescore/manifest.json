@@ -1,0 +1,5 @@
+{
+  "built_at": "2026-10-01T12:38:51+00:00",
+  "round_trip_bps": 4.0,
+  "threshold": "max(1.5, min(2*sqrt(tau/5min), 10)) bps"
+}

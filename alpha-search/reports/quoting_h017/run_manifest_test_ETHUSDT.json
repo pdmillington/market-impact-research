@@ -1,0 +1,131 @@
+{
+  "frozen": {
+    "unit_notional_usd": 20.0,
+    "inventory_limit": 5,
+    "latency_ms": 100.0,
+    "maker_fee_bps": 2.0,
+    "queue_model": "conservative",
+    "calibration": [
+      "2023-05-16",
+      "2023-07-31"
+    ],
+    "test": [
+      "2023-08-01",
+      "2024-03-31"
+    ],
+    "grid": {
+      "D_bps": [
+        2,
+        5,
+        10
+      ],
+      "T_s": [
+        2,
+        5
+      ],
+      "k": [
+        3,
+        6
+      ]
+    }
+  },
+  "sensitivities": {
+    "latency_250": {
+      "latency_ms": 250.0
+    },
+    "optimistic_queue": {
+      "queue_model": "proportional"
+    },
+    "inventory_2": {
+      "inventory_limit": 2
+    }
+  },
+  "runs": [
+    {
+      "unit_notional_usd": 20.0,
+      "inventory_limit": 5,
+      "latency_ms": 100.0,
+      "maker_fee_bps": 2.0,
+      "queue_model": "conservative",
+      "name": "S0",
+      "strategy": "S0"
+    },
+    {
+      "unit_notional_usd": 20.0,
+      "inventory_limit": 5,
+      "latency_ms": 100.0,
+      "maker_fee_bps": 2.0,
+      "queue_model": "conservative",
+      "strategy": "S1",
+      "D_bps": 2,
+      "T_s": 5,
+      "k": 3,
+      "name": "S1"
+    },
+    {
+      "unit_notional_usd": 20.0,
+      "inventory_limit": 5,
+      "latency_ms": 250.0,
+      "maker_fee_bps": 2.0,
+      "queue_model": "conservative",
+      "name": "S0_latency_250",
+      "strategy": "S0"
+    },
+    {
+      "unit_notional_usd": 20.0,
+      "inventory_limit": 5,
+      "latency_ms": 250.0,
+      "maker_fee_bps": 2.0,
+      "queue_model": "conservative",
+      "strategy": "S1",
+      "D_bps": 2,
+      "T_s": 5,
+      "k": 3,
+      "name": "S1_latency_250"
+    },
+    {
+      "unit_notional_usd": 20.0,
+      "inventory_limit": 5,
+      "latency_ms": 100.0,
+      "maker_fee_bps": 2.0,
+      "queue_model": "proportional",
+      "name": "S0_optimistic_queue",
+      "strategy": "S0"
+    },
+    {
+      "unit_notional_usd": 20.0,
+      "inventory_limit": 5,
+      "latency_ms": 100.0,
+      "maker_fee_bps": 2.0,
+      "queue_model": "proportional",
+      "strategy": "S1",
+      "D_bps": 2,
+      "T_s": 5,
+      "k": 3,
+      "name": "S1_optimistic_queue"
+    },
+    {
+      "unit_notional_usd": 20.0,
+      "inventory_limit": 2,
+      "latency_ms": 100.0,
+      "maker_fee_bps": 2.0,
+      "queue_model": "conservative",
+      "name": "S0_inventory_2",
+      "strategy": "S0"
+    },
+    {
+      "unit_notional_usd": 20.0,
+      "inventory_limit": 2,
+      "latency_ms": 100.0,
+      "maker_fee_bps": 2.0,
+      "queue_model": "conservative",
+      "strategy": "S1",
+      "D_bps": 2,
+      "T_s": 5,
+      "k": 3,
+      "name": "S1_inventory_2"
+    }
+  ],
+  "days_requested": 244,
+  "days_simulated": 244
+}

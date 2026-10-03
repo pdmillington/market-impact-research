@@ -1,0 +1,218 @@
+{
+  "frozen": {
+    "seed": 20260930,
+    "blocks_per_day": 12,
+    "notional_usd": 10000.0,
+    "window_min": 30.0,
+    "latency_ms": 100.0,
+    "queue_model": "conservative",
+    "maker_fee_bps": 2.0,
+    "taker_fee_bps": 5.0,
+    "calibration": [
+      "2023-05-16",
+      "2023-07-31"
+    ],
+    "test": [
+      "2023-08-01",
+      "2024-03-31"
+    ],
+    "grid": {
+      "m_ticks": [
+        2,
+        5,
+        10
+      ],
+      "T_s": [
+        2,
+        5
+      ],
+      "k": [
+        6,
+        12
+      ]
+    }
+  },
+  "sensitivities": {
+    "latency_250": {
+      "latency_ms": 250.0
+    },
+    "optimistic_queue": {
+      "queue_model": "proportional"
+    },
+    "size_50k": {
+      "notional_usd": 50000.0
+    },
+    "window_60": {
+      "window_min": 60.0
+    }
+  },
+  "runs": [
+    {
+      "notional_usd": 10000.0,
+      "window_min": 30.0,
+      "latency_ms": 100.0,
+      "queue_model": "conservative",
+      "maker_fee_bps": 2.0,
+      "taker_fee_bps": 5.0,
+      "name": "E0",
+      "strategy": "E0"
+    },
+    {
+      "notional_usd": 10000.0,
+      "window_min": 30.0,
+      "latency_ms": 100.0,
+      "queue_model": "conservative",
+      "maker_fee_bps": 2.0,
+      "taker_fee_bps": 5.0,
+      "name": "E1",
+      "strategy": "E1"
+    },
+    {
+      "notional_usd": 10000.0,
+      "window_min": 30.0,
+      "latency_ms": 100.0,
+      "queue_model": "conservative",
+      "maker_fee_bps": 2.0,
+      "taker_fee_bps": 5.0,
+      "strategy": "E2",
+      "m_ticks": 10,
+      "T_s": 5,
+      "k": 12,
+      "name": "E2"
+    },
+    {
+      "notional_usd": 10000.0,
+      "window_min": 30.0,
+      "latency_ms": 250.0,
+      "queue_model": "conservative",
+      "maker_fee_bps": 2.0,
+      "taker_fee_bps": 5.0,
+      "name": "E0_latency_250",
+      "strategy": "E0"
+    },
+    {
+      "notional_usd": 10000.0,
+      "window_min": 30.0,
+      "latency_ms": 250.0,
+      "queue_model": "conservative",
+      "maker_fee_bps": 2.0,
+      "taker_fee_bps": 5.0,
+      "name": "E1_latency_250",
+      "strategy": "E1"
+    },
+    {
+      "notional_usd": 10000.0,
+      "window_min": 30.0,
+      "latency_ms": 250.0,
+      "queue_model": "conservative",
+      "maker_fee_bps": 2.0,
+      "taker_fee_bps": 5.0,
+      "strategy": "E2",
+      "m_ticks": 10,
+      "T_s": 5,
+      "k": 12,
+      "name": "E2_latency_250"
+    },
+    {
+      "notional_usd": 10000.0,
+      "window_min": 30.0,
+      "latency_ms": 100.0,
+      "queue_model": "proportional",
+      "maker_fee_bps": 2.0,
+      "taker_fee_bps": 5.0,
+      "name": "E0_optimistic_queue",
+      "strategy": "E0"
+    },
+    {
+      "notional_usd": 10000.0,
+      "window_min": 30.0,
+      "latency_ms": 100.0,
+      "queue_model": "proportional",
+      "maker_fee_bps": 2.0,
+      "taker_fee_bps": 5.0,
+      "name": "E1_optimistic_queue",
+      "strategy": "E1"
+    },
+    {
+      "notional_usd": 10000.0,
+      "window_min": 30.0,
+      "latency_ms": 100.0,
+      "queue_model": "proportional",
+      "maker_fee_bps": 2.0,
+      "taker_fee_bps": 5.0,
+      "strategy": "E2",
+      "m_ticks": 10,
+      "T_s": 5,
+      "k": 12,
+      "name": "E2_optimistic_queue"
+    },
+    {
+      "notional_usd": 50000.0,
+      "window_min": 30.0,
+      "latency_ms": 100.0,
+      "queue_model": "conservative",
+      "maker_fee_bps": 2.0,
+      "taker_fee_bps": 5.0,
+      "name": "E0_size_50k",
+      "strategy": "E0"
+    },
+    {
+      "notional_usd": 50000.0,
+      "window_min": 30.0,
+      "latency_ms": 100.0,
+      "queue_model": "conservative",
+      "maker_fee_bps": 2.0,
+      "taker_fee_bps": 5.0,
+      "name": "E1_size_50k",
+      "strategy": "E1"
+    },
+    {
+      "notional_usd": 50000.0,
+      "window_min": 30.0,
+      "latency_ms": 100.0,
+      "queue_model": "conservative",
+      "maker_fee_bps": 2.0,
+      "taker_fee_bps": 5.0,
+      "strategy": "E2",
+      "m_ticks": 10,
+      "T_s": 5,
+      "k": 12,
+      "name": "E2_size_50k"
+    },
+    {
+      "notional_usd": 10000.0,
+      "window_min": 60.0,
+      "latency_ms": 100.0,
+      "queue_model": "conservative",
+      "maker_fee_bps": 2.0,
+      "taker_fee_bps": 5.0,
+      "name": "E0_window_60",
+      "strategy": "E0"
+    },
+    {
+      "notional_usd": 10000.0,
+      "window_min": 60.0,
+      "latency_ms": 100.0,
+      "queue_model": "conservative",
+      "maker_fee_bps": 2.0,
+      "taker_fee_bps": 5.0,
+      "name": "E1_window_60",
+      "strategy": "E1"
+    },
+    {
+      "notional_usd": 10000.0,
+      "window_min": 60.0,
+      "latency_ms": 100.0,
+      "queue_model": "conservative",
+      "maker_fee_bps": 2.0,
+      "taker_fee_bps": 5.0,
+      "strategy": "E2",
+      "m_ticks": 10,
+      "T_s": 5,
+      "k": 12,
+      "name": "E2_window_60"
+    }
+  ],
+  "days_requested": 244,
+  "days_simulated": 244
+}

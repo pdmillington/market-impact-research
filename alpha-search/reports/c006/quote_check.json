@@ -1,0 +1,38 @@
+{
+  "BTCUSDT": {
+    "trades": 2444,
+    "trade_clock_edge": 27.968346088760907,
+    "mid_edge": 27.494968110805605,
+    "taker_edge_after_spread": 27.0131827800389,
+    "taker_net_2bp_fees": 23.0131827800389,
+    "t_mid": 8.894254587247765,
+    "t_taker": 8.896910784676171,
+    "median_entry_spread_bps": 0.03875961480638402,
+    "mean_entry_spread_bps": 0.8304402887767395,
+    "dropped_stale": 535
+  },
+  "ETHUSDT": {
+    "trades": 1619,
+    "trade_clock_edge": 23.619476344311988,
+    "mid_edge": 23.26047511134149,
+    "taker_edge_after_spread": 22.72140669610574,
+    "taker_net_2bp_fees": 18.72140669610574,
+    "t_mid": 6.913088164471222,
+    "t_taker": 6.863256843262553,
+    "median_entry_spread_bps": 0.06173544509706914,
+    "mean_entry_spread_bps": 0.9248536452268119,
+    "dropped_stale": 408
+  },
+  "SOLUSDT": {
+    "trades": 847,
+    "trade_clock_edge": 72.900414877254,
+    "mid_edge": 72.04442414466419,
+    "taker_edge_after_spread": 69.42151796909545,
+    "taker_net_2bp_fees": 65.42151796909545,
+    "t_mid": 6.431060491017252,
+    "t_taker": 6.3024090296935675,
+    "median_entry_spread_bps": 1.2508599662268283,
+    "mean_entry_spread_bps": 3.8034987617583416,
+    "dropped_stale": 206
+  }
+}

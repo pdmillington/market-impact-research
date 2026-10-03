@@ -1,0 +1,200 @@
+{
+  "frozen": {
+    "unit_notional_usd": 20.0,
+    "inventory_limit": 5,
+    "latency_ms": 100.0,
+    "maker_fee_bps": 2.0,
+    "queue_model": "conservative",
+    "calibration": [
+      "2023-05-16",
+      "2023-07-31"
+    ],
+    "test": [
+      "2023-08-01",
+      "2024-03-31"
+    ],
+    "grid": {
+      "D_bps": [
+        2,
+        5,
+        10
+      ],
+      "T_s": [
+        2,
+        5
+      ],
+      "k": [
+        3,
+        6
+      ]
+    }
+  },
+  "sensitivities": {
+    "latency_250": {
+      "latency_ms": 250.0
+    },
+    "optimistic_queue": {
+      "queue_model": "proportional"
+    },
+    "inventory_2": {
+      "inventory_limit": 2
+    }
+  },
+  "runs": [
+    {
+      "unit_notional_usd": 20.0,
+      "inventory_limit": 5,
+      "latency_ms": 100.0,
+      "maker_fee_bps": 2.0,
+      "queue_model": "conservative",
+      "name": "S0",
+      "strategy": "S0"
+    },
+    {
+      "unit_notional_usd": 20.0,
+      "inventory_limit": 5,
+      "latency_ms": 100.0,
+      "maker_fee_bps": 2.0,
+      "queue_model": "conservative",
+      "name": "S1_D2_T2_k3",
+      "strategy": "S1",
+      "D_bps": 2,
+      "T_s": 2,
+      "k": 3
+    },
+    {
+      "unit_notional_usd": 20.0,
+      "inventory_limit": 5,
+      "latency_ms": 100.0,
+      "maker_fee_bps": 2.0,
+      "queue_model": "conservative",
+      "name": "S1_D2_T2_k6",
+      "strategy": "S1",
+      "D_bps": 2,
+      "T_s": 2,
+      "k": 6
+    },
+    {
+      "unit_notional_usd": 20.0,
+      "inventory_limit": 5,
+      "latency_ms": 100.0,
+      "maker_fee_bps": 2.0,
+      "queue_model": "conservative",
+      "name": "S1_D2_T5_k3",
+      "strategy": "S1",
+      "D_bps": 2,
+      "T_s": 5,
+      "k": 3
+    },
+    {
+      "unit_notional_usd": 20.0,
+      "inventory_limit": 5,
+      "latency_ms": 100.0,
+      "maker_fee_bps": 2.0,
+      "queue_model": "conservative",
+      "name": "S1_D2_T5_k6",
+      "strategy": "S1",
+      "D_bps": 2,
+      "T_s": 5,
+      "k": 6
+    },
+    {
+      "unit_notional_usd": 20.0,
+      "inventory_limit": 5,
+      "latency_ms": 100.0,
+      "maker_fee_bps": 2.0,
+      "queue_model": "conservative",
+      "name": "S1_D5_T2_k3",
+      "strategy": "S1",
+      "D_bps": 5,
+      "T_s": 2,
+      "k": 3
+    },
+    {
+      "unit_notional_usd": 20.0,
+      "inventory_limit": 5,
+      "latency_ms": 100.0,
+      "maker_fee_bps": 2.0,
+      "queue_model": "conservative",
+      "name": "S1_D5_T2_k6",
+      "strategy": "S1",
+      "D_bps": 5,
+      "T_s": 2,
+      "k": 6
+    },
+    {
+      "unit_notional_usd": 20.0,
+      "inventory_limit": 5,
+      "latency_ms": 100.0,
+      "maker_fee_bps": 2.0,
+      "queue_model": "conservative",
+      "name": "S1_D5_T5_k3",
+      "strategy": "S1",
+      "D_bps": 5,
+      "T_s": 5,
+      "k": 3
+    },
+    {
+      "unit_notional_usd": 20.0,
+      "inventory_limit": 5,
+      "latency_ms": 100.0,
+      "maker_fee_bps": 2.0,
+      "queue_model": "conservative",
+      "name": "S1_D5_T5_k6",
+      "strategy": "S1",
+      "D_bps": 5,
+      "T_s": 5,
+      "k": 6
+    },
+    {
+      "unit_notional_usd": 20.0,
+      "inventory_limit": 5,
+      "latency_ms": 100.0,
+      "maker_fee_bps": 2.0,
+      "queue_model": "conservative",
+      "name": "S1_D10_T2_k3",
+      "strategy": "S1",
+      "D_bps": 10,
+      "T_s": 2,
+      "k": 3
+    },
+    {
+      "unit_notional_usd": 20.0,
+      "inventory_limit": 5,
+      "latency_ms": 100.0,
+      "maker_fee_bps": 2.0,
+      "queue_model": "conservative",
+      "name": "S1_D10_T2_k6",
+      "strategy": "S1",
+      "D_bps": 10,
+      "T_s": 2,
+      "k": 6
+    },
+    {
+      "unit_notional_usd": 20.0,
+      "inventory_limit": 5,
+      "latency_ms": 100.0,
+      "maker_fee_bps": 2.0,
+      "queue_model": "conservative",
+      "name": "S1_D10_T5_k3",
+      "strategy": "S1",
+      "D_bps": 10,
+      "T_s": 5,
+      "k": 3
+    },
+    {
+      "unit_notional_usd": 20.0,
+      "inventory_limit": 5,
+      "latency_ms": 100.0,
+      "maker_fee_bps": 2.0,
+      "queue_model": "conservative",
+      "name": "S1_D10_T5_k6",
+      "strategy": "S1",
+      "D_bps": 10,
+      "T_s": 5,
+      "k": 6
+    }
+  ],
+  "days_requested": 77,
+  "days_simulated": 77
+}

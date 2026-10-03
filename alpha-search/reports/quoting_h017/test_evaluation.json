@@ -718,5 +718,725 @@
         "net_per_fill_bps": -2.9470571917939155
       }
     ]
+  },
+  "ETHUSDT": {
+    "summary": [
+      {
+        "run": "S0",
+        "days": 244,
+        "pnl_per_day_bps_of_unit": -101117.9624342838,
+        "t_daily": -25.444838433969753,
+        "months_positive_share": 0.0,
+        "pnl_ex_best_worst_10": -97011.32442695598,
+        "sharpe_daily_ann": -31.120833256533256,
+        "max_drawdown_bps_of_unit": 24625081.682044886,
+        "fills_per_day": 34481.66393442623,
+        "quoting_share": 0.7986888771250756,
+        "net_per_fill_bps": -2.9325140058954173,
+        "spread_per_day": -5541.286313229358,
+        "mark_per_day": -26598.47507702211,
+        "fees_per_day": 68978.00679475428,
+        "funding_per_day": -0.19424927806487016,
+        "markout_1s_bps": -0.7526062351145779,
+        "markout_5s_bps": -0.8668536764594368,
+        "markout_60s_bps": -0.8963908364224992,
+        "spread_capture_bps": -0.11782458413505556
+      },
+      {
+        "run": "S0_inventory_2",
+        "days": 244,
+        "pnl_per_day_bps_of_unit": -81353.81048315612,
+        "t_daily": -24.52676285732973,
+        "months_positive_share": 0.0,
+        "pnl_ex_best_worst_10": -77754.43641922114,
+        "sharpe_daily_ann": -29.997962030148646,
+        "max_drawdown_bps_of_unit": 19813087.432251073,
+        "fills_per_day": 27971.254098360656,
+        "quoting_share": 0.7250239240143063,
+        "net_per_fill_bps": -2.908479190710442,
+        "spread_per_day": -4720.6039559457795,
+        "mark_per_day": -20678.509059171043,
+        "fees_per_day": 55954.73642459308,
+        "funding_per_day": 0.03895655378289743,
+        "markout_1s_bps": -0.755853041575532,
+        "markout_5s_bps": -0.8534183690702546,
+        "markout_60s_bps": -0.8699425612325276,
+        "spread_capture_bps": -0.12345162261411403
+      },
+      {
+        "run": "S0_latency_250",
+        "days": 244,
+        "pnl_per_day_bps_of_unit": -73412.20754717715,
+        "t_daily": -30.673097935756946,
+        "months_positive_share": 0.0,
+        "pnl_ex_best_worst_10": -72086.98145289351,
+        "sharpe_daily_ann": -37.5153636285471,
+        "max_drawdown_bps_of_unit": 17875731.87887417,
+        "fills_per_day": 24811.44262295082,
+        "quoting_share": 0.7411230514998862,
+        "net_per_fill_bps": -2.9588044783526675,
+        "spread_per_day": -3756.0336263506642,
+        "mark_per_day": -20019.760241705226,
+        "fees_per_day": 49636.07914537784,
+        "funding_per_day": -0.3345337434210271,
+        "markout_1s_bps": -0.7725351082305689,
+        "markout_5s_bps": -0.8950547872245823,
+        "markout_60s_bps": -0.9298326314268095,
+        "spread_capture_bps": -0.11516966717560922
+      },
+      {
+        "run": "S0_optimistic_queue",
+        "days": 244,
+        "pnl_per_day_bps_of_unit": -126592.8722491504,
+        "t_daily": -28.587144540484484,
+        "months_positive_share": 0.0,
+        "pnl_ex_best_worst_10": -122411.94198801384,
+        "sharpe_daily_ann": -34.964095403219815,
+        "max_drawdown_bps_of_unit": 30818402.83030633,
+        "fills_per_day": 46578.33196721312,
+        "quoting_share": 0.7870217368937843,
+        "net_per_fill_bps": -2.717848984765281,
+        "spread_per_day": -3757.116009350381,
+        "mark_per_day": -29651.46832991494,
+        "fees_per_day": 93184.47771039883,
+        "funding_per_day": 0.18980051378327664,
+        "markout_1s_bps": -0.5416243673450561,
+        "markout_5s_bps": -0.6386928521784552,
+        "markout_60s_bps": -0.6677287004727204,
+        "spread_capture_bps": -0.05346554528091666
+      },
+      {
+        "run": "S1",
+        "days": 244,
+        "pnl_per_day_bps_of_unit": -23589.05072472752,
+        "t_daily": -29.080558419649282,
+        "months_positive_share": 0.0,
+        "pnl_ex_best_worst_10": -23123.810918628555,
+        "sharpe_daily_ann": -35.567575401719104,
+        "max_drawdown_bps_of_unit": 5747149.101952908,
+        "fills_per_day": 7844.893442622951,
+        "quoting_share": 0.2760272328713191,
+        "net_per_fill_bps": -3.0069306737250585,
+        "spread_per_day": -1290.1627540781876,
+        "mark_per_day": -6608.526950509524,
+        "fees_per_day": 15688.597469415994,
+        "funding_per_day": -1.7635507238153154,
+        "markout_1s_bps": -0.824036398266832,
+        "markout_5s_bps": -0.9562394200065957,
+        "markout_60s_bps": -0.9800567325795438,
+        "spread_capture_bps": -0.1256832132686097
+      },
+      {
+        "run": "S1_inventory_2",
+        "days": 244,
+        "pnl_per_day_bps_of_unit": -19710.5158721332,
+        "t_daily": -30.080747154187716,
+        "months_positive_share": 0.0,
+        "pnl_ex_best_worst_10": -19400.585318985886,
+        "sharpe_daily_ann": -36.79087681561523,
+        "max_drawdown_bps_of_unit": 4802241.058867939,
+        "fills_per_day": 6533.323770491803,
+        "quoting_share": 0.24783117934596996,
+        "net_per_fill_bps": -3.016920110580938,
+        "spread_per_day": -1081.1244013320036,
+        "mark_per_day": -5563.125758111521,
+        "fees_per_day": 13065.889259892981,
+        "funding_per_day": -0.376452796692716,
+        "markout_1s_bps": -0.8345271104973642,
+        "markout_5s_bps": -0.9714648871355115,
+        "markout_60s_bps": -1.0036465274828026,
+        "spread_capture_bps": -0.1273236764838487
+      },
+      {
+        "run": "S1_latency_250",
+        "days": 244,
+        "pnl_per_day_bps_of_unit": -20160.23930219172,
+        "t_daily": -31.569522340719598,
+        "months_positive_share": 0.0,
+        "pnl_ex_best_worst_10": -19925.055361160652,
+        "sharpe_daily_ann": -38.6117539438688,
+        "max_drawdown_bps_of_unit": 4911503.4387069205,
+        "fills_per_day": 6604.348360655737,
+        "quoting_share": 0.26761974411335004,
+        "net_per_fill_bps": -3.052570549169219,
+        "spread_per_day": -1080.6272695538883,
+        "mark_per_day": -5868.332645001412,
+        "fees_per_day": 13208.777998543246,
+        "funding_per_day": -2.501389093174119,
+        "markout_1s_bps": -0.8506227226050402,
+        "markout_5s_bps": -0.9870299871709971,
+        "markout_60s_bps": -1.0117289423750362,
+        "spread_capture_bps": -0.12731584386419692
+      },
+      {
+        "run": "S1_optimistic_queue",
+        "days": 244,
+        "pnl_per_day_bps_of_unit": -28838.625529139335,
+        "t_daily": -31.343057465668174,
+        "months_positive_share": 0.0,
+        "pnl_ex_best_worst_10": -28426.94421066347,
+        "sharpe_daily_ann": -38.33477141818972,
+        "max_drawdown_bps_of_unit": 7025151.998386821,
+        "fills_per_day": 10228.422131147541,
+        "quoting_share": 0.26438283799616735,
+        "net_per_fill_bps": -2.8194598501483514,
+        "spread_per_day": -902.5359943582417,
+        "mark_per_day": -7477.295563484635,
+        "fees_per_day": 20457.217790237624,
+        "funding_per_day": -1.5761810588399878,
+        "markout_1s_bps": -0.6267573652518801,
+        "markout_5s_bps": -0.7479815226141864,
+        "markout_60s_bps": -0.7749119577514206,
+        "spread_capture_bps": -0.06113653957882076
+      }
+    ],
+    "break_even_tick_bps": {
+      "S0": 5.557132504574886,
+      "S0_inventory_2": 5.492981877236827,
+      "S0_latency_250": 5.629325928502401,
+      "S0_optimistic_queue": 5.228526310383607,
+      "S1": 5.708747038621867,
+      "S1_inventory_2": 5.752645701997908,
+      "S1_latency_250": 5.768826197021679,
+      "S1_optimistic_queue": 5.427550836345199
+    },
+    "condition_1": {
+      "diff_per_day": 77528.91170955628,
+      "t_daily": 24.150905059507394,
+      "months_positive_share": 1.0,
+      "pass": true
+    },
+    "condition_2": {
+      "pass": false
+    },
+    "condition_1_latency_250": {
+      "diff_per_day": 53251.968244985415,
+      "t_daily": 29.801289866341744,
+      "months_positive_share": 1.0
+    },
+    "condition_1_optimistic_queue": {
+      "diff_per_day": 97754.24672001106,
+      "t_daily": 27.38368667609793,
+      "months_positive_share": 1.0
+    },
+    "condition_1_inventory_2": {
+      "diff_per_day": 61643.29461102293,
+      "t_daily": 22.77901272469652,
+      "months_positive_share": 1.0
+    },
+    "monthly": [
+      {
+        "month": "2023-08",
+        "run": "S0",
+        "pnl_bps_of_unit": -40891.45219438375,
+        "tick_bps": 0.05690797704298842,
+        "fills": 13965.677419354839,
+        "net_per_fill_bps": -2.8870188092178948
+      },
+      {
+        "month": "2023-08",
+        "run": "S0_inventory_2",
+        "pnl_bps_of_unit": -31846.164172033663,
+        "tick_bps": 0.05690797704298842,
+        "fills": 10994.774193548386,
+        "net_per_fill_bps": -2.8472498197090257
+      },
+      {
+        "month": "2023-08",
+        "run": "S0_latency_250",
+        "pnl_bps_of_unit": -32307.67294582019,
+        "tick_bps": 0.05690797704298842,
+        "fills": 10918.451612903225,
+        "net_per_fill_bps": -2.9185897054261964
+      },
+      {
+        "month": "2023-08",
+        "run": "S0_optimistic_queue",
+        "pnl_bps_of_unit": -59015.584454286734,
+        "tick_bps": 0.05690797704298842,
+        "fills": 22617.322580645163,
+        "net_per_fill_bps": -2.549036563081885
+      },
+      {
+        "month": "2023-08",
+        "run": "S1",
+        "pnl_bps_of_unit": -8702.955704466533,
+        "tick_bps": 0.05690797704298842,
+        "fills": 2872.483870967742,
+        "net_per_fill_bps": -3.0039169829013925
+      },
+      {
+        "month": "2023-08",
+        "run": "S1_inventory_2",
+        "pnl_bps_of_unit": -7462.780279177128,
+        "tick_bps": 0.05690797704298842,
+        "fills": 2441.064516129032,
+        "net_per_fill_bps": -3.037047132441306
+      },
+      {
+        "month": "2023-08",
+        "run": "S1_latency_250",
+        "pnl_bps_of_unit": -7830.317442140151,
+        "tick_bps": 0.05690797704298842,
+        "fills": 2569.935483870968,
+        "net_per_fill_bps": -3.036215836818238
+      },
+      {
+        "month": "2023-08",
+        "run": "S1_optimistic_queue",
+        "pnl_bps_of_unit": -11310.283394770617,
+        "tick_bps": 0.05690797704298842,
+        "fills": 4149.225806451613,
+        "net_per_fill_bps": -2.652809321224713
+      },
+      {
+        "month": "2023-09",
+        "run": "S0",
+        "pnl_bps_of_unit": -46874.06914355731,
+        "tick_bps": 0.06170222174757451,
+        "fills": 16429.466666666667,
+        "net_per_fill_bps": -2.8411798635492405
+      },
+      {
+        "month": "2023-09",
+        "run": "S0_inventory_2",
+        "pnl_bps_of_unit": -36990.77672280395,
+        "tick_bps": 0.06170222174757451,
+        "fills": 13101.266666666666,
+        "net_per_fill_bps": -2.809861996180815
+      },
+      {
+        "month": "2023-09",
+        "run": "S0_latency_250",
+        "pnl_bps_of_unit": -36721.81473246431,
+        "tick_bps": 0.06170222174757451,
+        "fills": 12755.133333333333,
+        "net_per_fill_bps": -2.8646026444789805
+      },
+      {
+        "month": "2023-09",
+        "run": "S0_optimistic_queue",
+        "pnl_bps_of_unit": -62690.39993681086,
+        "tick_bps": 0.06170222174757451,
+        "fills": 23881.833333333332,
+        "net_per_fill_bps": -2.6050653514282005
+      },
+      {
+        "month": "2023-09",
+        "run": "S1",
+        "pnl_bps_of_unit": -11388.433167740348,
+        "tick_bps": 0.06170222174757451,
+        "fills": 3818.5666666666666,
+        "net_per_fill_bps": -2.9903431342612996
+      },
+      {
+        "month": "2023-09",
+        "run": "S1_inventory_2",
+        "pnl_bps_of_unit": -9658.453278164809,
+        "tick_bps": 0.06170222174757451,
+        "fills": 3228.633333333333,
+        "net_per_fill_bps": -2.992626932561392
+      },
+      {
+        "month": "2023-09",
+        "run": "S1_latency_250",
+        "pnl_bps_of_unit": -10184.044715322823,
+        "tick_bps": 0.06170222174757451,
+        "fills": 3370.9333333333334,
+        "net_per_fill_bps": -3.032911400309975
+      },
+      {
+        "month": "2023-09",
+        "run": "S1_optimistic_queue",
+        "pnl_bps_of_unit": -14596.365297715849,
+        "tick_bps": 0.06170222174757451,
+        "fills": 5253.366666666667,
+        "net_per_fill_bps": -2.7764336101038043
+      },
+      {
+        "month": "2023-10",
+        "run": "S0",
+        "pnl_bps_of_unit": -77976.40156981235,
+        "tick_bps": 0.060545245277484665,
+        "fills": 26995.8064516129,
+        "net_per_fill_bps": -2.859816151940919
+      },
+      {
+        "month": "2023-10",
+        "run": "S0_inventory_2",
+        "pnl_bps_of_unit": -61673.763104904945,
+        "tick_bps": 0.060545245277484665,
+        "fills": 21571.225806451614,
+        "net_per_fill_bps": -2.8367856288700146
+      },
+      {
+        "month": "2023-10",
+        "run": "S0_latency_250",
+        "pnl_bps_of_unit": -58728.79377223837,
+        "tick_bps": 0.060545245277484665,
+        "fills": 20061.677419354837,
+        "net_per_fill_bps": -2.897158408961193
+      },
+      {
+        "month": "2023-10",
+        "run": "S0_optimistic_queue",
+        "pnl_bps_of_unit": -94433.95038044764,
+        "tick_bps": 0.060545245277484665,
+        "fills": 34770.45161290323,
+        "net_per_fill_bps": -2.6838905737404386
+      },
+      {
+        "month": "2023-10",
+        "run": "S1",
+        "pnl_bps_of_unit": -17981.368482451137,
+        "tick_bps": 0.060545245277484665,
+        "fills": 6075.387096774193,
+        "net_per_fill_bps": -2.9636662262490394
+      },
+      {
+        "month": "2023-10",
+        "run": "S1_inventory_2",
+        "pnl_bps_of_unit": -15292.045825714486,
+        "tick_bps": 0.060545245277484665,
+        "fills": 5117.193548387097,
+        "net_per_fill_bps": -2.9826086102968277
+      },
+      {
+        "month": "2023-10",
+        "run": "S1_latency_250",
+        "pnl_bps_of_unit": -15817.60256589465,
+        "tick_bps": 0.060545245277484665,
+        "fills": 5206.677419354839,
+        "net_per_fill_bps": -3.0328483140233202
+      },
+      {
+        "month": "2023-10",
+        "run": "S1_optimistic_queue",
+        "pnl_bps_of_unit": -21131.010392278688,
+        "tick_bps": 0.060545245277484665,
+        "fills": 7470.451612903225,
+        "net_per_fill_bps": -2.8264556355193933
+      },
+      {
+        "month": "2023-11",
+        "run": "S0",
+        "pnl_bps_of_unit": -116730.57484683474,
+        "tick_bps": 0.05046001806135912,
+        "fills": 41213.3,
+        "net_per_fill_bps": -2.827163711968288
+      },
+      {
+        "month": "2023-11",
+        "run": "S0_inventory_2",
+        "pnl_bps_of_unit": -94055.5421496681,
+        "tick_bps": 0.05046001806135912,
+        "fills": 33388.53333333333,
+        "net_per_fill_bps": -2.8145034348870914
+      },
+      {
+        "month": "2023-11",
+        "run": "S0_latency_250",
+        "pnl_bps_of_unit": -85031.90529160273,
+        "tick_bps": 0.05046001806135912,
+        "fills": 29836.6,
+        "net_per_fill_bps": -2.846091789636114
+      },
+      {
+        "month": "2023-11",
+        "run": "S0_optimistic_queue",
+        "pnl_bps_of_unit": -139173.8367761896,
+        "tick_bps": 0.05046001806135912,
+        "fills": 51976.6,
+        "net_per_fill_bps": -2.667795144258899
+      },
+      {
+        "month": "2023-11",
+        "run": "S1",
+        "pnl_bps_of_unit": -29948.341880634012,
+        "tick_bps": 0.05046001806135912,
+        "fills": 10210.466666666667,
+        "net_per_fill_bps": -2.9358778652889885
+      },
+      {
+        "month": "2023-11",
+        "run": "S1_inventory_2",
+        "pnl_bps_of_unit": -24656.99193972267,
+        "tick_bps": 0.05046001806135912,
+        "fills": 8382.333333333334,
+        "net_per_fill_bps": -2.9448692490326205
+      },
+      {
+        "month": "2023-11",
+        "run": "S1_latency_250",
+        "pnl_bps_of_unit": -25210.290833810912,
+        "tick_bps": 0.05046001806135912,
+        "fills": 8547.4,
+        "net_per_fill_bps": -2.9504610154392608
+      },
+      {
+        "month": "2023-11",
+        "run": "S1_optimistic_queue",
+        "pnl_bps_of_unit": -34990.90232975942,
+        "tick_bps": 0.05046001806135912,
+        "fills": 12544.666666666666,
+        "net_per_fill_bps": -2.784525366124671
+      },
+      {
+        "month": "2023-12",
+        "run": "S0",
+        "pnl_bps_of_unit": -107263.31788764992,
+        "tick_bps": 0.044352560853933645,
+        "fills": 36851.54838709677,
+        "net_per_fill_bps": -2.9034689561330738
+      },
+      {
+        "month": "2023-12",
+        "run": "S0_inventory_2",
+        "pnl_bps_of_unit": -85944.01168072959,
+        "tick_bps": 0.044352560853933645,
+        "fills": 29809.0,
+        "net_per_fill_bps": -2.8745146889898257
+      },
+      {
+        "month": "2023-12",
+        "run": "S0_latency_250",
+        "pnl_bps_of_unit": -80829.70914645551,
+        "tick_bps": 0.044352560853933645,
+        "fills": 27416.25806451613,
+        "net_per_fill_bps": -2.942165775026159
+      },
+      {
+        "month": "2023-12",
+        "run": "S0_optimistic_queue",
+        "pnl_bps_of_unit": -135468.83748357135,
+        "tick_bps": 0.044352560853933645,
+        "fills": 50327.354838709674,
+        "net_per_fill_bps": -2.681568026047847
+      },
+      {
+        "month": "2023-12",
+        "run": "S1",
+        "pnl_bps_of_unit": -27435.959161415984,
+        "tick_bps": 0.044352560853933645,
+        "fills": 9252.387096774193,
+        "net_per_fill_bps": -2.9655436825996584
+      },
+      {
+        "month": "2023-12",
+        "run": "S1_inventory_2",
+        "pnl_bps_of_unit": -23176.799841581214,
+        "tick_bps": 0.044352560853933645,
+        "fills": 7786.1612903225805,
+        "net_per_fill_bps": -2.9768184916928053
+      },
+      {
+        "month": "2023-12",
+        "run": "S1_latency_250",
+        "pnl_bps_of_unit": -23784.235934081193,
+        "tick_bps": 0.044352560853933645,
+        "fills": 7873.645161290323,
+        "net_per_fill_bps": -3.0214413295438245
+      },
+      {
+        "month": "2023-12",
+        "run": "S1_optimistic_queue",
+        "pnl_bps_of_unit": -33971.44478930125,
+        "tick_bps": 0.044352560853933645,
+        "fills": 12215.516129032258,
+        "net_per_fill_bps": -2.7766270835052955
+      },
+      {
+        "month": "2024-01",
+        "run": "S0",
+        "pnl_bps_of_unit": -125354.4130456462,
+        "tick_bps": 0.042332748430985945,
+        "fills": 42527.25806451613,
+        "net_per_fill_bps": -2.9249183026668963
+      },
+      {
+        "month": "2024-01",
+        "run": "S0_inventory_2",
+        "pnl_bps_of_unit": -101252.2653668272,
+        "tick_bps": 0.042332748430985945,
+        "fills": 34650.096774193546,
+        "net_per_fill_bps": -2.901080598990858
+      },
+      {
+        "month": "2024-01",
+        "run": "S0_latency_250",
+        "pnl_bps_of_unit": -90546.19984135489,
+        "tick_bps": 0.042332748430985945,
+        "fills": 30485.41935483871,
+        "net_per_fill_bps": -2.947881912117418
+      },
+      {
+        "month": "2024-01",
+        "run": "S0_optimistic_queue",
+        "pnl_bps_of_unit": -158471.82357917793,
+        "tick_bps": 0.042332748430985945,
+        "fills": 58233.903225806454,
+        "net_per_fill_bps": -2.6960842275020953
+      },
+      {
+        "month": "2024-01",
+        "run": "S1",
+        "pnl_bps_of_unit": -30736.499190137354,
+        "tick_bps": 0.042332748430985945,
+        "fills": 10118.967741935483,
+        "net_per_fill_bps": -3.0318303040867325
+      },
+      {
+        "month": "2024-01",
+        "run": "S1_inventory_2",
+        "pnl_bps_of_unit": -25530.9805484508,
+        "tick_bps": 0.042332748430985945,
+        "fills": 8415.09677419355,
+        "net_per_fill_bps": -3.0307106864097633
+      },
+      {
+        "month": "2024-01",
+        "run": "S1_latency_250",
+        "pnl_bps_of_unit": -26287.20807572579,
+        "tick_bps": 0.042332748430985945,
+        "fills": 8484.129032258064,
+        "net_per_fill_bps": -3.081772445221906
+      },
+      {
+        "month": "2024-01",
+        "run": "S1_optimistic_queue",
+        "pnl_bps_of_unit": -38234.309581176094,
+        "tick_bps": 0.042332748430985945,
+        "fills": 13523.774193548386,
+        "net_per_fill_bps": -2.815936533079134
+      },
+      {
+        "month": "2024-02",
+        "run": "S0",
+        "pnl_bps_of_unit": -109862.14629596447,
+        "tick_bps": 0.037224873825889085,
+        "fills": 37284.206896551725,
+        "net_per_fill_bps": -2.927448566425422
+      },
+      {
+        "month": "2024-02",
+        "run": "S0_inventory_2",
+        "pnl_bps_of_unit": -88622.03631977805,
+        "tick_bps": 0.037224873825889085,
+        "fills": 30383.0,
+        "net_per_fill_bps": -2.901573869596273
+      },
+      {
+        "month": "2024-02",
+        "run": "S0_latency_250",
+        "pnl_bps_of_unit": -81113.00827552725,
+        "tick_bps": 0.037224873825889085,
+        "fills": 27191.172413793105,
+        "net_per_fill_bps": -2.9639280881095402
+      },
+      {
+        "month": "2024-02",
+        "run": "S0_optimistic_queue",
+        "pnl_bps_of_unit": -146264.40587963315,
+        "tick_bps": 0.037224873825889085,
+        "fills": 54465.793103448275,
+        "net_per_fill_bps": -2.662981594159547
+      },
+      {
+        "month": "2024-02",
+        "run": "S1",
+        "pnl_bps_of_unit": -23142.424444205626,
+        "tick_bps": 0.037224873825889085,
+        "fills": 7657.0344827586205,
+        "net_per_fill_bps": -3.0350349196675586
+      },
+      {
+        "month": "2024-02",
+        "run": "S1_inventory_2",
+        "pnl_bps_of_unit": -19415.5532555725,
+        "tick_bps": 0.037224873825889085,
+        "fills": 6403.379310344828,
+        "net_per_fill_bps": -3.036186407061505
+      },
+      {
+        "month": "2024-02",
+        "run": "S1_latency_250",
+        "pnl_bps_of_unit": -19999.91271633729,
+        "tick_bps": 0.037224873825889085,
+        "fills": 6563.827586206897,
+        "net_per_fill_bps": -3.0694352371587716
+      },
+      {
+        "month": "2024-02",
+        "run": "S1_optimistic_queue",
+        "pnl_bps_of_unit": -30155.729695635142,
+        "tick_bps": 0.037224873825889085,
+        "fills": 10864.586206896553,
+        "net_per_fill_bps": -2.776908926176472
+      },
+      {
+        "month": "2024-03",
+        "run": "S0",
+        "pnl_bps_of_unit": -183309.29503381476,
+        "tick_bps": 0.02767625132766834,
+        "fills": 60401.67741935484,
+        "net_per_fill_bps": -3.007019779475942
+      },
+      {
+        "month": "2024-03",
+        "run": "S0_inventory_2",
+        "pnl_bps_of_unit": -149893.50981880684,
+        "tick_bps": 0.02767625132766834,
+        "fills": 49722.8064516129,
+        "net_per_fill_bps": -2.986119336858355
+      },
+      {
+        "month": "2024-03",
+        "run": "S0_latency_250",
+        "pnl_bps_of_unit": -121706.6501263543,
+        "tick_bps": 0.02767625132766834,
+        "fills": 39753.54838709677,
+        "net_per_fill_bps": -3.041259143997194
+      },
+      {
+        "month": "2024-03",
+        "run": "S0_optimistic_queue",
+        "pnl_bps_of_unit": -216837.7381958493,
+        "tick_bps": 0.02767625132766834,
+        "fills": 76304.25806451614,
+        "net_per_fill_bps": -2.811453434062965
+      },
+      {
+        "month": "2024-03",
+        "run": "S1",
+        "pnl_bps_of_unit": -39159.17928412,
+        "tick_bps": 0.02767625132766834,
+        "fills": 12688.161290322581,
+        "net_per_fill_bps": -3.068104955498678
+      },
+      {
+        "month": "2024-03",
+        "run": "S1_inventory_2",
+        "pnl_bps_of_unit": -32306.79582289166,
+        "tick_bps": 0.02767625132766834,
+        "fills": 10437.387096774193,
+        "net_per_fill_bps": -3.079516087022344
+      },
+      {
+        "month": "2024-03",
+        "run": "S1_latency_250",
+        "pnl_bps_of_unit": -31999.050643028742,
+        "tick_bps": 0.02767625132766834,
+        "fills": 10174.0,
+        "net_per_fill_bps": -3.1237748987905025
+      },
+      {
+        "month": "2024-03",
+        "run": "S1_optimistic_queue",
+        "pnl_bps_of_unit": -46142.96600738693,
+        "tick_bps": 0.02767625132766834,
+        "fills": 15761.064516129032,
+        "net_per_fill_bps": -2.904432343706889
+      }
+    ]
   }
 }

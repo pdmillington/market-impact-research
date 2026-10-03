@@ -6,6 +6,29 @@ under `tools/`.
 
 ## Active research notebooks
 
+### `TopStrategiesWorkbench.ipynb`
+
+Hands-on view of the surviving results (October 2026):
+
+- **C-006**, the confirmed 5-minute pretrend reversal;
+- **C-007**, stress reversion (BTC and ETH only);
+- **H-018**, passive execution.
+
+A controls cell at the top sets instrument, bar size, model, horizon, tail,
+fees and trade size. The rest computes live from saved outputs:
+
+- the per-trade distribution;
+- cumulative edge with and without the best days;
+- decay by year and rolling;
+- a bar size × model robustness grid;
+- clustering;
+- indicative fees, spread and slippage;
+- the C-007 and H-018 tables.
+
+The defaults are the registered cells. Anything found by browsing is a lead for
+a new registration, not a result. Rebuild with
+`scripts/build_top_strategies_notebook.py`.
+
 ### `PBScaleFreeImpactWorkbench.ipynb`
 
 This is the canonical impact notebook for both alpha research and conditioning

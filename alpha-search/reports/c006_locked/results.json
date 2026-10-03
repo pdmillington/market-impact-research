@@ -1,0 +1,69 @@
+{
+  "rule": "reject if pooled mean gross < 2 bps, or fewer than 2 of 3 instruments positive",
+  "per_symbol": {
+    "BTCUSDT": {
+      "trades": 651,
+      "days": 27,
+      "trades_per_day": 24.11111111111111,
+      "gross_bps": 0.2180454435539213,
+      "gross_log_bps": 0.2603895143769008,
+      "net_bps": -3.781954556446079,
+      "t": 3.5890546964372225,
+      "ordinary_gross_bps": -12.82802939560177,
+      "best10_share": 46.456911737139414,
+      "months_positive_share": 0.6666666666666666,
+      "by_year": {
+        "2026": 0.21804544355392055
+      },
+      "years_positive": 1,
+      "mean_2023_24_bps": null,
+      "mean_2025_26_bps": 0.2180454435539213
+    },
+    "ETHUSDT": {
+      "trades": 962,
+      "days": 45,
+      "trades_per_day": 21.377777777777776,
+      "gross_bps": 4.917670616820769,
+      "gross_log_bps": 5.140407436839424,
+      "net_bps": 0.9176706168207689,
+      "t": 5.284427612203774,
+      "ordinary_gross_bps": -6.174014989520893,
+      "best10_share": 2.041444335878184,
+      "months_positive_share": 1.0,
+      "by_year": {
+        "2026": 4.917670616820768
+      },
+      "years_positive": 1,
+      "mean_2023_24_bps": null,
+      "mean_2025_26_bps": 4.917670616820769
+    },
+    "SOLUSDT": {
+      "trades": 288,
+      "days": 25,
+      "trades_per_day": 11.52,
+      "gross_bps": 28.292586238479387,
+      "gross_log_bps": 27.699676886643367,
+      "net_bps": 24.292586238479387,
+      "t": 4.040607981725507,
+      "ordinary_gross_bps": -14.564766928190384,
+      "best10_share": 1.2520330620121418,
+      "months_positive_share": 1.0,
+      "by_year": {
+        "2026": 28.292586238479384
+      },
+      "years_positive": 1,
+      "mean_2023_24_bps": null,
+      "mean_2025_26_bps": 28.292586238479387
+    }
+  },
+  "pooled": {
+    "instrument_days": 97,
+    "mean_gross_bps": 28.798738487869407,
+    "net_bps": 24.798738487869407,
+    "t": 7.4918072622983685
+  },
+  "instruments_positive": 3,
+  "reject_a_pooled_below_threshold": false,
+  "reject_b_breadth": false,
+  "verdict": "NOT REJECTED"
+}

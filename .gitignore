@@ -53,3 +53,6 @@ htmlcov/
 .env
 .env.*
 !.env.example
+
+# Large regenerable C-006 trade table (rebuild with alpha-search/scripts/run_c006.py)
+/alpha-search/reports/c006/trades.parquet

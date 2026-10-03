@@ -164,6 +164,33 @@ Transformation used with these features:
 All window features are known at $t$ (strictly prior flow), and the decision is
 assumed to execute after $t$ with the entry delay registered in the hypothesis.
 
+## Execution-signature features (hourly; E-005 / H-013)
+
+Built by `scripts/build_signature_features.py` from reconstructed events
+(timestamp_direction_v1). For event $e$:
+
+- aggressor sign $s_e$;
+- notional $n_e=q_e\,\mathrm{vwap}_e$;
+- price levels $L_e$;
+- side-aligned sweep depth $d_e=s_e\,10^4\ln(p^{\mathrm{last}}_e/p^{\mathrm{first}}_e)\ge0$ bps.
+
+Sums run over events in the window $[T-W,T)$, with $W\in\{8\,\mathrm h,24\,\mathrm h\}$.
+Each feature is also stored as `z30` against its previous 720 hourly values
+(at least 360).
+
+| Name | Definition | Interpretation |
+|---|---|---|
+| `ml_share_W` | $\sum_{L_e\ge2}n_e\,/\,\sum n_e$ | Urgency: the share of aggressive notional that walked through more than one price level. Unsigned. |
+| `ml_imbalance_W` | $\sum_{L_e\ge2}s_e n_e\,/\,\sum_{L_e\ge2}n_e$ | One-sidedness of urgent (multi-level) flow, in $[-1,1]$. |
+| `sweep_pressure_W` | $\sum_{L_e\ge2}s_e d_e\,/\,N_W = \sum_{L_e\ge2}10^4\ln(p^{\mathrm{last}}_e/p^{\mathrm{first}}_e)\,/\,N_W$, with $N_W$ the number of events | Signed depth taken per event: H-014's side-aligned sweep depth $d_e\ge0$, signed by the aggressor and aggregated. |
+| `absorption_imbalance_W` | $(R^{-}_W-R^{+}_W)/(R^{-}_W+R^{+}_W)$, where $R^{\mp}_W$ counts level runs by sellers (−) or buyers (+) that first reach $\ge3$ hits in the high absorption tercile inside the window (frozen E-003 cuts); 0 if there are no runs | Passive interest. Positive means sellers repeatedly hit a bid that held (a large passive buyer). |
+| `burst_skew_W` | $(N^{(10)}_W-N^{(1)}_W)/N_W$, with $N^{(k)}$ the events whose signed 5 s burst intensity is in decile $k$ (frozen E-002 cuts) | One-sided self-excitation. Event-count share stands in for time share. |
+| `large_imbalance_W` | $\sum_{n_e\ge\$1\mathrm m}s_e n_e\,/\,\sum n_e$ | Large-trader footprint. |
+| `flow_imbalance_W` | $\sum s_e n_e\,/\,\sum n_e$ | Plain signed flow (control; the `window_imbalance_ratio_W` analogue in notional). |
+| `own_return_W` | $\ln(P_T/P_{T-W})$, $P$ = last event price of the hour | Conditioning variable for E-005 (with `flow_imbalance_W`). |
+
+All are known at $T$. The locked months (2026-06 onward) are not built.
+
 ## Using the catalogue in an experiment
 
 The generic conditioner runner accepts one `primary_feature` and a list of

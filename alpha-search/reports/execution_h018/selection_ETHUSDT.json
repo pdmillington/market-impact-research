@@ -1,0 +1,72 @@
+{
+  "symbol": "ETHUSDT",
+  "run": "E2_m10_T5_k12",
+  "m_ticks": 10,
+  "T_s": 5,
+  "k": 12,
+  "calibration_mean_is_bps": 3.790765075035712,
+  "calibration_orders": 914,
+  "frozen_at": "2026-09-30T22:49:27+00:00",
+  "grid_ranking": [
+    {
+      "run": "E2_m10_T5_k12",
+      "mean_is_bps": 3.790765075035712,
+      "orders": 914
+    },
+    {
+      "run": "E2_m10_T2_k12",
+      "mean_is_bps": 3.790765075035712,
+      "orders": 914
+    },
+    {
+      "run": "E2_m5_T5_k12",
+      "mean_is_bps": 3.81467571590778,
+      "orders": 914
+    },
+    {
+      "run": "E2_m5_T2_k12",
+      "mean_is_bps": 3.81467571590778,
+      "orders": 914
+    },
+    {
+      "run": "E2_m2_T5_k12",
+      "mean_is_bps": 3.841718030413048,
+      "orders": 914
+    },
+    {
+      "run": "E2_m2_T2_k12",
+      "mean_is_bps": 3.841718030413048,
+      "orders": 914
+    },
+    {
+      "run": "E2_m10_T2_k6",
+      "mean_is_bps": 4.0112175019789404,
+      "orders": 914
+    },
+    {
+      "run": "E2_m10_T5_k6",
+      "mean_is_bps": 4.011217501978941,
+      "orders": 914
+    },
+    {
+      "run": "E2_m5_T2_k6",
+      "mean_is_bps": 4.033991685673354,
+      "orders": 914
+    },
+    {
+      "run": "E2_m5_T5_k6",
+      "mean_is_bps": 4.033991685673355,
+      "orders": 914
+    },
+    {
+      "run": "E2_m2_T2_k6",
+      "mean_is_bps": 4.045964588482375,
+      "orders": 914
+    },
+    {
+      "run": "E2_m2_T5_k6",
+      "mean_is_bps": 4.045964588482376,
+      "orders": 914
+    }
+  ]
+}

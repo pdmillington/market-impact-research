@@ -8,8 +8,13 @@ Implementation choices (recorded in the ledger run notes):
 - minimum samples: rolling z-scores need 360 of 720 hourly values; the funding z
   needs 20 settlements in its 30-day window; the |C| threshold uses the
   trailing 365 days *excluding* the current hour and needs 180 days;
-- an hour with no kline close has zero position (no carry through gaps);
+- an hour with no kline close has zero target position;
 - the funding settlement at exactly 2026-06-01 00:00 is outside the data cut.
+
+P&L (v2, 2026-09-30): linear-perp accounting via `alpha_search.perp_pnl`
+(quantity × price change, funding on notional at settlement, costs on the trade
+from drifted notional). v1 used log returns; its outputs are kept as
+`v1_log_returns_*`.
 """
 
 from __future__ import annotations
@@ -26,7 +31,9 @@ import polars as pl
 
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "shared-methodology" / "src"))
+sys.path.insert(0, str(REPO / "alpha-search" / "src"))
 
+from alpha_search.perp_pnl import book_pnl  # noqa: E402
 from crypto_market_data.series import DATASETS  # noqa: E402
 
 
@@ -111,8 +118,6 @@ def symbol_panel(root: Path, symbol: str, member: np.ndarray) -> dict:
     close = on_grid(root, "perp_klines_1h", symbol)
     premium = on_grid(root, "premium_index_1h", symbol)
     log_close = np.log(close)
-    ret_next = np.full(N_HOURS, np.nan)
-    ret_next[:-1] = log_close[1:] - log_close[:-1]
     ret_prev = np.full(N_HOURS, np.nan)
     ret_prev[1:] = log_close[1:] - log_close[:-1]
     r24 = np.full(N_HOURS, np.nan)
@@ -124,7 +129,9 @@ def symbol_panel(root: Path, symbol: str, member: np.ndarray) -> dict:
     vol = rolling(ret_prev, Z_WINDOW, Z_MIN, "std") * np.sqrt(8_760)
     scale = np.where(vol > 0, np.minimum(VOL_TARGET / np.where(vol > 0, vol, np.nan), SCALE_CAP), np.nan)
     tradable = member & np.isfinite(close) & np.isfinite(scale)
-    out = {"ret_next": np.nan_to_num(ret_next), "funding_next": np.nan_to_num(paid), "tradable": tradable,
+    simple_next = np.full(N_HOURS, np.nan)
+    simple_next[:-1] = close[1:] / close[:-1] - 1.0
+    out = {"close": close, "simple_next": np.nan_to_num(simple_next), "funding_next": np.nan_to_num(paid), "tradable": tradable,
            "scale": np.nan_to_num(scale), "C": {}, "pos": {}}
     for name, parts in VARIANTS.items():
         stack = np.vstack([z[p] for p in parts])
@@ -139,11 +146,6 @@ def symbol_panel(root: Path, symbol: str, member: np.ndarray) -> dict:
         out["C"][name] = c
         out["pos"][name] = np.where(tradable, tranche * out["scale"], 0.0)
     return out
-
-
-def hourly_pnl(pos: np.ndarray, ret: np.ndarray, funding: np.ndarray, cost_bps: float) -> np.ndarray:
-    change = np.abs(np.diff(np.concatenate([[0.0], pos])))
-    return pos * ret - pos * funding - cost_bps * 1e-4 * change
 
 
 def daily(values: np.ndarray) -> pl.DataFrame:
@@ -203,21 +205,28 @@ def main() -> None:
         rank_half[symbol] = low
         print(symbol, flush=True)
 
-    n_active = np.sum([p["tradable"] for p in panels.values()], axis=0)
+    syms = list(panels)
+    close = np.vstack([panels[s]["close"] for s in syms])
+    fund = np.vstack([panels[s]["funding_next"] for s in syms])
+    tradable = np.vstack([panels[s]["tradable"] for s in syms])
+    every_hour = np.ones(N_HOURS, bool)
+    n_active = tradable.sum(axis=0)
     denom = np.where(n_active > 0, n_active, np.nan)
-    market = np.nansum([np.where(p["tradable"], p["ret_next"], 0.0) for p in panels.values()], axis=0) / denom
+    market = np.where(tradable, np.vstack([panels[s]["simple_next"] for s in syms]), 0.0).sum(axis=0) / denom
     market_daily = daily(np.nan_to_num(market))
+    test_mask = T >= utc_ms(TEST[0])
 
-    results: dict = {"n_symbols": len(symbols), "mean_active_members_test": float(np.nanmean(
-        np.where((T >= utc_ms(TEST[0])), n_active, np.nan)))}
+    results: dict = {"pnl_model": "linear perp v2 (alpha_search.perp_pnl)", "n_symbols": len(symbols),
+                     "mean_active_members_test": float(np.nanmean(np.where(test_mask, n_active, np.nan)))}
     daily_frames = {}
     for variant in VARIANTS:
+        position = np.vstack([panels[s]["pos"][variant] for s in syms])
+        # Portfolio: equal weight across tradable members, re-targeted every hour.
+        book = book_pnl(np.nan_to_num(position / denom), close, fund, every_hour)
         for cost_name, cost in COSTS_BPS.items():
             if variant != "full" and cost_name != "gate_6":
                 continue
-            per_symbol = {s: hourly_pnl(p["pos"][variant], p["ret_next"], p["funding_next"], cost) for s, p in panels.items()}
-            portfolio = np.nansum(list(per_symbol.values()), axis=0) / denom
-            d = daily(np.nan_to_num(portfolio))
+            d = daily(book.net(cost))
             key = f"{variant}_{cost_name}"
             daily_frames[key] = d
             test, current = window(d, TEST), window(d, CURRENT)
@@ -229,29 +238,31 @@ def main() -> None:
                 entry["alpha_daily"] = alpha
                 entry["alpha_ann_pct"] = alpha * 365 * 100
                 entry["alpha_nw_t"] = alpha_t
-                test_mask = (T >= utc_ms(TEST[0]))
+                # Breadth: each instrument's own unscaled book, net of costs.
+                own = book_pnl(position, close, fund, every_hour)
+                own_net = own.price + own.funding - cost * 1e-4 * own.traded
                 breadth = []
-                for s, pnl in per_symbol.items():
-                    months = panels[s]["tradable"][test_mask].sum() / (24 * 30.4)
+                for i, s in enumerate(syms):
+                    months = tradable[i, test_mask].sum() / (24 * 30.4)
                     if months >= 12:
-                        breadth.append({"symbol": s, "member_months": months, "net": float(pnl[test_mask].sum())})
+                        breadth.append({"symbol": s, "member_months": months, "net": float(own_net[i, test_mask].sum())})
                 entry["breadth"] = {"instruments": len(breadth),
                                     "positive_share": float(np.mean([b["net"] > 0 for b in breadth]))}
                 pl.DataFrame(breadth).write_csv(out / "breadth_full_gate_6.csv")
             if key == "full_gross":
                 halves = {}
                 for label, pick in (("low_volume", True), ("high_volume", False)):
-                    pnls = [np.where(rank_half[s] == pick, per_symbol[s], 0.0) for s in symbols]
-                    counts = np.sum([p["tradable"] & (rank_half[s] == pick) for s, p in panels.items()], axis=0)
-                    halves[label] = np.nansum(pnls, axis=0) / np.where(counts > 0, counts, np.nan)
-                diff = daily(np.nan_to_num(halves["low_volume"] - halves["high_volume"]))
+                    in_half = np.vstack([rank_half[s] == pick for s in syms]) & tradable
+                    count = in_half.sum(axis=0)
+                    target = np.where(in_half, position, 0.0) / np.where(count > 0, count, np.nan)
+                    halves[label] = book_pnl(np.nan_to_num(target), close, fund, every_hour).net(0.0)
+                diff = daily(halves["low_volume"] - halves["high_volume"])
                 results["S1_low_minus_high_volume_gross"] = {"test": stats(window(diff, TEST)),
                                                              "current": stats(window(diff, CURRENT))}
             results[key] = entry
             print(key, json.dumps(entry["test"]), flush=True)
 
-    # S2: cross-sectional, dollar-neutral quintiles.
-    syms = list(panels)
+    # S2: cross-sectional, dollar-neutral quintiles, with a saved decomposition.
     C = np.vstack([np.where(panels[s]["tradable"], panels[s]["C"]["full"], np.nan) for s in syms])
     scale = np.vstack([panels[s]["scale"] for s in syms])
     weights = np.zeros_like(C)
@@ -264,13 +275,24 @@ def main() -> None:
         weights[long, h] = scale[long, h] / scale[long, h].sum()
         weights[short, h] = -scale[short, h] / scale[short, h].sum()
     held = np.vstack([pl.Series(w).rolling_mean(HOLD_HOURS, min_samples=1).to_numpy() for w in weights])
-    held = np.where(np.vstack([panels[s]["tradable"] for s in syms]), held, 0.0)
-    ret = np.vstack([panels[s]["ret_next"] for s in syms])
-    fund = np.vstack([panels[s]["funding_next"] for s in syms])
-    change = np.abs(np.diff(np.concatenate([np.zeros((len(syms), 1)), held], axis=1), axis=1)).sum(axis=0)
-    xs = (held * ret).sum(axis=0) - (held * fund).sum(axis=0) - COSTS_BPS["gate_6"] * 1e-4 * change
-    xs_daily = daily(xs)
-    results["S2_cross_sectional_gate_6"] = {"test": stats(window(xs_daily, TEST)), "current": stats(window(xs_daily, CURRENT))}
+    held = np.where(tradable, held, 0.0)
+    s2 = book_pnl(held, close, fund, every_hour)
+    s2_legs = {"price_long": s2.leg("price", 1), "price_short": s2.leg("price", -1),
+               "funding_long": s2.leg("funding", 1), "funding_short": s2.leg("funding", -1),
+               "cost_gate_6": -COSTS_BPS["gate_6"] * 1e-4 * s2.traded.sum(axis=0)}
+    s2_legs["gross"] = s2_legs["price_long"] + s2_legs["price_short"] + s2_legs["funding_long"] + s2_legs["funding_short"]
+    s2_legs["net_gate_6"] = s2_legs["gross"] + s2_legs["cost_gate_6"]
+    s2_daily = {k: daily(v) for k, v in s2_legs.items()}
+    results["S2_cross_sectional_gate_6"] = {"test": stats(window(s2_daily["net_gate_6"], TEST)),
+                                            "current": stats(window(s2_daily["net_gate_6"], CURRENT))}
+    results["S2_decomposition"] = {
+        "note": "Reported after the H-019 verdict (the post-hoc diagnostic behind lead L-H019a), saved reproducibly from v2.",
+        "legs_test": {k: stats(window(v, TEST)) for k, v in s2_daily.items()},
+        "turnover_per_day_test": float(s2.traded.sum(axis=0)[test_mask].mean() * 24),
+        "gross_exposure_test": float(np.abs(s2.notional).sum(axis=0)[test_mask].mean()),
+    }
+    pl.DataFrame({"date": s2_daily["gross"]["date"]} | {k: v["v"] for k, v in s2_daily.items()}).write_parquet(out / "s2_decomposition_daily.parquet")
+    print("S2", json.dumps(results["S2_decomposition"]["legs_test"]["gross"]), flush=True)
 
     g = results["full_gate_6"]
     results["conditions"] = {

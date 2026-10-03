@@ -1,0 +1,72 @@
+{
+  "symbol": "ETHUSDT",
+  "run": "S1_D2_T5_k3",
+  "D_bps": 2,
+  "T_s": 5,
+  "k": 3,
+  "calibration_mean_pnl_bps_per_day": -11141.12421943186,
+  "calibration_days": 77,
+  "frozen_at": "2026-09-30T22:37:08+00:00",
+  "grid_ranking": [
+    {
+      "run": "S1_D2_T5_k3",
+      "mean_pnl_bps_per_day": -11141.12421943186,
+      "days": 77
+    },
+    {
+      "run": "S1_D10_T5_k3",
+      "mean_pnl_bps_per_day": -11144.500466318923,
+      "days": 77
+    },
+    {
+      "run": "S1_D5_T5_k3",
+      "mean_pnl_bps_per_day": -11144.542257219411,
+      "days": 77
+    },
+    {
+      "run": "S1_D2_T5_k6",
+      "mean_pnl_bps_per_day": -15806.699907106065,
+      "days": 77
+    },
+    {
+      "run": "S1_D5_T5_k6",
+      "mean_pnl_bps_per_day": -15807.499505094544,
+      "days": 77
+    },
+    {
+      "run": "S1_D10_T5_k6",
+      "mean_pnl_bps_per_day": -15808.08638451923,
+      "days": 77
+    },
+    {
+      "run": "S1_D2_T2_k3",
+      "mean_pnl_bps_per_day": -17248.45315403969,
+      "days": 77
+    },
+    {
+      "run": "S1_D10_T2_k3",
+      "mean_pnl_bps_per_day": -17248.74635537218,
+      "days": 77
+    },
+    {
+      "run": "S1_D5_T2_k3",
+      "mean_pnl_bps_per_day": -17250.114198137067,
+      "days": 77
+    },
+    {
+      "run": "S1_D10_T2_k6",
+      "mean_pnl_bps_per_day": -21528.699430199733,
+      "days": 77
+    },
+    {
+      "run": "S1_D2_T2_k6",
+      "mean_pnl_bps_per_day": -21531.23393536605,
+      "days": 77
+    },
+    {
+      "run": "S1_D5_T2_k6",
+      "mean_pnl_bps_per_day": -21532.118966276506,
+      "days": 77
+    }
+  ]
+}

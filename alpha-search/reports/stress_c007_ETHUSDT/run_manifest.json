@@ -1,0 +1,15 @@
+{
+  "experiment_id": "stress_c007_ETHUSDT",
+  "config": "/Users/petermillington/research/market-impact-research/alpha-search/configs/stress_c007_ETHUSDT.json",
+  "thresholds_z": {
+    "50": 24.35112858529999,
+    "100": 18.654900056466104,
+    "200": 14.258303621159804
+  },
+  "holdout_months_excluded": [
+    "2026-06",
+    "2026-07",
+    "2026-08"
+  ],
+  "created_utc": "2026-10-01T12:47:05+00:00"
+}

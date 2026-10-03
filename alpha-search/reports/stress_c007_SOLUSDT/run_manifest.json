@@ -1,0 +1,15 @@
+{
+  "experiment_id": "stress_c007_SOLUSDT",
+  "config": "/Users/petermillington/research/market-impact-research/alpha-search/configs/stress_c007_SOLUSDT.json",
+  "thresholds_z": {
+    "50": 18.3974045769953,
+    "100": 14.684706684244913,
+    "200": 11.948693028320207
+  },
+  "holdout_months_excluded": [
+    "2026-06",
+    "2026-07",
+    "2026-08"
+  ],
+  "created_utc": "2026-10-01T12:47:44+00:00"
+}

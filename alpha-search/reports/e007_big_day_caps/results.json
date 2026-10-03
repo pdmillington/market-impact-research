@@ -1,0 +1,178 @@
+[
+  {
+    "variant": "uncapped",
+    "test_trades": 32055,
+    "test_kept": 1.0,
+    "test_net_bps": 13.24133999460787,
+    "test_se": 3.5576813176462814,
+    "test_t": 3.7219016579506845,
+    "test_net_2025_06_26_05": 0.6224424402758642,
+    "test_per_symbol_net": {
+      "BTCUSDT": 11.46,
+      "ETHUSDT": 8.66,
+      "SOLUSDT": 25.09
+    },
+    "locked_trades": 1901,
+    "locked_net_bps": 2.849558944669775,
+    "locked_t": 0.288132022746299,
+    "locked_per_symbol_net": {
+      "BTCUSDT": -3.78,
+      "ETHUSDT": 0.92,
+      "SOLUSDT": 24.29
+    }
+  },
+  {
+    "variant": "concurrent_1",
+    "test_trades": 3166,
+    "test_kept": 0.09876774294181875,
+    "test_net_bps": 2.9427383654773753,
+    "test_se": 2.1093762926637036,
+    "test_t": 1.3950751109283155,
+    "test_net_2025_06_26_05": -4.37120348006911,
+    "test_per_symbol_net": {
+      "BTCUSDT": 2.53,
+      "ETHUSDT": -0.16,
+      "SOLUSDT": 7.59
+    },
+    "locked_trades": 245,
+    "locked_net_bps": -6.355599949300586,
+    "locked_t": -0.9319822510164426,
+    "locked_per_symbol_net": {
+      "BTCUSDT": -1.78,
+      "ETHUSDT": -10.3,
+      "SOLUSDT": -3.26
+    }
+  },
+  {
+    "variant": "concurrent_3",
+    "test_trades": 7891,
+    "test_kept": 0.24617064420527218,
+    "test_net_bps": 3.412659950239486,
+    "test_se": 2.3210362674730565,
+    "test_t": 1.4703173742110005,
+    "test_net_2025_06_26_05": -4.39333103720472,
+    "test_per_symbol_net": {
+      "BTCUSDT": 3.37,
+      "ETHUSDT": -0.22,
+      "SOLUSDT": 8.36
+    },
+    "locked_trades": 585,
+    "locked_net_bps": -5.922737317147725,
+    "locked_t": -0.7164433423027954,
+    "locked_per_symbol_net": {
+      "BTCUSDT": -2.88,
+      "ETHUSDT": -7.17,
+      "SOLUSDT": -6.69
+    }
+  },
+  {
+    "variant": "concurrent_5",
+    "test_trades": 11507,
+    "test_kept": 0.35897675869599127,
+    "test_net_bps": 3.9050258842213883,
+    "test_se": 2.4837984653378453,
+    "test_t": 1.5721991694242505,
+    "test_net_2025_06_26_05": -4.03264149219672,
+    "test_per_symbol_net": {
+      "BTCUSDT": 3.79,
+      "ETHUSDT": -0.26,
+      "SOLUSDT": 9.74
+    },
+    "locked_trades": 819,
+    "locked_net_bps": -6.278722094727301,
+    "locked_t": -0.6323251567169749,
+    "locked_per_symbol_net": {
+      "BTCUSDT": -3.76,
+      "ETHUSDT": -6.42,
+      "SOLUSDT": -9.02
+    }
+  },
+  {
+    "variant": "concurrent_10",
+    "test_trades": 17934,
+    "test_kept": 0.5594759007955077,
+    "test_net_bps": 4.36623729303902,
+    "test_se": 2.7256799953176634,
+    "test_t": 1.6018891801457267,
+    "test_net_2025_06_26_05": -3.023550111346742,
+    "test_per_symbol_net": {
+      "BTCUSDT": 3.55,
+      "ETHUSDT": 0.34,
+      "SOLUSDT": 11.45
+    },
+    "locked_trades": 1198,
+    "locked_net_bps": -4.806198617143007,
+    "locked_t": -0.41620796145741984,
+    "locked_per_symbol_net": {
+      "BTCUSDT": -6.01,
+      "ETHUSDT": -6.3,
+      "SOLUSDT": 0.96
+    }
+  },
+  {
+    "variant": "daily_10",
+    "test_trades": 8943,
+    "test_kept": 0.2789892372484792,
+    "test_net_bps": 5.226611832197892,
+    "test_se": 3.56271637645959,
+    "test_t": 1.4670300074214102,
+    "test_net_2025_06_26_05": -3.1807956446959045,
+    "test_per_symbol_net": {
+      "BTCUSDT": 6.6,
+      "ETHUSDT": 4.0,
+      "SOLUSDT": 5.04
+    },
+    "locked_trades": 638,
+    "locked_net_bps": 8.96508536483274,
+    "locked_t": 1.2240507143900141,
+    "locked_per_symbol_net": {
+      "BTCUSDT": 16.7,
+      "ETHUSDT": 9.72,
+      "SOLUSDT": -2.83
+    }
+  },
+  {
+    "variant": "daily_25",
+    "test_trades": 16248,
+    "test_kept": 0.5068788020589612,
+    "test_net_bps": 5.088554345688033,
+    "test_se": 3.5957814528985885,
+    "test_t": 1.41514561225241,
+    "test_net_2025_06_26_05": -3.9642295955999676,
+    "test_per_symbol_net": {
+      "BTCUSDT": 2.47,
+      "ETHUSDT": 3.46,
+      "SOLUSDT": 11.1
+    },
+    "locked_trades": 1016,
+    "locked_net_bps": 7.265070643152549,
+    "locked_t": 0.7317473908830381,
+    "locked_per_symbol_net": {
+      "BTCUSDT": 10.06,
+      "ETHUSDT": 9.59,
+      "SOLUSDT": -3.79
+    }
+  },
+  {
+    "variant": "daily_50",
+    "test_trades": 22862,
+    "test_kept": 0.7132116674465762,
+    "test_net_bps": 4.556896005350199,
+    "test_se": 4.3842518345493,
+    "test_t": 1.0393782513678635,
+    "test_net_2025_06_26_05": -3.463117862387466,
+    "test_per_symbol_net": {
+      "BTCUSDT": 1.39,
+      "ETHUSDT": -1.2,
+      "SOLUSDT": 18.53
+    },
+    "locked_trades": 1292,
+    "locked_net_bps": 2.688834988843863,
+    "locked_t": 0.19873968270153158,
+    "locked_per_symbol_net": {
+      "BTCUSDT": -2.19,
+      "ETHUSDT": -1.61,
+      "SOLUSDT": 21.78
+    }
+  }
+]
