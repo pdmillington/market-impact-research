@@ -10,7 +10,7 @@ from pathlib import Path
 import nbformat as nbf
 
 
-REPO = Path("/Users/petermillington/Research/market-impact-research")
+REPO = Path(__file__).resolve().parents[2]
 OUTPUT = REPO / "alpha-search" / "notebooks" / "archive" / "ImpactAlphaWorkbench.ipynb"
 
 
@@ -66,7 +66,7 @@ from IPython.display import Markdown, display
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 
-REPO = Path('/Users/petermillington/Research/market-impact-research')
+REPO = next(path for path in (Path.cwd(), *Path.cwd().parents) if (path / 'alpha-search').is_dir() and (path / 'shared-methodology').is_dir())
 ALPHA = REPO / 'alpha-search'
 SHARED = REPO / 'shared-data'
 ACADEMIC = REPO / 'crypto-impact-study'

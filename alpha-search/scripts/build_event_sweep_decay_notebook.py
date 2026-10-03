@@ -5,7 +5,7 @@ from pathlib import Path
 import nbformat as nbf
 
 
-REPO = Path("/Users/petermillington/Research/market-impact-research")
+REPO = Path(__file__).resolve().parents[2]
 OUTPUT = REPO / "alpha-search" / "notebooks" / "EventSweepDecayWorkbenchV2.ipynb"
 
 
@@ -71,7 +71,7 @@ import polars as pl
 from IPython.display import display
 get_ipython().run_line_magic('matplotlib', 'inline')
 
-REPO = Path('/Users/petermillington/Research/market-impact-research')
+REPO = next(path for path in (Path.cwd(), *Path.cwd().parents) if (path / 'alpha-search').is_dir() and (path / 'shared-methodology').is_dir())
 RESULT_ROOT = REPO / 'alpha-search' / 'reports' / 'event_decay_sweep_v2'
 plt.style.use('seaborn-v0_8-whitegrid')
 plt.rcParams.update({'figure.dpi': 115, 'axes.spines.top': False, 'axes.spines.right': False})

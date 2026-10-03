@@ -5,7 +5,7 @@ from pathlib import Path
 import nbformat as nbf
 
 
-REPO = Path("/Users/petermillington/Research/market-impact-research")
+REPO = Path(__file__).resolve().parents[2]
 OUTPUT = REPO / "alpha-search" / "notebooks" / "archive" / "ImpactFunctionWorkbenchV2.ipynb"
 
 
@@ -78,7 +78,7 @@ get_ipython().run_line_magic('matplotlib', 'inline')
 pl.Config.set_tbl_rows(100)
 pl.Config.set_tbl_cols(20)
 
-REPO = Path('/Users/petermillington/Research/market-impact-research')
+REPO = next(path for path in (Path.cwd(), *Path.cwd().parents) if (path / 'alpha-search').is_dir() and (path / 'shared-methodology').is_dir())
 SHARED = REPO / 'shared-data'
 CACHE_ROOT = SHARED / 'features' / 'alpha' / 'symbol=BTCUSDT' / 'impact_research_v2'
 

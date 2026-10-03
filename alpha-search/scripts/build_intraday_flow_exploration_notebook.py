@@ -5,7 +5,7 @@ from pathlib import Path
 import nbformat as nbf
 
 
-REPO = Path("/Users/petermillington/Research/market-impact-research")
+REPO = Path(__file__).resolve().parents[2]
 OUTPUT = REPO / "alpha-search" / "notebooks" / "IntradayFlowExploration.ipynb"
 
 
@@ -46,7 +46,7 @@ import polars as pl
 from IPython.display import display
 get_ipython().run_line_magic('matplotlib', 'inline')
 
-REPO = Path('/Users/petermillington/Research/market-impact-research')
+REPO = next(path for path in (Path.cwd(), *Path.cwd().parents) if (path / 'alpha-search').is_dir() and (path / 'shared-methodology').is_dir())
 E = REPO / 'alpha-search' / 'reports' / 'intraday_flow_v1' / 'exploration'
 univariate = pl.read_csv(E / 'univariate_ic.csv')
 correlation = pl.read_csv(E / 'flow_return_correlation.csv')

@@ -5,7 +5,7 @@ from pathlib import Path
 import nbformat as nbf
 
 
-REPO = Path("/Users/petermillington/Research/market-impact-research")
+REPO = Path(__file__).resolve().parents[2]
 OUTPUT = REPO / "alpha-search" / "notebooks" / "archive" / "ImpactSurfaceAndResidualAlpha.ipynb"
 
 
@@ -71,7 +71,7 @@ import polars as pl
 from IPython.display import Markdown, display
 get_ipython().run_line_magic('matplotlib', 'inline')
 
-REPO = Path('/Users/petermillington/Research/market-impact-research')
+REPO = next(path for path in (Path.cwd(), *Path.cwd().parents) if (path / 'alpha-search').is_dir() and (path / 'shared-methodology').is_dir())
 RESULTS = REPO / 'alpha-search' / 'reports' / 'impact_surface_residual_alpha_v1'
 manifest = json.loads((RESULTS / 'run_manifest.json').read_text())
 fits = pl.read_csv(RESULTS / 'surface_fits.csv')

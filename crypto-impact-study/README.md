@@ -27,7 +27,7 @@ Raw data and processed outputs are kept separate. Paths are handled with `pathli
 Use Python 3.11 or newer. The Git repository root is `market-impact-research`, so install from that directory:
 
 ```bash
-cd /Users/petermillington/Research/market-impact-research
+cd /Users/petermillington/phd/market-impact-research
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip

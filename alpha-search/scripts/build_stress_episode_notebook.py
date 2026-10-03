@@ -5,7 +5,7 @@ from pathlib import Path
 import nbformat as nbf
 
 
-REPO = Path("/Users/petermillington/Research/market-impact-research")
+REPO = Path(__file__).resolve().parents[2]
 OUTPUT = REPO / "alpha-search" / "notebooks" / "StressEpisodeWorkbench.ipynb"
 
 
@@ -64,7 +64,7 @@ import polars as pl
 from IPython.display import Markdown, display
 get_ipython().run_line_magic('matplotlib', 'inline')
 
-REPO = Path('/Users/petermillington/Research/market-impact-research')
+REPO = next(path for path in (Path.cwd(), *Path.cwd().parents) if (path / 'alpha-search').is_dir() and (path / 'shared-methodology').is_dir())
 SERIES = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300']
 INK, MUTED = '#2b2b2b', '#8a8a85'
 RNG = np.random.default_rng(20_260_929)
