@@ -1,0 +1,9 @@
+{
+    "python.defaultInterpreterPath": "${workspaceFolder}/shared-methodology/.venv/bin/python",
+    "python.terminal.activateEnvironment": true,
+    "python.analysis.extraPaths": [
+        "shared-methodology/src",
+        "alpha-search/src",
+        "alpha-search/scripts"
+    ]
+}
