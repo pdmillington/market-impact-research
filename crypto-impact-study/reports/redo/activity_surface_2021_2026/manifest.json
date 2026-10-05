@@ -1,0 +1,21 @@
+{
+  "primary": "2021-01..2026-08",
+  "warm_up": "2020-12",
+  "bins": [
+    20,
+    10
+  ],
+  "n_values": [
+    100,
+    250,
+    500,
+    1000,
+    2000,
+    4000,
+    8000,
+    16000
+  ],
+  "bootstrap": 200,
+  "response": "log_return / trailing 24h realised vol (same bars)",
+  "excluded": "2026-09 onward (alpha-search P-006)"
+}

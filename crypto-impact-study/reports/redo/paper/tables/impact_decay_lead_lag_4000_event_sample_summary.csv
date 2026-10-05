@@ -1,0 +1,3 @@
+construction,observations,complete_current_impact,UTC_days,n_ordinary_activity__ordinary_imbalance,n_high_activity__ordinary_imbalance,n_ordinary_activity__extreme_imbalance,n_high_activity__extreme_imbalance
+event_bars,583799,576268,2069,382753,85792,84286,30968
+time_bars,595480,595280,2070,407685,68739,68674,50382
