@@ -159,7 +159,7 @@ CONTOUR_N = (250, 2000, 16000)
 
 
 def contour_figure(cells: pd.DataFrame, fits: pd.DataFrame, scales: pd.DataFrame, figures: Path, tables: Path) -> None:
-    """Response surface over (log a, log z) for three N: data as filled contours, fits as lines.
+    """Response surface over (log a, log z) for three N: data as filled contours (log scale), fits as lines.
 
     The colour is the folded cell mean (sides averaged) divided by the surface's R_N, so the
     panels share one scale. Lines are contours of the fitted response on the same scale and at
@@ -169,8 +169,10 @@ def contour_figure(cells: pd.DataFrame, fits: pd.DataFrame, scales: pd.DataFrame
     surface = fits.loc[fits.model == "activity_surface"].iloc[0]
     pb = fits.loc[fits.model == "pb_gamma_1"].iloc[0]
     sc = {m: scales.loc[scales.model == m].set_index("n_events") for m in ("activity_surface", "pb_gamma_1")}
-    levels = np.array([0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2])
-    ramp = matplotlib.colors.ListedColormap(plt.cm.Blues(np.linspace(0.05, 0.7, 256)))
+    levels = np.array([0.1, 0.2, 0.5, 1.0, 2.0, 4.0])
+    fill_levels = np.geomspace(0.05, 8.0, 25)
+    norm = matplotlib.colors.LogNorm(fill_levels[0], fill_levels[-1])
+    ramp = matplotlib.colors.ListedColormap(plt.cm.Blues(np.linspace(0.05, 0.75, 256)))
     ln10 = np.log(10)
     fig, axes = plt.subplots(1, len(CONTOUR_N), figsize=(4.6 * len(CONTOUR_N), 4.4), sharey=False)
     rows = []
@@ -179,11 +181,13 @@ def contour_figure(cells: pd.DataFrame, fits: pd.DataFrame, scales: pd.DataFrame
         fc = sub.groupby(["iz", "ia"])[["mean_logz", "mean_loga", "fy"]].mean().reset_index()
         r_surface = sc["activity_surface"].loc[n, "r_scale"]
         fc["scaled"] = fc["fy"] / r_surface
-        fill = ax.tricontourf(fc["mean_loga"] / ln10, fc["mean_logz"] / ln10, fc["scaled"],
-                              levels=np.linspace(0, 1.3, 27), cmap=ramp, extend="both")
-        log_a = np.linspace(fc["mean_loga"].min(), fc["mean_loga"].max(), 200)
-        log_z = np.linspace(fc["mean_logz"].min(), fc["mean_logz"].max(), 200)
-        A, Z = np.meshgrid(log_a, log_z)
+        # The cells form a complete (z bin x a bin) grid, so the data are drawn on that curvilinear
+        # grid (no interpolation outside the cells' hull).
+        grid = {c: fc.pivot(index="iz", columns="ia", values=c).to_numpy() for c in ("mean_loga", "mean_logz", "scaled")}
+        fill = ax.contourf(grid["mean_loga"] / ln10, grid["mean_logz"] / ln10,
+                           np.clip(grid["scaled"], fill_levels[0], fill_levels[-1]),
+                           levels=fill_levels, cmap=ramp, norm=norm)
+        A, Z = grid["mean_loga"], grid["mean_logz"]   # fitted contours on the same cells
         for f, model, style, colour in ((surface, "activity_surface", "-", INK), (pb, "pb_gamma_1", "--", ORANGE)):
             q, r = sc[model].loc[n, "q_scale"], sc[model].loc[n, "r_scale"]
             pred = r * pb_shape(np.exp(Z + f.gamma * A) / q, f.alpha, f.beta) / r_surface
@@ -200,6 +204,7 @@ def contour_figure(cells: pd.DataFrame, fits: pd.DataFrame, scales: pd.DataFrame
                matplotlib.lines.Line2D([], [], color=ORANGE, lw=1.4, ls="--", label="P&B, γ = 1")]
     axes[0].legend(handles=handles, loc="lower left", fontsize=8, frameon=True)
     bar = fig.colorbar(fill, ax=axes, shrink=0.85, pad=0.02, ticks=levels)
+    bar.ax.set_yticklabels([f"{v:g}" for v in levels])
     bar.set_label(r"Folded mean response $s\,\bar y/\mathcal{R}_N$ (contour levels marked)")
     fig.savefig(figures / "29_activity_surface_contours.pdf", bbox_inches="tight")
     plt.close(fig)

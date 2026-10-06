@@ -20,7 +20,7 @@ fill's sign; about 1% of timestamps were mis-signed as a result. Data from
   changed; the per-cell log is in `run_log.json`. One cell is skipped:
   BarConstructionRobustness cell 3, an out-of-order zero-range diagnostic
   that produces nothing used later.
-- **Figures 26–28 and the `activity_surface_*` tables:**
+- **Figures 26–29 and the `activity_surface_*` tables:**
   `scripts/make_surface_figures.py`. It reads the outputs of
   `scripts/run_activity_surface.py` and `scripts/diagnose_activity_surface.py`.
 
@@ -46,6 +46,7 @@ fill's sign; about 1% of timestamps were mis-signed as a result. Data from
 | **26_activity_surface_collapse** | make_surface_figures | **New.** See caveat 3 |
 | **27_activity_surface_gamma** | make_surface_figures | **New.** γ by N and by calendar year |
 | **28_activity_surface_oos** | make_surface_figures | **New.** Out-of-sample weighted RMSE, 2023–2026 |
+| **29_activity_surface_contours** | make_surface_figures | **New.** See caveat 8 |
 
 The notebooks also wrote figures the chapter does not currently use. They
 include 02_binned_log_log, 03, the 05 linear-axis version, 06/07/08 regime
@@ -118,3 +119,19 @@ The full discussion is in `../README.md`.
    means, and the free power form is closer there. Any text claiming the
    logarithmic form wins at every scale should be re-checked against the
    notebook's fit tables before it is kept.
+8. **Figure 29 (contour map).** Each panel plots log relative activity
+   (horizontal) against log relative imbalance (vertical) for one N (250,
+   2,000 or 16,000).
+   - **Colour:** the folded cell mean, with the two sides averaged, divided by
+     the surface's R_N and shown on a log scale. This puts the three panels on
+     one scale.
+   - **Lines:** fitted contours at the same levels (0.1, 0.2, 0.5, 1, 2, 4):
+     solid for the activity surface, dashed for P&B.
+   - **How to read it:** the model's contours are straight lines with slope
+     −γ (−0.36 for the surface, −1 for P&B). The data bands follow the
+     shallower surface lines.
+   - **Caption wording:** because R_N is not identified at small N, the colour
+     scale is a display normalisation, not an absolute level. The data are
+     drawn only on the observed cell grid, with no extrapolation.
+   - **Data:** `activity_surface_contour_cells.csv`,
+     `activity_surface_contour_levels.csv`.

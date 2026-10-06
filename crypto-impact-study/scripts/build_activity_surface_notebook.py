@@ -379,29 +379,41 @@ def fitted_on_grid(fit, n, log_a, log_z):
     return A, Z, r * pb_shape(np.exp(Z + fit.gamma * A) / q, fit.alpha, fit.beta)
 
 
-def plot_surface_map(n, fit_main=None, fit_ref=None, levels=8):
+def plot_surface_map(n_values=(250, 2000, 16000), fit_main=None, fit_ref=None,
+                     levels=(0.1, 0.2, 0.5, 1.0, 2.0, 4.0)):
+    # Same drawing as thesis figure 29 (scripts/make_surface_figures.py): colour = folded cell mean / surface R_N
+    # on a log scale, drawn on the cells' own (z bin x a bin) grid; lines = fitted contours at the same levels.
+    import matplotlib
     fit_main = fit_main or fits['activity surface (γ free)']
     fit_ref = fit_ref or fits['P&B (γ=1)']
-    fc = folded_cells(cells, n)
-    log_a = np.linspace(fc['mean_loga'].min(), fc['mean_loga'].max(), 200)
-    log_z = np.linspace(fc['mean_logz'].min(), fc['mean_logz'].max(), 200)
-    lv = np.quantile(fc['fy'], np.linspace(0.15, 0.95, levels))
-    fig, ax = plt.subplots(figsize=(7.5, 5.5))
-    tc = ax.tricontourf(fc['mean_loga'] / np.log(10), fc['mean_logz'] / np.log(10), fc['fy'], levels=20, cmap='viridis')
-    ax.scatter(fc['mean_loga'] / np.log(10), fc['mean_logz'] / np.log(10), s=4, color='white', alpha=0.5)
-    for fit, style in ((fit_main, '-'), (fit_ref, '--')):
-        A, Z, P = fitted_on_grid(fit, n, log_a, log_z)
-        cs = ax.contour(A / np.log(10), Z / np.log(10), P, levels=lv, colors='white' if style == '-' else 'orange',
-                        linestyles=style, linewidths=1.4)
-    ax.set_xlabel(r'$\log_{10} a$  (block volume / trailing 24 h volume)')
-    ax.set_ylabel(r'$\log_{10} z$  (|Q| / V)')
-    ax.set_title(f'N = {n:,}: data (colour), surface γ={fit_main.gamma:.2f} (white), P&B γ=1 (orange dashed)', fontsize=9)
-    fig.colorbar(tc, ax=ax, label=r'folded mean response $s\,\bar y$')
+    n_values = [n for n in n_values if n in N_USE]
+    fill_levels = np.geomspace(0.05, 8.0, 25)
+    norm = matplotlib.colors.LogNorm(fill_levels[0], fill_levels[-1])
+    ln10 = np.log(10)
+    fig, axes = plt.subplots(1, len(n_values), figsize=(4.6 * len(n_values), 4.4), squeeze=False)
+    for ax, n in zip(axes[0], n_values):
+        fc = folded_cells(cells, n)
+        r_main = fit_main.scales.set_index('n_events').loc[n, 'r_scale']
+        fc['scaled'] = fc['fy'] / r_main
+        grid = {c: fc.pivot(index='iz', columns='ia', values=c).to_numpy() for c in ('mean_loga', 'mean_logz', 'scaled')}
+        fill = ax.contourf(grid['mean_loga'] / ln10, grid['mean_logz'] / ln10,
+                           np.clip(grid['scaled'], fill_levels[0], fill_levels[-1]),
+                           levels=fill_levels, cmap='Blues', norm=norm)
+        for fit, style, colour in ((fit_main, '-', 'k'), (fit_ref, '--', 'tab:orange')):
+            q, r = fit.scales.set_index('n_events').loc[n, ['q_scale', 'r_scale']]
+            pred = r * pb_shape(np.exp(grid['mean_logz'] + fit.gamma * grid['mean_loga']) / q, fit.alpha, fit.beta) / r_main
+            ax.contour(grid['mean_loga'] / ln10, grid['mean_logz'] / ln10, pred, levels=list(levels),
+                       colors=colour, linestyles=style, linewidths=1.4)
+        ax.set_title(f'N = {n:,}: surface γ={fit_main.gamma:.2f} (black), reference γ={fit_ref.gamma:.2f} (dashed)', fontsize=9)
+        ax.set_xlabel(r'$\log_{10} a$'); ax.grid(False)
+    axes[0][0].set_ylabel(r'$\log_{10} z$')
+    bar = fig.colorbar(fill, ax=axes[0], shrink=0.85, ticks=list(levels))
+    bar.ax.set_yticklabels([f'{v:g}' for v in levels])
+    bar.set_label(r'$s\,\bar y/\mathcal{R}_N$')
     plt.show()
 
 
-for n in [n for n in (1000, 4000) if n in N_USE]:
-    plot_surface_map(n)
+plot_surface_map()
 """)
 
 md("""
