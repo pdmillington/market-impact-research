@@ -215,12 +215,12 @@
     "cells": [
       {
         "cell": 0,
-        "seconds": 1.1,
+        "seconds": 1.2,
         "status": "ok"
       },
       {
         "cell": 1,
-        "seconds": 117.3,
+        "seconds": 116.3,
         "status": "ok"
       },
       {
@@ -231,14 +231,115 @@
       {
         "cell": 3,
         "seconds": 0.0,
-        "status": "failed"
+        "status": "skipped"
+      },
+      {
+        "cell": 4,
+        "seconds": 1196.6,
+        "status": "ok"
+      },
+      {
+        "cell": 5,
+        "seconds": 14.7,
+        "status": "ok"
+      },
+      {
+        "cell": 6,
+        "seconds": 0.1,
+        "status": "ok"
+      },
+      {
+        "cell": 7,
+        "seconds": 0.3,
+        "status": "ok"
+      },
+      {
+        "cell": 8,
+        "seconds": 0.5,
+        "status": "ok"
+      },
+      {
+        "cell": 9,
+        "seconds": 0.0,
+        "status": "ok"
+      },
+      {
+        "cell": 10,
+        "seconds": 7.4,
+        "status": "ok"
+      },
+      {
+        "cell": 11,
+        "seconds": 0.0,
+        "status": "ok"
+      },
+      {
+        "cell": 12,
+        "seconds": 12.0,
+        "status": "ok"
+      },
+      {
+        "cell": 13,
+        "seconds": 0.0,
+        "status": "ok"
+      },
+      {
+        "cell": 14,
+        "seconds": 0.0,
+        "status": "ok"
+      },
+      {
+        "cell": 15,
+        "seconds": 0.0,
+        "status": "ok"
+      },
+      {
+        "cell": 16,
+        "seconds": 1.1,
+        "status": "ok"
+      },
+      {
+        "cell": 17,
+        "seconds": 0.0,
+        "status": "ok"
+      },
+      {
+        "cell": 18,
+        "seconds": 0.0,
+        "status": "ok"
+      },
+      {
+        "cell": 19,
+        "seconds": 389.0,
+        "status": "ok"
+      },
+      {
+        "cell": 20,
+        "seconds": 0.7,
+        "status": "ok"
+      },
+      {
+        "cell": 21,
+        "seconds": 1.4,
+        "status": "ok"
+      },
+      {
+        "cell": 22,
+        "seconds": 0.3,
+        "status": "ok"
+      },
+      {
+        "cell": 23,
+        "seconds": 0.0,
+        "status": "ok"
+      },
+      {
+        "cell": 24,
+        "seconds": 0.0,
+        "status": "ok"
       }
     ],
-    "error": {
-      "cell": 3,
-      "traceback": "Traceback (most recent call last):\n  File \"/Users/petermillington/phd/market-impact-research/crypto-impact-study/scripts/run_paper_notebooks.py\", line 91, in run_one\n    exec(compile(source, f\"{name}[{index}]\", \"exec\"), namespace)\n  File \"BarConstructionRobustness[3]\", line 1, in <module>\nNameError: name 'bars_n' is not defined\n"
-    },
-    "completed": false
+    "completed": true
   },
   "RegimeResponseCurves": {
     "notebook": "RegimeResponseCurves",
