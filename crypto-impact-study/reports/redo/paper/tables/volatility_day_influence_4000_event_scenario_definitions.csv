@@ -1,0 +1,14 @@
+scenario,selection_rule,excluded_day_count,excluded_dates
+all_days,none,0,
+drop_2021-05-19,single day; daily-range rank 1,1,2021-05-19
+drop_2021-07-26,single day; daily-range rank 2,1,2021-07-26
+drop_2021-12-04,single day; daily-range rank 3,1,2021-12-04
+drop_2021-05-21,single day; daily-range rank 4,1,2021-05-21
+drop_2021-01-11,single day; daily-range rank 5,1,2021-01-11
+drop_2021-09-07,single day; daily-range rank 6,1,2021-09-07
+drop_2021-02-08,single day; daily-range rank 7,1,2021-02-08
+drop_2021-05-23,single day; daily-range rank 8,1,2021-05-23
+drop_2022-11-08,single day; daily-range rank 9,1,2022-11-08
+drop_2022-06-13,single day; daily-range rank 10,1,2022-06-13
+drop_largest_3_range_days,largest 3 daily ranges,3,2021-05-19;2021-07-26;2021-12-04
+drop_upper_1pct_range_days,intraday range at or above full-sample 99th percentile,21,2021-01-04;2021-01-11;2021-01-29;2021-02-08;2021-02-22;2021-02-23;2021-04-18;2021-05-12;2021-05-19;2021-05-20;2021-05-21;2021-05-23;2021-07-26;2021-09-07;2021-12-04;2022-06-13;2022-11-08;2022-11-09;2023-10-23;2025-10-10;2026-02-06
