@@ -1,0 +1,4 @@
+test,statistic,p_value,variance_ratio_2021_over_rest,ratio_block_bootstrap_2_5,ratio_block_bootstrap_97_5,block_days,replicates
+"Brown-Forsythe, 2021 vs 2022..2026-08 (daily log returns)",115.85423620563147,2.5143407109592835e-26,2.5331407534224666,1.836002400744204,3.3951835749478754,20.0,5000.0
+"Brown-Forsythe, equal variance across years 2021..2026",30.25044036466608,9.15926390701155e-30,,,,,
+"Mean 5-min realised variance, 2021 / 2022..2026-08",,,3.327611081736285,2.221547194997324,4.618220783360389,20.0,5000.0
