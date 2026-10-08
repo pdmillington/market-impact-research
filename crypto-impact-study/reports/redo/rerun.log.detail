@@ -1,0 +1,191 @@
+N=100: 4,690,095 blocks
+N=250: 1,876,038 blocks
+N=500: 938,019 blocks
+N=1000: 469,009 blocks
+N=2000: 234,504 blocks
+N=4000: 117,252 blocks
+N=8000: 58,626 blocks
+N=16000: 29,313 blocks
+{
+  "alpha": 1.6982141720001787,
+  "beta": 0.7670909321481201,
+  "robust_objective": 1197.7196576977044,
+  "converged": true,
+  "period": [
+    "2025-01",
+    "2026-05"
+  ],
+  "symbol": "BTCUSDT"
+}
+                                  quantity  robust_exponent  ols_exponent
+                 xi: fitted response width         0.937140      0.952992
+               psi: fitted response height         0.605310      0.609894
+H_q,24h: trailing-normalised signed volume         0.639238      0.635760
+                    H_q,raw: signed volume         0.635081      0.632213
+                    H_epsilon: order signs         0.764321      0.763089
+                              H_r: returns         0.505209      0.506981
+                  quantity  paper  corrected_events  difference
+alpha (master-curve shape) 1.7978            1.6982     -0.0996
+ beta (master-curve shape) 0.7502            0.7671      0.0168
+            xi (Theil-Sen) 0.9545            0.9371     -0.0174
+           psi (Theil-Sen) 0.6081            0.6053     -0.0028
+       H_q,24h (Theil-Sen) 0.6294            0.6392      0.0098
+       H_q,raw (Theil-Sen) 0.6283            0.6351      0.0068
+     H_epsilon (Theil-Sen) 0.7636            0.7643      0.0007
+           H_r (Theil-Sen) 0.5073            0.5052     -0.0021
+N=100: 23,363,842 blocks
+N=250: 9,345,534 blocks
+N=500: 4,672,765 blocks
+N=1000: 2,336,381 blocks
+N=2000: 1,168,189 blocks
+N=4000: 584,092 blocks
+N=8000: 292,044 blocks
+N=16000: 146,020 blocks
+{
+  "alpha": 1.5151567776112889,
+  "beta": 0.7690144758987316,
+  "robust_objective": 2591.2621816470537,
+  "converged": true,
+  "period": [
+    "2021-01",
+    "2026-08"
+  ],
+  "symbol": "BTCUSDT"
+}
+                                  quantity  robust_exponent  ols_exponent
+                 xi: fitted response width         0.828685      0.821163
+               psi: fitted response height         0.575206      0.574025
+H_q,24h: trailing-normalised signed volume         0.640172      0.640763
+                    H_q,raw: signed volume         0.642895      0.642345
+                    H_epsilon: order signs         0.789134      0.787081
+                              H_r: returns         0.491503      0.491200
+N=100: 5,381,617 blocks
+N=250: 2,152,646 blocks
+N=500: 1,076,323 blocks
+N=1000: 538,162 blocks
+N=2000: 269,081 blocks
+N=4000: 134,540 blocks
+N=8000: 67,270 blocks
+N=16000: 33,635 blocks
+{
+  "alpha": 1.375976518311062,
+  "beta": 0.6897814657371201,
+  "robust_objective": 1756.3681918749037,
+  "converged": true,
+  "period": [
+    "2021-01",
+    "2021-12"
+  ],
+  "symbol": "BTCUSDT"
+}
+                                  quantity  robust_exponent  ols_exponent
+                 xi: fitted response width         0.846159      0.844330
+               psi: fitted response height         0.601240      0.600860
+H_q,24h: trailing-normalised signed volume         0.629669      0.627255
+                    H_q,raw: signed volume         0.636760      0.633279
+                    H_epsilon: order signs         0.804491      0.801677
+                              H_r: returns         0.482610      0.481107
+N=100: 5,241,937 blocks
+N=250: 2,096,775 blocks
+N=500: 1,048,387 blocks
+N=1000: 524,193 blocks
+N=2000: 262,096 blocks
+N=4000: 131,048 blocks
+N=8000: 65,523 blocks
+N=16000: 32,761 blocks
+{
+  "alpha": 1.736738345718453,
+  "beta": 0.640916130277275,
+  "robust_objective": 1772.4334032152897,
+  "converged": true,
+  "period": [
+    "2022-01",
+    "2022-12"
+  ],
+  "symbol": "BTCUSDT"
+}
+                                  quantity  robust_exponent  ols_exponent
+                 xi: fitted response width         0.868903      0.866121
+               psi: fitted response height         0.613168      0.612771
+H_q,24h: trailing-normalised signed volume         0.647120      0.646733
+                    H_q,raw: signed volume         0.647997      0.647333
+                    H_epsilon: order signs         0.801936      0.799536
+                              H_r: returns         0.490851      0.490137
+N=100: 3,510,433 blocks
+N=250: 1,404,171 blocks
+N=500: 702,084 blocks
+N=1000: 351,040 blocks
+N=2000: 175,519 blocks
+N=4000: 87,758 blocks
+N=8000: 43,878 blocks
+N=16000: 21,937 blocks
+{
+  "alpha": 1.6659215001750605,
+  "beta": 0.676350724547823,
+  "robust_objective": 1501.8386495284774,
+  "converged": true,
+  "period": [
+    "2023-01",
+    "2023-12"
+  ],
+  "symbol": "BTCUSDT"
+}
+                                  quantity  robust_exponent  ols_exponent
+                 xi: fitted response width         0.850351      0.844280
+               psi: fitted response height         0.588493      0.587838
+H_q,24h: trailing-normalised signed volume         0.652910      0.651853
+                    H_q,raw: signed volume         0.648900      0.648233
+                    H_epsilon: order signs         0.804529      0.804809
+                              H_r: returns         0.500129      0.499702
+N=100: 3,847,958 blocks
+N=250: 1,539,183 blocks
+N=500: 769,591 blocks
+N=1000: 384,796 blocks
+N=2000: 192,398 blocks
+N=4000: 96,199 blocks
+N=8000: 48,099 blocks
+N=16000: 24,050 blocks
+{
+  "alpha": 1.806766451326622,
+  "beta": 0.7252497981981582,
+  "robust_objective": 1646.538606617088,
+  "converged": true,
+  "period": [
+    "2024-01",
+    "2024-12"
+  ],
+  "symbol": "BTCUSDT"
+}
+                                  quantity  robust_exponent  ols_exponent
+                 xi: fitted response width         0.936507      0.923268
+               psi: fitted response height         0.623579      0.621973
+H_q,24h: trailing-normalised signed volume         0.637612      0.637746
+                    H_q,raw: signed volume         0.636463      0.636171
+                    H_epsilon: order signs         0.774642      0.772007
+                              H_r: returns         0.503087      0.503305
+N=100: 3,355,535 blocks
+N=250: 1,342,214 blocks
+N=500: 671,107 blocks
+N=1000: 335,553 blocks
+N=2000: 167,776 blocks
+N=4000: 83,888 blocks
+N=8000: 41,944 blocks
+N=16000: 20,972 blocks
+{
+  "alpha": 1.9706651679592824,
+  "beta": 0.773448959026653,
+  "robust_objective": 1205.5339057388287,
+  "converged": true,
+  "period": [
+    "2025-01",
+    "2025-12"
+  ],
+  "symbol": "BTCUSDT"
+}
+                                  quantity  robust_exponent  ols_exponent
+                 xi: fitted response width         0.937523      0.945008
+               psi: fitted response height         0.603784      0.607265
+H_q,24h: trailing-normalised signed volume         0.638121      0.634687
+                    H_q,raw: signed volume         0.635067      0.631868
+                    H_epsilon: order signs         0.767321      0.765366
+                              H_r: returns         0.504562      0.506660

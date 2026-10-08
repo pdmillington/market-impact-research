@@ -6,7 +6,7 @@ import json
 import shutil
 import tempfile
 import zipfile
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 import polars as pl
@@ -51,6 +51,8 @@ class ParseReport:
     event_rule: str = "timestamp_direction_v1"
     exact_duplicate_rows_removed: int = 0
     reused_trade_ids: int = 0
+    supplement_archives: list[str] = field(default_factory=list)
+    supplement_rows_added: int = 0
 
 
 def _csv_member(archive: zipfile.ZipFile) -> str:
@@ -152,6 +154,58 @@ def _remove_adjacent_exact_duplicates(canonical_path: Path) -> int:
     return removed
 
 
+def _merge_daily_supplements(
+    layout: DataLayout, symbol: str, month: str, canonical_path: Path, temp_dir: Path
+) -> tuple[list[str], int]:
+    """Add fills found only in stored daily archives for this month.
+
+    Binance's monthly archives occasionally stop early on a day (e.g. BTCUSDT
+    2022-02-14 after 07:28 UTC) while the daily archive for that day is
+    complete. A daily fill is added only if its trade ID is absent from the
+    monthly data; a daily fill whose trade ID is present must match the monthly
+    record exactly, otherwise parsing fails. Rows are appended; the caller sorts.
+    """
+
+    archives = layout.daily_supplements(symbol, month)
+    if not archives:
+        return [], 0
+    frames = []
+    for path in archives:
+        with zipfile.ZipFile(path) as archive:
+            member = _csv_member(archive)
+            csv_path = Path(temp_dir) / Path(member).name
+            with archive.open(member) as source, csv_path.open("wb") as output:
+                shutil.copyfileobj(source, output, length=8 * 1024 * 1024)
+        frames.append(canonical_fills_from_csv(csv_path).collect())
+        csv_path.unlink()
+    daily = pl.concat(frames).unique(maintain_order=True)
+    monthly = pl.scan_parquet(canonical_path)
+    lo, hi = daily["trade_id"].min(), daily["trade_id"].max()
+    overlap = monthly.filter(pl.col("trade_id").is_between(lo, hi)).collect()
+    new = daily.join(overlap, on="trade_id", how="anti")
+    shared = daily.join(overlap, on="trade_id", how="inner", suffix="_monthly")
+    conflicts = shared.filter(pl.any_horizontal(
+        [pl.col(c) != pl.col(f"{c}_monthly") for c in CANONICAL_COLUMNS if c != "trade_id"]))
+    if conflicts.height:
+        raise ValueError(
+            f"{conflicts.height} daily-archive fills disagree with the monthly archive for "
+            f"{symbol} {month}; refusing to merge."
+        )
+    if new.height:
+        temporary_path = canonical_path.with_suffix(".supplemented.parquet.part")
+        temporary_path.unlink(missing_ok=True)
+        pl.concat([monthly, new.lazy()]).sink_parquet(
+            temporary_path,
+            compression="zstd",
+            compression_level=6,
+            statistics=True,
+            row_group_size=250_000,
+            maintain_order=True,
+        )
+        temporary_path.replace(canonical_path)
+    return [path.name for path in archives], new.height
+
+
 REUSE_MINIMUM_GAP_MS = 60_000
 REUSE_ORDER = ("timestamp_ms", "trade_id")
 
@@ -205,6 +259,8 @@ def _build_report(
     event_path: Path,
     exact_duplicate_rows_removed: int = 0,
     reused_trade_ids: int = 0,
+    supplement_archives: list[str] | None = None,
+    supplement_rows_added: int = 0,
 ) -> ParseReport:
     fills = pl.scan_parquet(canonical_path)
     events = pl.scan_parquet(event_path)
@@ -287,6 +343,8 @@ def _build_report(
         last_timestamp_ms=int(fill_summary["last_timestamp_ms"][0]),
         exact_duplicate_rows_removed=exact_duplicate_rows_removed,
         reused_trade_ids=reused_trade_ids,
+        supplement_archives=list(supplement_archives or []),
+        supplement_rows_added=supplement_rows_added,
     )
 
 
@@ -330,16 +388,21 @@ def parse_month_archive(
             with archive.open(member) as source, csv_path.open("wb") as output:
                 shutil.copyfileobj(source, output, length=8 * 1024 * 1024)
         _write_canonical(csv_path, canonical_path)
+        csv_path.unlink()
 
-    exact_duplicate_rows_removed = _remove_adjacent_exact_duplicates(
-        canonical_path
-    )
+        exact_duplicate_rows_removed = _remove_adjacent_exact_duplicates(
+            canonical_path
+        )
+        supplement_archives, supplement_rows_added = _merge_daily_supplements(
+            layout, symbol, month, canonical_path, Path(temp_dir)
+        )
 
     reused_trade_ids = _reused_trade_ids(canonical_path)
     order_by = ("trade_id",)
     if reused_trade_ids:
         # Trade-ID order interleaves fills from before and after the outage.
         order_by = REUSE_ORDER
+    if reused_trade_ids or supplement_rows_added:
         _sort_canonical(canonical_path, order_by)
 
     reconstruct_timestamp_direction_events(canonical_path, event_path, order_by)
@@ -351,6 +414,8 @@ def parse_month_archive(
         event_path=event_path,
         exact_duplicate_rows_removed=exact_duplicate_rows_removed,
         reused_trade_ids=reused_trade_ids,
+        supplement_archives=supplement_archives,
+        supplement_rows_added=supplement_rows_added,
     )
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(asdict(report), indent=2) + "\n")

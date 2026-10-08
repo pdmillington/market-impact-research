@@ -1,4 +1,4 @@
-"""Download immutable Binance monthly futures trade archives."""
+"""Download immutable Binance futures trade archives (monthly, and daily for gap repair)."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from .months import iter_months
 
 
 BASE_URL = "https://data.binance.vision/data/futures/um/monthly/trades"
+DAILY_BASE_URL = "https://data.binance.vision/data/futures/um/daily/trades"
 DOWNLOAD_CHUNK_SIZE = 8 * 1024 * 1024
 DEFAULT_MAX_ATTEMPTS = 8
 MAX_RETRY_DELAY_SECONDS = 60
@@ -23,6 +24,28 @@ def archive_url(symbol: str, month: str) -> str:
 
     name = f"{symbol}-trades-{month}.zip"
     return f"{BASE_URL}/{symbol}/{name}"
+
+
+def daily_archive_url(symbol: str, day: str) -> str:
+    """Return the public Binance URL for one daily USD-M trade archive."""
+
+    return f"{DAILY_BASE_URL}/{symbol}/{symbol}-trades-{day}.zip"
+
+
+def download_daily_supplements(*, root: Path, symbol: str, days: list[str], overwrite: bool = False) -> list[Path]:
+    """Download verified daily archives into the shared source layer.
+
+    The monthly archives occasionally lack the end of a day (the day's trades stop
+    early and resume at 00:00 UTC). Where Binance's daily archive for that day is
+    complete, parse_month_archive merges it into the month.
+    """
+
+    layout = DataLayout(Path(root))
+    return [
+        download_verified(url=daily_archive_url(symbol, day),
+                          destination=layout.source_daily_archive(symbol, day), overwrite=overwrite)
+        for day in days
+    ]
 
 
 def sha256_file(path: Path, chunk_size: int = 8 * 1024 * 1024) -> str:

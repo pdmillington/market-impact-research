@@ -13,7 +13,9 @@ For each block of N consecutive events (continuous across months, no gaps reset)
 - log_return = ln(last event price / first event price);
 - gross and signed volume, sign sum, duration;
 - price_change_fraction = share of adjacent events with a different price;
-- endpoint_price_changed = last price differs from first.
+- endpoint_price_changed = last price differs from first;
+- spans_data_gap = the block covers a known unrecoverable gap in the trade archives
+  (config/btcusdt_data_gaps.csv); analyses drop these blocks.
 
 Output: one parquet per N and month (month of the block's first event) under
 shared-data/features/academic/symbol=BTCUSDT/pb_blocks_v1/N=<n>/<YYYY-MM>.parquet.
@@ -32,9 +34,11 @@ import polars as pl
 
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "shared-methodology" / "src"))
+sys.path.insert(0, str(REPO / "crypto-impact-study" / "src"))
 
 from crypto_market_data.layout import DataLayout  # noqa: E402
 from crypto_market_data.months import iter_months  # noqa: E402
+from crypto_impact.data_gaps import spans_data_gap  # noqa: E402
 
 
 N_VALUES = (100, 250, 500, 1000, 2000, 4000, 8000, 16000)
@@ -70,6 +74,7 @@ def complete_blocks(time_ms: np.ndarray, price: np.ndarray, quantity: np.ndarray
         "log_return": np.log(price_m[:, -1] / price_m[:, 0]),
         "price_change_fraction": (np.diff(price_m, axis=1) != 0).mean(axis=1) if n > 1 else np.full(rows, np.nan),
         "endpoint_price_changed": price_m[:, -1] != price_m[:, 0],
+        "spans_data_gap": spans_data_gap(time_m[:, 0], time_m[:, -1]),
     })
 
 

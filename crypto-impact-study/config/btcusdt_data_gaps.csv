@@ -1,0 +1,8 @@
+# Unrecoverable gaps in Binance BTCUSDT perpetual trade archives (found 2026-10-08 by
+# scripts/trading_gaps_audit.py; see reports/redo/data_description/daily_archive_gap_check.csv).
+# Bars spanning a gap contain unobserved trades and are excluded by the bar builders.
+symbol,gap_start_ms,gap_end_ms,gap_start_utc,gap_end_utc,missing_trade_ids,evidence
+BTCUSDT,1666738344171,1666742400140,2022-10-25 22:52:24.171,2022-10-26 00:00:00.140,100865,monthly and daily trade archives both lack these trade IDs; aggTrades has them but merges fills up to 100 ms apart
+BTCUSDT,1678833231892,1678838400042,2023-03-14 22:33:51.892,2023-03-15 00:00:00.042,318590,monthly and daily trade archives both lack these trade IDs; aggTrades has them but merges fills up to 100 ms apart
+BTCUSDT,1700534604004,1700556699707,2023-11-21 02:43:24.004,2023-11-21 08:51:39.707,417955,monthly and daily trade archives both lack these trade IDs; aggTrades has them but merges fills up to 100 ms apart
+BTCUSDT,1700562593003,1700563128127,2023-11-21 10:29:53.003,2023-11-21 10:38:48.127,7265,monthly and daily trade archives both lack these trade IDs; aggTrades has them but merges fills up to 100 ms apart

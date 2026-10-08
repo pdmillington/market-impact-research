@@ -29,6 +29,26 @@ class DataLayout:
             / f"{symbol}-trades-{month}.zip"
         )
 
+    def source_daily_archive(self, symbol: str, day: str) -> Path:
+        """Daily trade archive used to fill gaps in the monthly archive."""
+
+        return (
+            self.root
+            / "source"
+            / "binance"
+            / "futures"
+            / "um"
+            / "trades_daily"
+            / symbol
+            / f"{symbol}-trades-{day}.zip"
+        )
+
+    def daily_supplements(self, symbol: str, month: str) -> list[Path]:
+        """Daily archives stored for one month, in date order."""
+
+        folder = self.source_daily_archive(symbol, f"{month}-01").parent
+        return sorted(folder.glob(f"{symbol}-trades-{month}-*.zip"))
+
     def source_metrics_day(self, symbol: str, day: str) -> Path:
         return (
             self.root

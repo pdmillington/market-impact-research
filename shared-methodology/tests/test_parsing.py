@@ -114,3 +114,48 @@ def test_duplicate_ids_without_a_gap_still_fail(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="identity"):
         parse_month_archive(root=tmp_path, symbol="ETHUSDT", month="2025-08")
+
+
+def _write_month_and_daily(layout: DataLayout, monthly_csv: str, daily_csv: str) -> None:
+    source = layout.source_archive("BTCUSDT", "2022-02")
+    source.parent.mkdir(parents=True)
+    with zipfile.ZipFile(source, "w") as archive:
+        archive.writestr("BTCUSDT-trades-2022-02.csv", monthly_csv)
+    daily = layout.source_daily_archive("BTCUSDT", "2022-02-14")
+    daily.parent.mkdir(parents=True)
+    with zipfile.ZipFile(daily, "w") as archive:
+        archive.writestr("BTCUSDT-trades-2022-02-14.csv", daily_csv)
+
+
+def test_daily_archive_fills_gap_in_monthly_archive(tmp_path: Path) -> None:
+    layout = DataLayout(tmp_path)
+    monthly = (
+        "1,100.0,1.0,100.0,1000,false\n"
+        "2,101.0,2.0,202.0,1000,false\n"
+        "5,99.0,4.0,396.0,9000,true\n"
+    )
+    daily = (  # the day is complete: IDs 3 and 4 are missing from the monthly file
+        "1,100.0,1.0,100.0,1000,false\n"
+        "2,101.0,2.0,202.0,1000,false\n"
+        "3,102.0,1.0,102.0,2000,false\n"
+        "4,98.0,3.0,294.0,3000,true\n"
+    )
+    _write_month_and_daily(layout, monthly, daily)
+    report = parse_month_archive(root=tmp_path, symbol="BTCUSDT", month="2022-02")
+
+    assert report.supplement_rows_added == 2
+    assert report.supplement_archives == ["BTCUSDT-trades-2022-02-14.zip"]
+    assert report.fill_rows == 5
+    fills = pl.read_parquet(layout.canonical_month("BTCUSDT", "2022-02"))
+    assert fills["trade_id"].to_list() == [1, 2, 3, 4, 5]
+    assert report.event_rows == 4  # (1-2 buy @1000), (3 buy @2000), (4 sell @3000), (5 sell @9000)
+    assert list(layout.temporary_root().iterdir()) == []
+
+
+def test_daily_archive_that_disagrees_with_monthly_fails(tmp_path: Path) -> None:
+    layout = DataLayout(tmp_path)
+    monthly = "1,100.0,1.0,100.0,1000,false\n"
+    daily = "1,100.0,9.0,900.0,1000,false\n2,101.0,1.0,101.0,2000,false\n"
+    _write_month_and_daily(layout, monthly, daily)
+    with pytest.raises(ValueError, match="disagree"):
+        parse_month_archive(root=tmp_path, symbol="BTCUSDT", month="2022-02")

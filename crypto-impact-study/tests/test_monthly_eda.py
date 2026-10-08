@@ -144,3 +144,18 @@ def test_bar_volumes_are_rounded_to_lot_precision():
     assert bars.iloc[0]["gross_volume"] == 1.2
     time_bars = make_time_bars(trades, window="1min")
     assert time_bars.iloc[0]["signed_imbalance"] == 0.0
+
+
+def test_bars_spanning_a_known_data_gap_are_dropped():
+    # 2023-11-21 02:43:24.004 -> 08:51:39.707 UTC is a recorded unrecoverable gap.
+    times = pd.to_datetime(["2023-11-21 02:43:20", "2023-11-21 02:43:24.004",
+                            "2023-11-21 08:51:39.707", "2023-11-21 08:51:40",
+                            "2023-11-21 09:00:00", "2023-11-21 09:00:01"], utc=True, format="ISO8601")
+    trades = pd.DataFrame({"price": 100.0, "quantity": 1.0, "signed_volume": 1.0}, index=times)
+    bars = monthly_eda.make_trade_bars(trades, trades_per_bar=3)
+    # first bar 02:43:20 -> 08:51:39.707 spans the gap; second bar 08:51:40 -> 09:00:01 does not
+    assert bars.index.tolist() == [pd.Timestamp("2023-11-21 08:51:40", tz="UTC")]
+    time_bars = make_time_bars(trades, window="5min")
+    assert pd.Timestamp("2023-11-21 02:40", tz="UTC") not in time_bars.index
+    assert pd.Timestamp("2023-11-21 08:50", tz="UTC") not in time_bars.index
+    assert pd.Timestamp("2023-11-21 09:00", tz="UTC") in time_bars.index

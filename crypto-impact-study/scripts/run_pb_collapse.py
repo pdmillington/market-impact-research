@@ -60,6 +60,9 @@ def main() -> None:
     sample_rows, curves, empirical = [], [], []
     for n in N_VALUES:
         blocks = add_trailing_volume_normalisation(load_blocks(args.shared_data_root, args.symbol, n, args.start, args.end))
+        # Blocks covering a known data gap keep their (observed) volume in the trailing
+        # window but are excluded from the analysis sample.
+        blocks = blocks.loc[~blocks["spans_data_gap"]].reset_index(drop=True)
         curve = independently_binned_signed_response(blocks, "pb_signed_volume", n_bins=args.bins)
         curve.insert(0, "n_events", n)
         curves.append(curve)

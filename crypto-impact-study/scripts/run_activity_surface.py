@@ -69,6 +69,9 @@ def load_arrays(root: Path, n: int, warm_start: str, start: str, end: str) -> di
     trailing_vol = np.sqrt(r2.rolling("1D", closed="left", min_periods=1).sum().to_numpy())
     full_from = end_time.min() + pd.Timedelta("1D")
     keep = (end_time >= full_from) & (blocks["start_time_ms"].to_numpy() >= pd.Timestamp(start + "-01", tz="UTC").value // 10**6)
+    # Blocks covering a known data gap stay in the trailing windows (their volume and
+    # returns were observed) but are excluded from the analysis sample.
+    keep &= ~blocks["spans_data_gap"].to_numpy()
     b = blocks.loc[keep]
     months = pd.to_datetime(b["start_time_ms"], unit="ms", utc=True).dt.strftime("%Y-%m").map(month_index).to_numpy()
     gross_v = b["gross_volume"].to_numpy(float)

@@ -11,6 +11,8 @@ import pandas as pd
 
 from collections.abc import Sequence
 
+from .data_gaps import load_data_gaps, spans_data_gap
+
 
 MONTHLY_COLUMNS = ["price", "qty", "time_str", "is_buyer_maker"]
 # BTCUSDT perpetual quantities trade in 0.001 BTC lots. Bar volumes are rounded to
@@ -18,6 +20,10 @@ MONTHLY_COLUMNS = ["price", "qty", "time_str", "is_buyer_maker"]
 # imbalance of 1e-14 BTC) become exact zeros instead of spurious tiny values, which
 # would otherwise produce extreme logs (ln 1e-14 = -32).
 QUANTITY_DECIMALS = 3
+
+
+def _epoch_ms(times) -> np.ndarray:
+    return pd.DatetimeIndex(pd.to_datetime(times, utc=True)).as_unit("ms").asi8
 
 
 def _round_bar_volumes(bars: pd.DataFrame) -> pd.DataFrame:
@@ -87,6 +93,8 @@ def make_trade_bars(
     
     bars["start_time"] = pd.to_datetime(bars["start_time"], utc=True)
     bars["end_time"] = pd.to_datetime(bars["end_time"], utc=True)
+    # Bars covering a known gap in the trade archives contain unobserved trades.
+    bars = bars.loc[~spans_data_gap(_epoch_ms(bars["start_time"]), _epoch_ms(bars["end_time"]))].copy()
 
     bars["duration_seconds"] = (
         bars["end_time"] - bars["start_time"]
@@ -124,6 +132,13 @@ def make_time_bars(trades: pd.DataFrame, window: str = "5min") -> pd.DataFrame:
     )
     bars = bars.loc[bars["trade_count"] > 0].copy()
     bars = _round_bar_volumes(bars)
+    # Drop bars whose interval overlaps a known gap in the trade archives (partial data).
+    start_ms = _epoch_ms(bars.index)
+    end_ms = start_ms + int(pd.Timedelta(window).total_seconds() * 1000)
+    overlaps = np.zeros(len(bars), dtype=bool)
+    for gap_start, gap_end in load_data_gaps():
+        overlaps |= (start_ms < gap_end) & (end_ms > gap_start)
+    bars = bars.loc[~overlaps].copy()
     bars["log_return_bps"] = 10_000 * np.log(
         bars["end_price"] / bars["start_price"]
     )
