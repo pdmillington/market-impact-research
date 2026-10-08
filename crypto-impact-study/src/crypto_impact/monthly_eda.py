@@ -13,6 +13,18 @@ from collections.abc import Sequence
 
 
 MONTHLY_COLUMNS = ["price", "qty", "time_str", "is_buyer_maker"]
+# BTCUSDT perpetual quantities trade in 0.001 BTC lots. Bar volumes are rounded to
+# this precision so that floating-point remainders of offsetting fills (e.g. a net
+# imbalance of 1e-14 BTC) become exact zeros instead of spurious tiny values, which
+# would otherwise produce extreme logs (ln 1e-14 = -32).
+QUANTITY_DECIMALS = 3
+
+
+def _round_bar_volumes(bars: pd.DataFrame) -> pd.DataFrame:
+    for column in ("gross_volume", "signed_imbalance"):
+        bars[column] = bars[column].round(QUANTITY_DECIMALS)
+    return bars
+
 
 
 def load_monthly_trades(path: Path) -> pd.DataFrame:
@@ -71,6 +83,7 @@ def make_trade_bars(
     
     if drop_incomplete:
         bars = bars.loc[bars["trade_count"] == trades_per_bar].copy()
+    bars = _round_bar_volumes(bars)
     
     bars["start_time"] = pd.to_datetime(bars["start_time"], utc=True)
     bars["end_time"] = pd.to_datetime(bars["end_time"], utc=True)
@@ -110,6 +123,7 @@ def make_time_bars(trades: pd.DataFrame, window: str = "5min") -> pd.DataFrame:
         trade_count=("price", "size"),
     )
     bars = bars.loc[bars["trade_count"] > 0].copy()
+    bars = _round_bar_volumes(bars)
     bars["log_return_bps"] = 10_000 * np.log(
         bars["end_price"] / bars["start_price"]
     )

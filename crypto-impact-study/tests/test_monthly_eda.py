@@ -128,3 +128,19 @@ def test_build_fixed_event_bars_rejects_sample_without_complete_bar(
             ["month-1.parquet"],
             events_per_bar=5,
         )
+
+
+def test_bar_volumes_are_rounded_to_lot_precision():
+    # Offsetting fills whose float sum leaves a ~1e-17 remainder must give an exact zero.
+    index = pd.date_range("2025-01-01", periods=4, freq="s", tz="UTC")
+    trades = pd.DataFrame(
+        {"price": [100.0, 100.0, 100.0, 100.0], "quantity": [0.1, 0.2, 0.3, 0.6],
+         "signed_volume": [0.1, 0.2, 0.3, -0.6]},
+        index=index,
+    )
+    assert trades["signed_volume"].sum() != 0.0  # the float remainder this guards against
+    bars = monthly_eda.make_trade_bars(trades, trades_per_bar=4)
+    assert bars.iloc[0]["signed_imbalance"] == 0.0
+    assert bars.iloc[0]["gross_volume"] == 1.2
+    time_bars = make_time_bars(trades, window="1min")
+    assert time_bars.iloc[0]["signed_imbalance"] == 0.0
