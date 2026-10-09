@@ -8,6 +8,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import polars as pl
 
 from collections.abc import Sequence
 
@@ -89,8 +90,14 @@ def make_trade_bars(
     
     if drop_incomplete:
         bars = bars.loc[bars["trade_count"] == trades_per_bar].copy()
+    return _finish_event_bars(bars)
+
+
+def _finish_event_bars(bars: pd.DataFrame) -> pd.DataFrame:
+    """Rounding, gap exclusion and derived columns shared by all event-bar builders."""
+
     bars = _round_bar_volumes(bars)
-    
+
     bars["start_time"] = pd.to_datetime(bars["start_time"], utc=True)
     bars["end_time"] = pd.to_datetime(bars["end_time"], utc=True)
     # Bars covering a known gap in the trade archives contain unobserved trades.
@@ -99,7 +106,7 @@ def make_trade_bars(
     bars["duration_seconds"] = (
         bars["end_time"] - bars["start_time"]
         ).dt.total_seconds()
-    
+
     bars["log_return_bps"] = 10_000 * np.log(
         bars["end_price"] / bars["start_price"]
     )
@@ -131,6 +138,12 @@ def make_time_bars(trades: pd.DataFrame, window: str = "5min") -> pd.DataFrame:
         trade_count=("price", "size"),
     )
     bars = bars.loc[bars["trade_count"] > 0].copy()
+    return _finish_time_bars(bars, window)
+
+
+def _finish_time_bars(bars: pd.DataFrame, window: str) -> pd.DataFrame:
+    """Rounding, gap exclusion and derived columns shared by all time-bar builders."""
+
     bars = _round_bar_volumes(bars)
     # Drop bars whose interval overlaps a known gap in the trade archives (partial data).
     start_ms = _epoch_ms(bars.index)
@@ -160,6 +173,25 @@ def build_fixed_event_bars(
     events_per_bar: int,
 ) -> pd.DataFrame:
     """Build continuous non-overlapping fixed-event bars from monthly files.
+
+    Incomplete events at the end of each file are carried into the following
+    file, so bar boundaries do not restart at calendar-month boundaries. Any
+    final incomplete bar at the end of the complete sample is discarded.
+    """
+
+    if events_per_bar <= 0:
+        raise ValueError("events_per_bar must be positive.")
+    return build_fixed_event_bars_multi(files, [events_per_bar])[events_per_bar]
+
+
+def build_fixed_event_bars_reference(
+    files: Sequence[Path],
+    *,
+    events_per_bar: int,
+) -> pd.DataFrame:
+    """Original pandas implementation of build_fixed_event_bars (one size per pass).
+
+    Kept as the reference that tests compare build_fixed_event_bars_multi against.
 
     Incomplete events at the end of each file are carried into the following
     file, so bar boundaries do not restart at calendar-month boundaries. Any
@@ -222,6 +254,110 @@ def build_fixed_event_bars(
         )
 
     return bars
+
+def _read_event_arrays(path: Path) -> dict[str, np.ndarray]:
+    """One monthly event file as arrays, in file order (the files are time sorted)."""
+
+    frame = pl.read_parquet(path, columns=["price", "qty", "time_str", "is_buyer_maker"])
+    time_ms = frame["time_str"].dt.epoch("ms").to_numpy()
+    if np.any(np.diff(time_ms) < 0):
+        raise ValueError(f"{Path(path).name} is not sorted by time.")
+    quantity = frame["qty"].to_numpy()
+    return {
+        "time_ms": time_ms,
+        "price": frame["price"].to_numpy(),
+        "quantity": quantity,
+        "signed_volume": np.where(frame["is_buyer_maker"].to_numpy(), -quantity, quantity),
+    }
+
+
+def _event_bars_from_arrays(arrays: dict[str, np.ndarray], n: int) -> pd.DataFrame:
+    rows = len(arrays["time_ms"]) // n
+    shaped = {key: values[: rows * n].reshape(rows, n) for key, values in arrays.items()}
+    to_time = lambda ms: pd.to_datetime(ms, unit="ms", utc=True)
+    return pd.DataFrame({
+        "start_time": to_time(shaped["time_ms"][:, 0]),
+        "end_time": to_time(shaped["time_ms"][:, -1]),
+        "start_price": shaped["price"][:, 0],
+        "end_price": shaped["price"][:, -1],
+        "high_price": shaped["price"].max(axis=1),
+        "low_price": shaped["price"].min(axis=1),
+        "gross_volume": shaped["quantity"].sum(axis=1),
+        "signed_imbalance": shaped["signed_volume"].sum(axis=1),
+        "trade_count": np.full(rows, n, dtype=np.int64),
+    })
+
+
+def build_fixed_event_bars_multi(
+    files: Sequence[Path],
+    sizes: Sequence[int],
+) -> dict[int, pd.DataFrame]:
+    """Fixed-event bars for several sizes from a single read of each monthly file.
+
+    Same bars as build_fixed_event_bars_reference (continuous across files, final
+    incomplete bar discarded, volumes rounded, bars spanning known data gaps dropped),
+    but each file is read once with polars and every size is aggregated with numpy
+    reshapes instead of a pandas group-by per size.
+    """
+
+    sizes = list(dict.fromkeys(int(n) for n in sizes))
+    if not sizes or min(sizes) <= 0:
+        raise ValueError("sizes must be positive.")
+    paths = [Path(path) for path in files]
+    if not paths:
+        raise ValueError("At least one input file is required.")
+
+    carry: dict[int, dict[str, np.ndarray] | None] = {n: None for n in sizes}
+    frames: dict[int, list[pd.DataFrame]] = {n: [] for n in sizes}
+    for path in paths:
+        arrays = _read_event_arrays(path)
+        for n in sizes:
+            joined = arrays if carry[n] is None else {
+                key: np.concatenate([carry[n][key], values]) for key, values in arrays.items()}
+            complete = (len(joined["time_ms"]) // n) * n
+            carry[n] = {key: values[complete:] for key, values in joined.items()}
+            if complete:
+                file_bars = _finish_event_bars(_event_bars_from_arrays(joined, n))
+                file_bars["source_file"] = path.name
+                frames[n].append(file_bars)
+
+    result = {}
+    for n in sizes:
+        if not frames[n]:
+            raise ValueError(f"No complete {n:,}-event bars could be constructed.")
+        bars = pd.concat(frames[n], axis=0).sort_index()
+        bars["events_per_bar"] = n
+        if not bars.index.is_unique:
+            raise ValueError("Constructed bar start times are not unique.")
+        result[n] = bars
+    return result
+
+
+def build_time_bars(files: Sequence[Path], windows: Sequence[str]) -> dict[str, pd.DataFrame]:
+    """Fixed-length time bars for several windows from a single read of each file.
+
+    Same bars as make_time_bars(load_monthly_trades(file), window) concatenated over
+    files: windows that divide a day align with UTC midnight, so month files never
+    split a bar.
+    """
+
+    frames: dict[str, list[pd.DataFrame]] = {window: [] for window in windows}
+    for path in files:
+        arrays = _read_event_arrays(Path(path))
+        events = pl.DataFrame(arrays)
+        for window in windows:
+            width = int(pd.Timedelta(window).total_seconds() * 1000)
+            raw = (events.group_by((pl.col("time_ms") // width * width).alias("bucket"), maintain_order=True)
+                   .agg(pl.col("price").first().alias("start_price"), pl.col("price").last().alias("end_price"),
+                        pl.col("price").max().alias("high_price"), pl.col("price").min().alias("low_price"),
+                        pl.col("quantity").sum().alias("gross_volume"),
+                        pl.col("signed_volume").sum().alias("signed_imbalance"),
+                        pl.len().cast(pl.Int64).alias("trade_count"))
+                   .sort("bucket").to_pandas())
+            raw.index = pd.DatetimeIndex(pd.to_datetime(raw.pop("bucket"), unit="ms", utc=True), name="timestamp")
+            frames[window].append(_finish_time_bars(raw, window))
+    return {window: pd.concat(parts).sort_index() for window, parts in frames.items()}
+
 
 def _central_limit(values: pd.Series, quantile: float = 0.995) -> float:
     return float(values.abs().quantile(quantile))
