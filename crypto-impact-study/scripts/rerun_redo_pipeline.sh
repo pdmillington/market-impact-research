@@ -50,11 +50,14 @@ step "trading gaps audit" "$PY" -W ignore "$S/trading_gaps_audit.py"
 step "runner notebooks" "$PY" -W ignore "$S/run_paper_notebooks.py" BarConstructionRobustness RegimeResponseCurves \
   StateDependentEffectiveLiquidity ImpactDecayAndLeadLag PatzeltBouchaudScaling
 
-# 5. Repointed notebooks: execute in place so their saved outputs are current.
+# 5. Repointed notebooks: execute in place so their saved outputs are current. The kernel is
+#    pinned to the project venv (alpha-search-venv); `python3` would resolve to whichever
+#    Jupyter installation runs nbconvert (e.g. Anaconda, with different package versions).
 "$PY" "$S/build_activity_surface_notebook.py" >> "$LOG.detail" 2>&1
 for name in PowerLawImpact ImbalanceResponseSymmetry VolatilityDayInfluence ActivitySurface; do
   step "notebook $name" env MPLBACKEND=Agg "$REPO/shared-methodology/.venv/bin/jupyter" nbconvert --to notebook \
-    --execute --inplace --ExecutePreprocessor.timeout=-1 "$NB/$name.ipynb"
+    --execute --inplace --ExecutePreprocessor.timeout=-1 \
+    --ExecutePreprocessor.kernel_name=alpha-search-venv "$NB/$name.ipynb"
 done
 
 echo "== rerun finished $(date -u '+%Y-%m-%d %H:%M:%S') UTC" >> "$LOG"
