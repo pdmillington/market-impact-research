@@ -18,6 +18,7 @@ def add_trailing_impact_normalisation(
     volume_col: str = "gross_volume",
     return_col: str = "current_return_bps",
     duration_col: str = "duration_seconds",
+    require_full_window: bool = False,
 ) -> pd.DataFrame:
     """Add backward-looking volume and volatility normalisations.
 
@@ -25,6 +26,12 @@ def add_trailing_impact_normalisation(
     market volume. ``normalised_signed_impact`` is the contemporaneous return,
     signed by the imbalance direction, divided by trailing realised volatility.
     The current bar is excluded from both trailing benchmarks.
+
+    With ``require_full_window`` the benchmarks are defined only once a full
+    ``window`` of history has elapsed since the first observation (a time-based
+    warm-up). Use it with ``min_periods=1``: a bar-count minimum instead drops
+    bars from quiet periods, when fewer bars complete within the window, and so
+    selects the sample on trading activity.
     """
 
     required = {imbalance_col, volume_col, return_col, duration_col}
@@ -66,6 +73,11 @@ def add_trailing_impact_normalisation(
             window, closed="left", min_periods=min_periods
         ).sum()
     )
+
+    if require_full_window:
+        warm_up = time_index < time_index.min() + pd.Timedelta(window)
+        trailing_volume[warm_up] = np.nan
+        trailing_realised_volatility[warm_up] = np.nan
 
     signed_impact = (
         np.sign(pd.to_numeric(data[imbalance_col], errors="coerce"))
