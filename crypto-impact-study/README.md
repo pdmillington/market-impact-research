@@ -115,7 +115,7 @@ example:
 
 ```bash
 python -m crypto_impact.monthly_eda \
-  crypto-impact-study/data/raw/BTCUSDT_monthly/BTCUSDT-trades-2025-01.parquet \
+  shared-data/legacy/crypto-impact-study-data/raw/BTCUSDT_monthly/BTCUSDT-trades-2025-01.parquet \
   --output-dir crypto-impact-study/data/processed/monthly_eda \
   --window 5min
 ```

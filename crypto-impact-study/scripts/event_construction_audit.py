@@ -14,7 +14,8 @@ Two parts, both written to reports/redo/event_construction/:
    price_levels.csv: distribution of price levels per event.
 
 2. old_inputs.csv: what the paper's original input files
-   (crypto-impact-study/data/raw/BTCUSDT_monthly, 2025-01..2026-05) contain,
+   (moved 2026-10-11 to shared-data/legacy/crypto-impact-study-data/raw/BTCUSDT_monthly,
+   2025-01..2026-05) contain,
    checked month by month against the fills: rows vs distinct timestamps, and
    whether each row's sign, price and quantity equal the first fill's sign, the
    first fill's price and the gross quantity at that timestamp.
@@ -40,7 +41,7 @@ from crypto_market_data.layout import DataLayout  # noqa: E402
 from crypto_market_data.months import iter_months  # noqa: E402
 
 OUT = REPO / "crypto-impact-study" / "reports" / "redo" / "event_construction"
-OLD = REPO / "crypto-impact-study" / "data" / "raw" / "BTCUSDT_monthly"
+OLD = REPO / "shared-data" / "legacy" / "crypto-impact-study-data" / "raw" / "BTCUSDT_monthly"
 LEVEL_BUCKETS = [1, 2, 3, 5, 10, 20, 50]
 
 

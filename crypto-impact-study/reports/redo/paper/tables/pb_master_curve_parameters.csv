@@ -1,2 +1,2 @@
 volume_metric,alpha,beta,robust_objective,converged,message
-signed_volume_over_trailing_24h_volume,1.488837929050723,0.7720989982411944,2637.8459850021336,True,`ftol` termination condition is satisfied.
+signed_volume_over_trailing_24h_volume,1.4878561772231187,0.772139246687264,2637.4863203009118,True,`ftol` termination condition is satisfied.

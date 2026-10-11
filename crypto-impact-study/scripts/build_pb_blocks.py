@@ -1,24 +1,26 @@
-"""Build the paper's continuous P&B event blocks from the shared event lake.
+"""Write the P&B event blocks (pb_blocks_v1) used by the redo scripts.
 
-Replicates `aggregate_complete_blocks` in notebooks/PatzeltBouchaudScaling.ipynb,
-but reads the shared `timestamp_direction_v1` events instead of the paper's
-pre-merged monthly files. Those files collapsed every timestamp into a single
-event with the first fill's sign and the gross volume of all fills, which
-mis-signs opposite-side volume at timestamps where both sides traded (about 1%
-of timestamps). The shared events keep each contiguous same-sign run separate.
+Blocks are built by the shared builder (crypto_impact.bars) from the shared
+`timestamp_direction_v1` event lake, so they follow the same construction rules as
+every other bar in the study:
 
-For each block of N consecutive events (continuous across months, no gaps reset):
+- one event per contiguous same-sign run of fills at a millisecond timestamp,
+  priced at the run's last fill (the paper's original input files instead merged
+  each timestamp under the first fill's price and sign);
+- consecutive, non-overlapping blocks of N events, continuous across months;
+- gross and signed volume rounded to the 0.001 BTC lot;
+- blocks covering a known unrecoverable gap in the trade archives are kept with
+  spans_data_gap = True (their observed volume enters trailing windows); analyses
+  drop them.
 
-- event price = the last fill price of the event (as in the paper);
-- log_return = ln(last event price / first event price);
-- gross and signed volume, sign sum, duration;
-- price_change_fraction = share of adjacent events with a different price;
-- endpoint_price_changed = last price differs from first;
-- spans_data_gap = the block covers a known unrecoverable gap in the trade archives
-  (config/btcusdt_data_gaps.csv); analyses drop these blocks.
+Columns: n_events, start/end_time_ms, duration_seconds, start/end_price, gross_volume,
+signed_volume, sign_sum, sign_bias, trade_imbalance, log_return = ln(end/start price),
+price_change_fraction (share of adjacent events with a different price),
+endpoint_price_changed, spans_data_gap.
 
-Output: one parquet per N and month (month of the block's first event) under
-shared-data/features/academic/symbol=BTCUSDT/pb_blocks_v1/N=<n>/<YYYY-MM>.parquet.
+Output: shared-data/features/academic/symbol=BTCUSDT/pb_blocks_v1/N=<n>/<YYYY-MM>.parquet,
+holding the blocks completed while that month's events are read (a block that starts
+in one month and ends in the next is in the later month's file).
 Months from 2026-09 onward are refused (reserved for the alpha-search P-006 test).
 """
 
@@ -36,46 +38,50 @@ REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "shared-methodology" / "src"))
 sys.path.insert(0, str(REPO / "crypto-impact-study" / "src"))
 
-from crypto_market_data.layout import DataLayout  # noqa: E402
 from crypto_market_data.months import iter_months  # noqa: E402
-from crypto_impact.data_gaps import spans_data_gap  # noqa: E402
+from crypto_impact.bars import iter_event_bars, lake_event_sources  # noqa: E402
 
 
 N_VALUES = (100, 250, 500, 1000, 2000, 4000, 8000, 16000)
 LAST_ALLOWED_MONTH = "2026-08"
-DAY_MS = 86_400_000
 
 
 def output_path(root: Path, symbol: str, n: int, month: str) -> Path:
     return root / "features" / "academic" / f"symbol={symbol}" / "pb_blocks_v1" / f"N={n}" / f"{month}.parquet"
 
 
-def complete_blocks(time_ms: np.ndarray, price: np.ndarray, quantity: np.ndarray, sign: np.ndarray, n: int) -> pl.DataFrame:
-    rows = len(time_ms) // n
-    time_m = time_ms[: rows * n].reshape(rows, n)
-    price_m = price[: rows * n].reshape(rows, n)
-    qty_m = quantity[: rows * n].reshape(rows, n)
-    sign_m = sign[: rows * n].reshape(rows, n)
-    gross = qty_m.sum(axis=1)
-    signed = (qty_m * sign_m).sum(axis=1)
-    sign_sum = sign_m.sum(axis=1)
+BLOCK_SCHEMA = {
+    "n_events": pl.Int32, "start_time_ms": pl.Int64, "end_time_ms": pl.Int64, "duration_seconds": pl.Float64,
+    "start_price": pl.Float64, "end_price": pl.Float64, "gross_volume": pl.Float64, "signed_volume": pl.Float64,
+    "sign_sum": pl.Int32, "sign_bias": pl.Float64, "trade_imbalance": pl.Float64, "log_return": pl.Float64,
+    "price_change_fraction": pl.Float64, "endpoint_price_changed": pl.Boolean, "spans_data_gap": pl.Boolean,
+}
+
+
+def block_frame(bars, n: int) -> pl.DataFrame:
+    """Shared-builder bars in the pb_blocks_v1 schema."""
+
+    if bars is None or bars.empty:
+        return pl.DataFrame(schema=BLOCK_SCHEMA)
+    start_ms = bars.index.as_unit("ms").asi8
+    end_ms = bars["end_time"].dt.as_unit("ms").astype("int64").to_numpy()
     return pl.DataFrame({
-        "n_events": np.full(rows, n, dtype=np.int32),
-        "start_time_ms": time_m[:, 0],
-        "end_time_ms": time_m[:, -1],
-        "duration_seconds": (time_m[:, -1] - time_m[:, 0]) / 1_000.0,
-        "start_price": price_m[:, 0],
-        "end_price": price_m[:, -1],
-        "gross_volume": gross,
-        "signed_volume": signed,
-        "sign_sum": sign_sum.astype(np.int32),
-        "sign_bias": sign_sum / n,
-        "trade_imbalance": signed / gross,
-        "log_return": np.log(price_m[:, -1] / price_m[:, 0]),
-        "price_change_fraction": (np.diff(price_m, axis=1) != 0).mean(axis=1) if n > 1 else np.full(rows, np.nan),
-        "endpoint_price_changed": price_m[:, -1] != price_m[:, 0],
-        "spans_data_gap": spans_data_gap(time_m[:, 0], time_m[:, -1]),
-    })
+        "n_events": np.full(len(bars), n, dtype=np.int32),
+        "start_time_ms": start_ms,
+        "end_time_ms": end_ms,
+        "duration_seconds": (end_ms - start_ms) / 1_000.0,
+        "start_price": bars["start_price"].to_numpy(),
+        "end_price": bars["end_price"].to_numpy(),
+        "gross_volume": bars["gross_volume"].to_numpy(),
+        "signed_volume": bars["signed_imbalance"].to_numpy(),
+        "sign_sum": bars["sign_sum"].to_numpy().astype(np.int32),
+        "sign_bias": bars["sign_bias"].to_numpy(),
+        "trade_imbalance": (bars["signed_imbalance"] / bars["gross_volume"]).to_numpy(),
+        "log_return": np.log(bars["end_price"].to_numpy() / bars["start_price"].to_numpy()),
+        "price_change_fraction": bars["price_change_fraction"].to_numpy(),
+        "endpoint_price_changed": bars["endpoint_price_changed"].to_numpy(),
+        "spans_data_gap": bars["spans_data_gap"].to_numpy(),
+    }, schema=BLOCK_SCHEMA)
 
 
 def main() -> None:
@@ -88,32 +94,15 @@ def main() -> None:
     if args.end_month > LAST_ALLOWED_MONTH:
         raise SystemExit(f"Months after {LAST_ALLOWED_MONTH} are reserved for the alpha-search P-006 test.")
     root = args.shared_data_root
-    layout = DataLayout(root)
-    carries = {n: None for n in N_VALUES}
-    total_events = 0
-    for month in iter_months(args.start_month, args.end_month):
-        events = (pl.scan_parquet(layout.event_month(args.symbol, month))
-                  .select("timestamp_ms", "first_trade_id", "last_price", "quantity", "aggressor_sign")
-                  .sort("timestamp_ms", "first_trade_id").collect())
-        t = events["timestamp_ms"].to_numpy()
-        p = events["last_price"].to_numpy()
-        q = events["quantity"].to_numpy()
-        s = events["aggressor_sign"].to_numpy().astype(np.int8)
-        total_events += len(t)
+    months = list(iter_months(args.start_month, args.end_month))
+    sources = lake_event_sources(root, args.symbol, months)
+    for month, completed in iter_event_bars(sources, N_VALUES, drop_data_gaps=False):
         for n in N_VALUES:
-            if carries[n] is not None:
-                ct, cp, cq, cs = carries[n]
-                bt, bp, bq, bs = np.concatenate([ct, t]), np.concatenate([cp, p]), np.concatenate([cq, q]), np.concatenate([cs, s])
-            else:
-                bt, bp, bq, bs = t, p, q, s
-            complete = (len(bt) // n) * n
-            frame = complete_blocks(bt[:complete], bp[:complete], bq[:complete], bs[:complete], n)
-            carries[n] = (bt[complete:], bp[complete:], bq[complete:], bs[complete:])
             target = output_path(root, args.symbol, n, month)
             target.parent.mkdir(parents=True, exist_ok=True)
-            frame.write_parquet(target, compression="zstd")
-        print(f"{month}: {len(t):,} events", flush=True)
-    print(f"done: {total_events:,} events", flush=True)
+            block_frame(completed.get(n), n).write_parquet(target, compression="zstd")
+        print(f"{month}: done", flush=True)
+    print("done", flush=True)
 
 
 if __name__ == "__main__":

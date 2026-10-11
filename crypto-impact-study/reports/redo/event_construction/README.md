@@ -20,7 +20,8 @@ Defined in `shared-methodology/src/crypto_market_data/events.py`.
 
 ## What the paper's original input files did (`old_inputs.csv`)
 
-The files are in `data/raw/BTCUSDT_monthly`, 2025-01 to 2026-05. They were
+The files were in `crypto-impact-study/data/raw/BTCUSDT_monthly` (moved on 2026-10-11 to
+`shared-data/legacy/crypto-impact-study-data/raw/BTCUSDT_monthly`), 2025-01 to 2026-05. They were
 checked against the raw fills:
 
 | Check | Result |

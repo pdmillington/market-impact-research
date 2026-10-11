@@ -1,0 +1,12 @@
+[NbConvertApp] Converting notebook notebooks/ImbalanceResponseSymmetry.ipynb to notebook
+[IPKernelApp] WARNING | Kernel is running over TCP without encryption. All communication (including code and outputs) is sent in plain text and is susceptible to eavesdropping. Use IPC transport or launch with kernel manager-provisioned CurveZMQ keys to enable transport encryption.
+[NbConvertApp] Writing 163864 bytes to notebooks/ImbalanceResponseSymmetry.ipynb
+[NbConvertApp] Converting notebook notebooks/VolatilityDayInfluence.ipynb to notebook
+[IPKernelApp] WARNING | Kernel is running over TCP without encryption. All communication (including code and outputs) is sent in plain text and is susceptible to eavesdropping. Use IPC transport or launch with kernel manager-provisioned CurveZMQ keys to enable transport encryption.
+[NbConvertApp] Writing 537587 bytes to notebooks/VolatilityDayInfluence.ipynb
+[NbConvertApp] Converting notebook notebooks/StateDependentEffectiveLiquidity.ipynb to notebook
+[IPKernelApp] WARNING | Kernel is running over TCP without encryption. All communication (including code and outputs) is sent in plain text and is susceptible to eavesdropping. Use IPC transport or launch with kernel manager-provisioned CurveZMQ keys to enable transport encryption.
+[NbConvertApp] Writing 429421 bytes to notebooks/StateDependentEffectiveLiquidity.ipynb
+[NbConvertApp] Converting notebook notebooks/ImpactDecayAndLeadLag.ipynb to notebook
+[IPKernelApp] WARNING | Kernel is running over TCP without encryption. All communication (including code and outputs) is sent in plain text and is susceptible to eavesdropping. Use IPC transport or launch with kernel manager-provisioned CurveZMQ keys to enable transport encryption.
+[NbConvertApp] Writing 437287 bytes to notebooks/ImpactDecayAndLeadLag.ipynb

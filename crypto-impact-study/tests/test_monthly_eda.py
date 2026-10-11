@@ -131,7 +131,9 @@ def test_multi_size_builder_matches_single_size_reference(tmp_path) -> None:
     fast = monthly_eda.build_fixed_event_bars_multi(months, [7, 50, 333])
     for n, bars in fast.items():
         reference = monthly_eda.build_fixed_event_bars_reference(months, events_per_bar=n)
-        pd.testing.assert_frame_equal(bars, reference, check_exact=False, rtol=1e-12, check_index_type=False)
+        # The shared builder adds order-flow and pinning columns the reference lacks.
+        pd.testing.assert_frame_equal(bars[reference.columns], reference, check_exact=False, rtol=1e-12,
+                                      check_index_type=False)
         assert (bars.index.as_unit("ms").asi8 == reference.index.as_unit("ms").asi8).all()
 
 
@@ -185,3 +187,68 @@ def test_bars_spanning_a_known_data_gap_are_dropped():
     assert pd.Timestamp("2023-11-21 02:40", tz="UTC") not in time_bars.index
     assert pd.Timestamp("2023-11-21 08:50", tz="UTC") not in time_bars.index
     assert pd.Timestamp("2023-11-21 09:00", tz="UTC") in time_bars.index
+
+
+def _random_months(tmp_path, seed=3):
+    rng = np.random.default_rng(seed)
+    months, frames = [], []
+    for k, start in enumerate(["2025-01-01", "2025-02-01"]):
+        count = 1_203 + 97 * k
+        index = pd.date_range(start, periods=count, freq="300ms", tz="UTC")
+        quantity = np.round(rng.uniform(0.001, 2.0, count), 3)
+        sign = rng.choice([-1.0, 1.0], count)
+        price = np.round(60_000 + rng.integers(-2, 3, count).cumsum() * 0.1, 1)  # repeated prices
+        events = pd.DataFrame({"price": price, "quantity": quantity, "signed_volume": sign * quantity}, index=index)
+        months.append(_write_month(tmp_path / f"m{k}.parquet", events))
+        frames.append(events)
+    return months, pd.concat(frames)
+
+
+def test_order_flow_and_pinning_columns_match_direct_calculation(tmp_path) -> None:
+    from crypto_impact import bars as shared
+    months, events = _random_months(tmp_path)
+    n = 40
+    built = shared.build_event_bars(shared.paper_event_sources(months), [n])[n]
+    rows = len(events) // n
+    price = events["price"].to_numpy()[: rows * n].reshape(rows, n)
+    sign = np.sign(events["signed_volume"].to_numpy())[: rows * n].reshape(rows, n)
+    # Formulas of the original PatzeltBouchaudScaling aggregate_complete_blocks.
+    np.testing.assert_array_equal(built["sign_sum"].to_numpy(), sign.sum(axis=1))
+    np.testing.assert_allclose(built["sign_bias"].to_numpy(), sign.sum(axis=1) / n)
+    np.testing.assert_allclose(built["price_change_fraction"].to_numpy(), (np.diff(price, axis=1) != 0).mean(axis=1))
+    np.testing.assert_array_equal(built["endpoint_price_changed"].to_numpy(), price[:, -1] != price[:, 0])
+
+
+def test_data_gap_bars_can_be_kept_and_flagged(tmp_path) -> None:
+    from crypto_impact import bars as shared
+    times = pd.to_datetime(["2023-11-21 02:43:20", "2023-11-21 02:43:24.004", "2023-11-21 08:51:39.707",
+                            "2023-11-21 08:51:40", "2023-11-21 09:00:00", "2023-11-21 09:00:01"],
+                           utc=True, format="ISO8601")
+    events = pd.DataFrame({"price": 100.0, "quantity": 1.0, "signed_volume": 1.0}, index=times)
+    files = [_write_month(tmp_path / "m.parquet", events)]
+    kept = shared.build_event_bars(shared.paper_event_sources(files), [3], drop_data_gaps=False)[3]
+    dropped = shared.build_event_bars(shared.paper_event_sources(files), [3])[3]
+    assert kept["spans_data_gap"].tolist() == [True, False]
+    assert len(dropped) == 1 and not dropped["spans_data_gap"].any()
+
+
+def test_lake_and_paper_sources_give_identical_bars(tmp_path) -> None:
+    import polars as pl
+    from crypto_market_data.layout import DataLayout
+    from crypto_impact import bars as shared
+    months, events = _random_months(tmp_path)
+    layout = DataLayout(tmp_path / "lake")
+    for k, (month, (_, frame)) in enumerate(zip(["2025-01", "2025-02"], events.groupby(events.index.month))):
+        path = layout.event_month("BTCUSDT", month)
+        path.parent.mkdir(parents=True)
+        pl.DataFrame({
+            "timestamp_ms": frame.index.as_unit("ms").asi8, "first_trade_id": np.arange(len(frame)) + 10_000 * k,
+            "last_price": frame["price"].to_numpy(), "quantity": frame["quantity"].to_numpy(),
+            "aggressor_sign": np.sign(frame["signed_volume"].to_numpy()).astype(np.int8),
+        }).write_parquet(path)
+    sizes = [7, 40]
+    paper = shared.build_event_bars(shared.paper_event_sources(months), sizes)
+    lake = shared.build_event_bars(shared.lake_event_sources(tmp_path / "lake", "BTCUSDT", ["2025-01", "2025-02"]), sizes)
+    for n in sizes:
+        pd.testing.assert_frame_equal(paper[n].drop(columns="source_file"), lake[n].drop(columns="source_file"),
+                                      check_index_type=False)
