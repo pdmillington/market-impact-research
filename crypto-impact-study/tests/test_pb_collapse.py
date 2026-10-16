@@ -65,3 +65,38 @@ def test_activity_surface_recovers_gamma_and_nests_pb():
     assert abs(free.gamma - 0.6) < 0.1
     assert pb.gamma == 1.0 and pb.gamma_fixed
     assert free.objective < pb.objective
+
+
+def test_single_n_surface_model_recovers_gamma_on_cells() -> None:
+    import numpy as np
+    import pandas as pd
+    from crypto_impact import effective_liquidity as el
+    rng = np.random.default_rng(5)
+    log_q = rng.uniform(np.log(0.01), np.log(0.8), 400)
+    log_a = rng.normal(-5.0, 0.8, 400)
+    truth = dict(log_Q=-6.0, log_R=np.log(0.2), log_alpha=np.log(2.0), log_beta=np.log(0.6), gamma=0.4)
+    cells = pd.DataFrame({"mean_log_q": log_q, "mean_log_a": log_a, "mean_u": np.exp(log_q),
+                          "mean_z": log_a + 5.0, "mean_f": 0.0, "standard_error": 1e-3,
+                          "activity_bin": 0, "imbalance_bin": np.arange(400) % 20})
+    cells["mean_impact"] = el.predict_model("surface_volume", np.array(list(truth.values())), cells)
+    fit = el.fit_one_model("surface_volume", cells, {}, n_starts=4)
+    assert abs(fit["params"][4] - 0.4) < 1e-3
+
+
+def test_fixed_parameters_are_held_and_not_counted() -> None:
+    import numpy as np
+    import pandas as pd
+    from crypto_impact import effective_liquidity as el
+    rng = np.random.default_rng(6)
+    log_q = rng.uniform(np.log(0.01), np.log(0.8), 300)
+    log_a = rng.normal(-5.0, 0.8, 300)
+    shape = {"log_alpha": np.log(2.0), "log_beta": np.log(0.6)}
+    truth = np.array([-6.0, np.log(0.2), shape["log_alpha"], shape["log_beta"], 0.4])
+    cells = pd.DataFrame({"mean_log_q": log_q, "mean_log_a": log_a, "mean_u": np.exp(log_q), "mean_z": 0.0,
+                          "mean_f": 0.0, "standard_error": 1e-3, "activity_bin": np.arange(300) % 5,
+                          "imbalance_bin": np.arange(300) % 20})
+    cells["mean_impact"] = el.predict_model("surface_volume", truth, cells)
+    fit = el.fit_one_model("surface_volume", cells, {}, n_starts=3, fixed_params=shape)
+    assert np.allclose(fit["params"][2:4], [shape["log_alpha"], shape["log_beta"]])
+    assert abs(fit["params"][4] - 0.4) < 1e-3
+    assert el.fit_summary_row(fit)["parameters"] == 3

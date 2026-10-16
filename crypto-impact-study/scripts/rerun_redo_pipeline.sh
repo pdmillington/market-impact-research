@@ -36,10 +36,20 @@ for year in 2021 2022 2023 2024 2025; do
   step "P&B $year" "$PY" -W ignore "$S/run_pb_collapse.py" --start "$year-01" --end "$year-12" --tag "pb_collapse_year_$year"
 done
 
-# 2. Activity surface, diagnostics, thesis figures 26-29.
-step "activity surface" "$PY" -W ignore "$S/run_activity_surface.py"
-step "surface diagnostics" "$PY" -W ignore "$S/diagnose_activity_surface.py"
+# 2. Activity surface. All-N fit (robustness), then the headline fit on N = 250..16,000
+#    (at N = 100 only R_N/Q_N is identified), robustness and stability scripts, the
+#    like-for-like comparison with the threshold model, then figures 26-31 and the tables.
+HEADLINE_N=250,500,1000,2000,4000,8000,16000
+step "activity surface (all N)" "$PY" -W ignore "$S/run_activity_surface.py"
+step "surface diagnostics (all N)" "$PY" -W ignore "$S/diagnose_activity_surface.py"
+step "activity surface (headline N)" "$PY" -W ignore "$S/run_activity_surface.py" --tag activity_surface_n250_2021_2026 --n-values "$HEADLINE_N"
+step "surface diagnostics (headline N)" "$PY" -W ignore "$S/diagnose_activity_surface.py" --tag activity_surface_n250_2021_2026 --n-values "$HEADLINE_N"
+step "event price rule robustness" "$PY" -W ignore "$S/event_price_rule_robustness.py"
+step "surface identification and stability" "$PY" -W ignore "$S/surface_identification_and_stability.py"
+step "surface linearity by activity" "$PY" -W ignore "$S/surface_linearity_by_activity.py"
+step "surface vs threshold" "$PY" -W ignore "$S/surface_vs_threshold.py"
 step "surface figures" "$PY" -W ignore "$S/make_surface_figures.py"
+step "surface tables" "$PY" -W ignore "$S/make_surface_tables.py"
 
 # 3. Data audits.
 step "event construction audit" "$PY" -W ignore "$S/event_construction_audit.py"

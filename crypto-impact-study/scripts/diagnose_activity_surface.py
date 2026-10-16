@@ -33,10 +33,18 @@ BEND_SHARE_MIN = 0.10
 
 
 def main() -> None:
+    import argparse
+    global OUT
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--tag", default="activity_surface_2021_2026")
+    parser.add_argument("--n-values", default=",".join(str(n) for n in run.N_VALUES))
+    args = parser.parse_args()
+    OUT = REPO / "crypto-impact-study" / "reports" / "redo" / args.tag
+    n_values = tuple(int(v) for v in args.n_values.split(","))
     fits = pd.read_csv(OUT / "fits.csv")
     scales = pd.read_csv(OUT / "scales.csv")
     stats = []
-    for n in run.N_VALUES:
+    for n in n_values:
         arrays = run.load_arrays(REPO / "shared-data", n, "2020-12", "2021-01", "2026-08")
         stats.append(run.stats_for(arrays, n, None, "y_vol"))
     cells = aggregate_cells(pd.concat(stats, ignore_index=True))
@@ -50,7 +58,7 @@ def main() -> None:
         x = np.exp(cells["mean_logz"] + f.gamma * cells["mean_loga"]).to_numpy() / q
         pred = cells["side"].to_numpy() * r * x / np.power(1 + np.abs(x) ** f.alpha, f.beta / f.alpha)
         wres = (cells["mean_y"].to_numpy() - pred) / sigma
-        for n in run.N_VALUES:
+        for n in n_values:
             m = (cells["n_events"] == n).to_numpy()
             rows.append({"model": model, "n_events": n, "cells": int(m.sum()),
                          "share_beyond_bend": float((x[m] > 1).mean()), "x_over_q_p90": float(np.quantile(x[m], 0.9)),

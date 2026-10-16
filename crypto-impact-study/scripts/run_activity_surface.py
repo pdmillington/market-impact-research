@@ -61,11 +61,17 @@ def month_index(month: str) -> int:
 
 def load_arrays(root: Path, n: int, warm_start: str, start: str, end: str) -> dict:
     blocks = pl.concat([pl.read_parquet(output_path(root, "BTCUSDT", n, m)) for m in iter_months(warm_start, end)]).to_pandas()
+    return arrays_from_blocks(blocks, n, start)
+
+
+def arrays_from_blocks(blocks: pd.DataFrame, n: int, start: str, return_col: str = "log_return") -> dict:
+    """Surface inputs from pb_blocks-style blocks (warm-up month included), using `return_col` as the return."""
+
     blocks = blocks.sort_values("end_time_ms", kind="stable")
     end_time = pd.DatetimeIndex(pd.to_datetime(blocks["end_time_ms"], unit="ms", utc=True))
     gross = pd.Series(blocks["gross_volume"].to_numpy(float), index=end_time)
     trailing_volume = gross.rolling("1D", closed="left", min_periods=1).sum().to_numpy()
-    r2 = pd.Series(blocks["log_return"].to_numpy(float) ** 2, index=end_time)
+    r2 = pd.Series(blocks[return_col].to_numpy(float) ** 2, index=end_time)
     trailing_vol = np.sqrt(r2.rolling("1D", closed="left", min_periods=1).sum().to_numpy())
     full_from = end_time.min() + pd.Timedelta("1D")
     keep = (end_time >= full_from) & (blocks["start_time_ms"].to_numpy() >= pd.Timestamp(start + "-01", tz="UTC").value // 10**6)
@@ -79,10 +85,11 @@ def load_arrays(root: Path, n: int, warm_start: str, start: str, end: str) -> di
     tv = trailing_volume[keep]
     return {
         "month": months.astype(np.int32), "side": np.sign(signed).astype(np.int8),
-        "z": np.abs(signed) / gross_v, "a": gross_v / tv, "y": b["log_return"].to_numpy(float),
-        "y_vol": b["log_return"].to_numpy(float) / trailing_vol[keep],
+        "z": np.abs(signed) / gross_v, "a": gross_v / tv, "y": b[return_col].to_numpy(float),
+        "y_vol": b[return_col].to_numpy(float) / trailing_vol[keep],
         "intensity": n / np.where(b["duration_seconds"].to_numpy(float) > 0, b["duration_seconds"].to_numpy(float), np.nan),
         "pb_x": np.abs(signed) / tv,
+        "day": (b["start_time_ms"].to_numpy() // 86_400_000).astype(np.int32),  # UTC day, for day-block bootstraps
     }
 
 
@@ -114,24 +121,27 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tag", default="activity_surface_2021_2026")
     parser.add_argument("--bootstrap", type=int, default=200)
+    parser.add_argument("--n-values", default=",".join(str(n) for n in N_VALUES),
+                        help="bar sizes N to fit, comma separated (headline: 250..16000; N = 100 identifies only R_N/Q_N)")
     parser.add_argument("--shared-data-root", type=Path, default=REPO / "shared-data")
     args = parser.parse_args()
+    n_values = tuple(int(v) for v in args.n_values.split(","))
     out = REPO / "crypto-impact-study" / "reports" / "redo" / args.tag
     out.mkdir(parents=True, exist_ok=True)
     root = args.shared_data_root
     primary_months = {month_index(m) for m in iter_months("2021-01", "2026-08")}
 
     arrays = {}
-    for n in N_VALUES:
+    for n in n_values:
         arrays[n] = load_arrays(root, n, "2020-12", "2021-01", "2026-08")
         print(f"N={n}: {len(arrays[n]['y']):,} blocks", flush=True)
 
     # 1. Full-sample fits (full-sample cuts).
-    stats = pd.concat([stats_for(arrays[n], n, None, "y_vol") for n in N_VALUES], ignore_index=True)
+    stats = pd.concat([stats_for(arrays[n], n, None, "y_vol") for n in n_values], ignore_index=True)
     cells = aggregate_cells(stats)
     fits = fit_all(cells)
     rows = [fit_row(name, fit, cells, {"sample": "2021-01..2026-08", "response": "log_return / trailing 24h vol"}) for name, fit in fits.items()]
-    for n in N_VALUES:
+    for n in n_values:
         sub = cells.loc[cells["n_events"] == n]
         for name, g in MODELS.items():
             rows.append(fit_row(f"independent_N_{name}", fit_activity_surface(sub, gamma=g, n_starts=6), sub,
@@ -145,7 +155,7 @@ def main() -> None:
     per_n = []
     for name, fit in fits.items():
         resid = fit.scaled_residuals(cells)
-        for n in N_VALUES:
+        for n in n_values:
             mask = (cells["n_events"] == n).to_numpy()
             per_n.append({"model": name, "n_events": n, "scaled_rmse": float(np.sqrt(np.mean(resid[mask] ** 2)))})
     pd.DataFrame(per_n).to_csv(out / "per_n_rmse.csv", index=False)
@@ -177,7 +187,7 @@ def main() -> None:
     for test_year in (2023, 2024, 2025, 2026):
         train_months = {m for m in months if m // 12 < test_year}
         test_months = [m for m in months if m // 12 == test_year]
-        fold_stats = pd.concat([stats_for(arrays[n], n, train_months, "y_vol") for n in N_VALUES], ignore_index=True)
+        fold_stats = pd.concat([stats_for(arrays[n], n, train_months, "y_vol") for n in n_values], ignore_index=True)
         train_cells = aggregate_cells(fold_stats, months=train_months)
         test_cells = aggregate_cells(fold_stats, months=test_months)
         for name, g in MODELS.items():
@@ -185,7 +195,7 @@ def main() -> None:
             oos.append({"test_year": test_year, "model": name, "gamma": fit.gamma,
                         "test_weighted_rmse": weighted_rmse(fit, test_cells),
                         "test_scaled_rmse": float(np.sqrt(np.mean(fit.scaled_residuals(test_cells) ** 2)))})
-            for n in N_VALUES:
+            for n in n_values:
                 sub_train = train_cells.loc[train_cells["n_events"] == n]
                 sub_test = test_cells.loc[test_cells["n_events"] == n]
                 ind = fit_activity_surface(sub_train, gamma=g, n_starts=4)
@@ -200,18 +210,21 @@ def main() -> None:
     for name in ("pb_gamma_1", "activity_surface"):
         fit = fits[name]
         lookup = fit.scales.set_index("n_events")
-        for n in DISPLACEMENT_N:
+        for n, measure in ((n, m) for n in DISPLACEMENT_N if n in n_values for m in ("event_intensity", "volume_share")):
             d = arrays[n]
             ok = np.isfinite(d["a"]) & (d["z"] > 0) & np.isfinite(d["intensity"]) & (d["side"] != 0) & np.isfinite(d["y_vol"])
             q, r = lookup.loc[n, "q_scale"], lookup.loc[n, "r_scale"]
             pred = r * pb_shape(d["z"][ok] * d["a"][ok] ** fit.gamma / q, fit.alpha, fit.beta)
             resid = (d["side"][ok] * d["y_vol"][ok] - pred) / r
-            act = pd.qcut(d["intensity"][ok], 5, labels=False, duplicates="drop")
+            # Activity quintiles by event intensity N/T (the paper's state variable) or by
+            # volume share a = V/V24 (the surface's activity variable).
+            activity = d["intensity"][ok] if measure == "event_intensity" else d["a"][ok]
+            act = pd.qcut(activity, 5, labels=False, duplicates="drop")
             imb = pd.qcut(d["pb_x"][ok], 5, labels=False, duplicates="drop")
             frame = pd.DataFrame({"resid": resid, "high_activity": act == act.max(), "extreme_imbalance": imb == imb.max()})
             g = frame.groupby(["high_activity", "extreme_imbalance"])["resid"].agg(["mean", "std", "size"])
             v = g["mean"]
-            disp.append({"model": name, "n_events": n,
+            disp.append({"model": name, "n_events": n, "activity_measure": measure,
                          "ordinary_activity": frame.loc[~frame["high_activity"], "resid"].mean(),
                          "high_activity": frame.loc[frame["high_activity"], "resid"].mean(),
                          "difference_high_minus_ordinary": frame.loc[frame["high_activity"], "resid"].mean() - frame.loc[~frame["high_activity"], "resid"].mean(),
@@ -222,18 +235,18 @@ def main() -> None:
 
     # 6. Robustness: raw log-return response; early period 2019-10..2020-12.
     robust = []
-    rstats = pd.concat([stats_for(arrays[n], n, None, "y") for n in N_VALUES], ignore_index=True)
+    rstats = pd.concat([stats_for(arrays[n], n, None, "y") for n in n_values], ignore_index=True)
     rcells = aggregate_cells(rstats)
     for name, fit in fit_all(rcells, n_starts=6).items():
         robust.append(fit_row(name, fit, rcells, {"sample": "2021-01..2026-08", "response": "log_return (raw)"}))
     del arrays
-    early = {n: load_arrays(root, n, "2019-09", "2019-10", "2020-12") for n in N_VALUES}
-    ecells = aggregate_cells(pd.concat([stats_for(early[n], n, None, "y_vol") for n in N_VALUES], ignore_index=True))
+    early = {n: load_arrays(root, n, "2019-09", "2019-10", "2020-12") for n in n_values}
+    ecells = aggregate_cells(pd.concat([stats_for(early[n], n, None, "y_vol") for n in n_values], ignore_index=True))
     for name, fit in fit_all(ecells, n_starts=6).items():
         robust.append(fit_row(name, fit, ecells, {"sample": "2019-10..2020-12", "response": "log_return / trailing 24h vol"}))
     pd.DataFrame(robust).to_csv(out / "robustness.csv", index=False)
     (out / "manifest.json").write_text(json.dumps({"primary": "2021-01..2026-08", "warm_up": "2020-12", "bins": [N_Z, N_A],
-                                                   "n_values": list(N_VALUES), "bootstrap": args.bootstrap, "response": "log_return / trailing 24h realised vol (same bars)",
+                                                   "n_values": list(n_values), "bootstrap": args.bootstrap, "response": "log_return / trailing 24h realised vol (same bars)",
                                                    "excluded": "2026-09 onward (alpha-search P-006)"}, indent=2))
     print("DONE", flush=True)
 

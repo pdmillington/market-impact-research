@@ -252,3 +252,21 @@ def test_lake_and_paper_sources_give_identical_bars(tmp_path) -> None:
     for n in sizes:
         pd.testing.assert_frame_equal(paper[n].drop(columns="source_file"), lake[n].drop(columns="source_file"),
                                       check_index_type=False)
+
+
+def test_extra_event_prices_become_bar_start_and_end_columns(tmp_path) -> None:
+    import polars as pl
+    from crypto_market_data.layout import DataLayout
+    from crypto_impact import bars as shared
+    layout = DataLayout(tmp_path)
+    path = layout.event_month("BTCUSDT", "2025-01")
+    path.parent.mkdir(parents=True)
+    t = np.arange(6, dtype=np.int64) * 1000 + 1_735_689_600_000
+    pl.DataFrame({"timestamp_ms": t, "first_trade_id": np.arange(6), "last_price": [10., 11, 12, 13, 14, 15],
+                  "quantity": 1.0, "aggressor_sign": np.int8(1), "first_price": [9., 10, 11, 12, 13, 14],
+                  "vwap": [9.5, 10.5, 11.5, 12.5, 13.5, 14.5]}).write_parquet(path)
+    plain = shared.build_event_bars(shared.lake_event_sources(tmp_path, "BTCUSDT", ["2025-01"]), [3])[3]
+    rich = shared.build_event_bars(shared.lake_event_sources(tmp_path, "BTCUSDT", ["2025-01"], extra_prices=True), [3])[3]
+    pd.testing.assert_frame_equal(rich[plain.columns], plain)
+    assert rich["start_price_first"].tolist() == [9.0, 12.0] and rich["end_price_first"].tolist() == [11.0, 14.0]
+    assert rich["end_price_vwap"].tolist() == [11.5, 14.5]

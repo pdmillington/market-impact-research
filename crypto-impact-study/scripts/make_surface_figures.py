@@ -1,14 +1,20 @@
 """Figures and tables for the activity-adjusted P&B surface (thesis chapter).
 
-Reads the outputs of run_activity_surface.py and diagnose_activity_surface.py
-(reports/redo/activity_surface_2021_2026/) and recomputes the full-sample cells
-(same cuts and response) for the collapse figure.
+Reads the headline outputs of run_activity_surface.py and diagnose_activity_surface.py
+(reports/redo/activity_surface_n250_2021_2026/, N = 250..16,000), the day-block
+intervals of surface_identification_and_stability.py (reports/redo/surface_stability/),
+the like-for-like comparison of surface_vs_threshold.py (reports/redo/surface_vs_threshold/),
+and recomputes the full-sample cells (same cuts and response) for the collapse figure.
+
+Notation (as in the paper): q = |Q| / V is the imbalance ratio of the bar, a = V / V_24h
+relative activity, z the log event intensity; the surface coordinate is q a^gamma / Q_N.
 
 Writes to reports/redo/paper/:
 - figures/26_activity_surface_collapse.pdf   P&B coordinate vs activity-adjusted coordinate
 - figures/27_activity_surface_gamma.pdf      gamma by bar size and by calendar year
 - figures/28_activity_surface_oos.pdf        out-of-sample weighted RMSE by test year
 - figures/29_activity_surface_contours.pdf   response over (activity, imbalance): data vs fitted contours
+- figures/31_surface_vs_threshold_oos.pdf    out-of-sample weighted RMSE by test block/year, surface vs threshold
 - tables/activity_surface_*.csv              the data behind each figure
 """
 
@@ -35,8 +41,12 @@ import run_activity_surface as run  # noqa: E402
 from crypto_impact.pb_collapse import pb_shape  # noqa: E402
 from crypto_impact.pb_surface import aggregate_cells  # noqa: E402
 
-SOURCE = REPO / "crypto-impact-study" / "reports" / "redo" / "activity_surface_2021_2026"
-OUT = REPO / "crypto-impact-study" / "reports" / "redo" / "paper"
+REDO = REPO / "crypto-impact-study" / "reports" / "redo"
+SOURCE = REDO / "activity_surface_n250_2021_2026"   # headline fit
+STABILITY = REDO / "surface_stability"
+COMPARISON = REDO / "surface_vs_threshold"
+N_HEADLINE = (250, 500, 1000, 2000, 4000, 8000, 16000)
+OUT = REDO / "paper"
 # Categorical slots 1-3 of the dataviz reference palette (pre-validated); secondary
 # encoding (hatching / markers) is added so colour never carries identity alone.
 BLUE, ORANGE, AQUA = "#2a78d6", "#eb6834", "#1baf7a"
@@ -50,7 +60,7 @@ def full_sample_cells() -> pd.DataFrame:
     """The redo's full-sample cells (same cuts and response as run_activity_surface.py)."""
 
     stats = []
-    for n in run.N_VALUES:
+    for n in N_HEADLINE:
         arrays = run.load_arrays(REPO / "shared-data", n, "2020-12", "2021-01", "2026-08")
         stats.append(run.stats_for(arrays, n, None, "y_vol"))
     return aggregate_cells(pd.concat(stats, ignore_index=True))
@@ -60,7 +70,7 @@ def collapse_figure(cells: pd.DataFrame, fits: pd.DataFrame, scales: pd.DataFram
     rows = []
     fig, axes = plt.subplots(1, 2, figsize=(12.5, 5.0), sharey=False)
     activity_colours = plt.cm.Blues(np.linspace(0.35, 1.0, int(cells["ia"].max()) + 1))
-    for ax, model, title in ((axes[0], "pb_gamma_1", r"P&B coordinate $z\,a/\mathcal{Q}_N$ ($\gamma=1$)"),
+    for ax, model, title in ((axes[0], "pb_gamma_1", r"P&B coordinate $q\,a/\mathcal{Q}_N$ ($\gamma=1$)"),
                              (axes[1], "activity_surface", None)):
         f = fits.loc[fits.model == model].iloc[0]
         sc = scales.loc[scales.model == model].set_index("n_events")
@@ -74,9 +84,9 @@ def collapse_figure(cells: pd.DataFrame, fits: pd.DataFrame, scales: pd.DataFram
         ax.plot(grid, pb_shape(grid, f.alpha, f.beta), color=INK, lw=2.0,
                 label=rf"master curve ($\alpha$={f.alpha:.2f}, $\beta$={f.beta:.2f})")
         ax.set_xscale("log"); ax.set_yscale("log")
-        ax.set_xlabel(title or rf"Activity-adjusted coordinate $z\,a^{{\gamma}}/\mathcal{{Q}}_N$ ($\gamma$={f.gamma:.2f})")
+        ax.set_xlabel(title or rf"Activity-adjusted coordinate $q\,a^{{\gamma}}/\mathcal{{Q}}_N$ ($\gamma$={f.gamma:.2f})")
         ax.set_ylabel(r"Folded response $s\,\bar y/\mathcal{R}_N$  ($y=r/\sigma_{24h}$)")
-        ax.set_title(f"{'P&B (γ = 1)' if model == 'pb_gamma_1' else 'Activity surface'}: weighted RMSE {f.weighted_rmse:.1f}",
+        ax.set_title(f"{'P&B (γ = 1)' if model == 'pb_gamma_1' else 'Activity surface'}: standardised RMSE {f.weighted_rmse:.1f}",
                      color=INK, fontsize=11)
         ax.legend(loc="upper left", fontsize=9, frameon=True)
         for i in np.flatnonzero(keep):
@@ -93,34 +103,42 @@ def collapse_figure(cells: pd.DataFrame, fits: pd.DataFrame, scales: pd.DataFram
 
 
 def gamma_figure(fits: pd.DataFrame, figures: Path, tables: Path) -> None:
+    """Common gamma (month-block band) against gamma fitted by N and by year (day-block 95% intervals)."""
+
     boot = pd.read_csv(SOURCE / "gamma_bootstrap.csv")
     common = fits.loc[fits.model == "activity_surface", "gamma"].iat[0]
     lo, hi = np.quantile(boot["gamma"], [0.025, 0.975])
-    by_n = fits.loc[fits.model == "independent_N_activity_surface", ["n_events", "gamma"]].astype({"n_events": int})
-    by_year = pd.read_csv(SOURCE / "gamma_by_year.csv")
-    by_year = by_year.loc[by_year.model == "activity_surface", ["sample", "gamma"]].rename(columns={"sample": "year"})
+    by_n = pd.read_csv(STABILITY / "gamma_by_n.csv")
+    by_year = pd.read_csv(STABILITY / "gamma_by_year.csv")
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.2))
     for ax, frame, xcol, xlabel in ((axes[0], by_n, "n_events", "Events per bar, $N$"),
                                     (axes[1], by_year, "year", "Calendar year")):
         xs = frame[xcol].astype(float).to_numpy() if xcol == "n_events" else np.arange(len(frame))
-        ax.axhspan(lo, hi, color=BLUE, alpha=0.12, lw=0, label=f"common γ 95% bootstrap [{lo:.2f}, {hi:.2f}]")
-        ax.axhline(common, color=BLUE, lw=1.5, ls="--", label=f"common γ = {common:.2f}")
-        ax.plot(xs, frame["gamma"], color=INK, lw=2, marker="o", ms=7,
-                markerfacecolor="white", markeredgewidth=2, label="γ fitted separately")
+        ax.axhspan(lo, hi, color=BLUE, alpha=0.12, lw=0, label=f"common γ, 95% month-block CI [{lo:.2f}, {hi:.2f}]")
+        ax.axhline(common, color=BLUE, lw=1.5, ls="--", label=f"common γ = {common:.2f} (N = 250–16,000)")
+        err = np.vstack([frame["gamma"] - frame["gamma_p025"], frame["gamma_p975"] - frame["gamma"]])
+        identified = (frame["n_events"] >= 250).to_numpy() if xcol == "n_events" else np.ones(len(frame), bool)
+        ax.errorbar(xs[identified], frame["gamma"][identified], yerr=err[:, identified], color=INK, lw=1.5, marker="o", ms=7,
+                    markerfacecolor="white", markeredgewidth=2, capsize=3, label="γ fitted separately (95% day-block CI)")
+        if (~identified).any():
+            ax.errorbar(xs[~identified], frame["gamma"][~identified], yerr=err[:, ~identified], color=MUTED, ls="none",
+                        marker="s", ms=6, markerfacecolor="white", markeredgewidth=1.5, capsize=3,
+                        label="N = 100: only $\\mathcal{R}_N/\\mathcal{Q}_N$ identified")
         if xcol == "n_events":
             ax.set_xscale("log"); ax.set_xticks(xs); ax.set_xticklabels([f"{int(v):,}" for v in xs], rotation=0, fontsize=8)
+            ax.minorticks_off()
         else:
-            ax.set_xticks(xs); ax.set_xticklabels(frame["year"].astype(str))
+            ax.set_xticks(xs); ax.set_xticklabels([f"{y}" + (" (Jan–Aug)" if y == 2026 else "") for y in frame["year"]])
         ax.set_xlabel(xlabel); ax.set_ylabel("Activity exponent γ"); ax.set_ylim(0, 0.8)
         ax.legend(fontsize=8, loc="upper left")
     axes[0].set_title("γ by aggregation scale (2021–Aug 2026)", fontsize=11)
-    axes[1].set_title("γ by calendar year (all N; 2026 to August)", fontsize=11)
+    axes[1].set_title("γ by calendar year (N = 250–16,000)", fontsize=11)
     fig.tight_layout()
     fig.savefig(figures / "27_activity_surface_gamma.pdf", bbox_inches="tight")
     plt.close(fig)
     by_n.to_csv(tables / "activity_surface_gamma_by_n.csv", index=False)
     by_year.to_csv(tables / "activity_surface_gamma_by_year.csv", index=False)
-    pd.DataFrame([{"common_gamma": common, "bootstrap_2_5": lo, "bootstrap_97_5": hi,
+    pd.DataFrame([{"n_set": "N_250_16000", "common_gamma": common, "month_block_2_5": lo, "month_block_97_5": hi,
                    "replicates": len(boot)}]).to_csv(tables / "activity_surface_gamma_bootstrap_summary.csv", index=False)
 
 
@@ -142,7 +160,7 @@ def oos_figure(figures: Path, tables: Path) -> None:
             markerfacecolor="white", markeredgewidth=1.8, label="Separate surface per N (benchmark)")
     ax.set_xticks(np.arange(len(years)))
     ax.set_xticklabels([f"{y}" + (" (Jan–Aug)" if y == 2026 else "") for y in years])
-    ax.set_ylabel("Out-of-sample weighted RMSE (lower is better)")
+    ax.set_ylabel("Out-of-sample standardised RMSE (lower is better)")
     ax.set_xlabel("Test year (training: 2021 to the preceding year)")
     handles, labels = ax.get_legend_handles_labels()
     order = [labels.index(l) for l in [s[1] for s in specs] + ["Separate surface per N (benchmark)"]]
@@ -159,7 +177,7 @@ CONTOUR_N = (250, 2000, 16000)
 
 
 def contour_figure(cells: pd.DataFrame, fits: pd.DataFrame, scales: pd.DataFrame, figures: Path, tables: Path) -> None:
-    """Response surface over (log a, log z) for three N: data as filled contours (log scale), fits as lines.
+    """Response surface over (log a, log q) for three N: data as filled contours (log scale), fits as lines.
 
     The colour is the folded cell mean (sides averaged) divided by the surface's R_N, so the
     panels share one scale. Lines are contours of the fitted response on the same scale and at
@@ -197,9 +215,9 @@ def contour_figure(cells: pd.DataFrame, fits: pd.DataFrame, scales: pd.DataFrame
         ax.grid(False)
         for row in fc.itertuples():
             rows.append({"n_events": n, "imbalance_bin": int(row.iz), "activity_bin": int(row.ia),
-                         "log10_z": row.mean_logz / ln10, "log10_a": row.mean_loga / ln10,
+                         "log10_q": row.mean_logz / ln10, "log10_a": row.mean_loga / ln10,
                          "folded_mean_response": row.fy, "scaled_by_surface_r_n": row.scaled})
-    axes[0].set_ylabel(r"$\log_{10} z$  ($z=|Q|/V$)")
+    axes[0].set_ylabel(r"$\log_{10} q$  ($q=|Q|/V$)")
     handles = [matplotlib.lines.Line2D([], [], color=INK, lw=1.4, label=f"Activity surface, γ = {surface.gamma:.2f}"),
                matplotlib.lines.Line2D([], [], color=ORANGE, lw=1.4, ls="--", label="P&B, γ = 1")]
     axes[0].legend(handles=handles, loc="lower left", fontsize=8, frameon=True)
@@ -210,6 +228,55 @@ def contour_figure(cells: pd.DataFrame, fits: pd.DataFrame, scales: pd.DataFrame
     plt.close(fig)
     pd.DataFrame(rows).to_csv(tables / "activity_surface_contour_cells.csv", index=False)
     pd.DataFrame({"contour_level_scaled_response": levels}).to_csv(tables / "activity_surface_contour_levels.csv", index=False)
+
+
+# Surface specification compared on each bar construction: shape fixed at the headline
+# estimate; on time bars the scales follow the bar's event count (xi, psi from the headline).
+SURFACE_FOR = {"event_bars": "surface_volume", "time_bars": "surface_volume_scaled"}
+
+
+def comparison_oos_figure(figures: Path, tables: Path) -> None:
+    """Out-of-sample weighted RMSE by test block, surface vs threshold models, 4,000-event and 5-minute bars."""
+
+    oos = pd.read_csv(COMPARISON / "out_of_sample.csv")
+    oos["surface"] = oos["construction"].map(SURFACE_FOR)
+    keep = oos.loc[(oos["model"] == oos["surface"]) | oos["model"].isin(["activity_tail", "state_log"])].copy()
+    keep["model"] = np.where(keep["model"] == keep["surface"], "activity_surface", keep["model"])
+    specs = (("activity_surface", "Activity surface (3 parameters)", BLUE, ""),
+             ("activity_tail", "Threshold model (activity tail, 7)", ORANGE, "//"),
+             ("state_log", "State log (4)", AQUA, ".."))
+    designs = (("blocked", "blocked (five contiguous day blocks)"),
+               ("expanding_year", "expanding (train 2021 to Y−1, test Y)"))
+    constructions = (("event_bars", "4,000-event bars"), ("time_bars", "Five-minute bars"))
+    fig, axes = plt.subplots(2, 2, figsize=(12, 7.4), sharey="col")
+    width = 0.26
+    for row, (design, design_label) in enumerate(designs):
+        for col, (construction, construction_label) in enumerate(constructions):
+            ax = axes[row, col]
+            sub = keep.loc[(keep["construction"] == construction) & (keep["design"] == design)]
+            table = sub.pivot(index="test_block", columns="model", values="wrmse") * 1e3
+            spans = sub.drop_duplicates("test_block").set_index("test_block")
+            xs = np.arange(len(table))
+            for k, (model, label, colour, hatch) in enumerate(specs):
+                ax.bar(xs + (k - 1) * width, table[model], width=width - 0.02, color=colour, hatch=hatch,
+                       edgecolor="white", linewidth=0.8, label=label)
+            if design == "blocked":
+                labels = [f"{pd.Timestamp(spans.loc[b, 'test_start']):%b %Y}–\n{pd.Timestamp(spans.loc[b, 'test_end']):%b %Y}"
+                          for b in table.index]
+            else:
+                labels = [f"{b}" + (" (Jan–Aug)" if int(b) == 2026 else "") for b in table.index]
+            ax.set_xticks(xs); ax.set_xticklabels(labels, fontsize=8)
+            ax.set_title(f"{construction_label}, {design_label}", fontsize=10, color=INK)
+            if col == 0:
+                ax.set_ylabel(r"Out-of-sample weighted RMSE ($\times 10^{-3}$)")
+            ax.grid(axis="x", visible=False)
+    axes[0, 0].legend(fontsize=8, loc="upper left")
+    for ax in axes.ravel():
+        ax.set_ylim(0, ax.get_ylim()[1] * 1.15)
+    fig.tight_layout()
+    fig.savefig(figures / "31_surface_vs_threshold_oos.pdf", bbox_inches="tight")
+    plt.close(fig)
+    keep.drop(columns="surface").to_csv(tables / "surface_vs_threshold_oos_by_block.csv", index=False)
 
 
 def main() -> None:
@@ -225,10 +292,11 @@ def main() -> None:
     pd.read_csv(SOURCE / "robustness.csv").to_csv(tables / "activity_surface_robustness.csv", index=False)
     gamma_figure(fits, figures, tables)
     oos_figure(figures, tables)
+    comparison_oos_figure(figures, tables)
     cells = full_sample_cells()
     collapse_figure(cells, fits, scales, figures, tables)
     contour_figure(cells, fits, scales, figures, tables)
-    print(json.dumps(sorted(p.name for p in figures.glob("2[6-9]_*.pdf"))))
+    print(json.dumps(sorted(p.name for p in figures.glob("*.pdf") if p.name[:2] in {"26", "27", "28", "29", "31"})))
 
 
 if __name__ == "__main__":

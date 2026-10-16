@@ -48,10 +48,15 @@ def _round_bar_volumes(bars: pd.DataFrame) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 # Event sources: (label, arrays) pairs in time order.
 
-def _arrays(time_ms: np.ndarray, price: np.ndarray, quantity: np.ndarray, sign: np.ndarray) -> EventArrays:
+def _arrays(time_ms: np.ndarray, price: np.ndarray, quantity: np.ndarray, sign: np.ndarray,
+            **extra_prices: np.ndarray) -> EventArrays:
+    """Event arrays; `extra_prices` (e.g. price_first, price_vwap) become extra start/end bar columns."""
+
     sign = sign.astype(np.int8)
-    return {"time_ms": time_ms.astype(np.int64), "price": price.astype(float),
-            "quantity": quantity.astype(float), "signed_volume": sign * quantity.astype(float), "sign": sign}
+    arrays = {"time_ms": time_ms.astype(np.int64), "price": price.astype(float),
+              "quantity": quantity.astype(float), "signed_volume": sign * quantity.astype(float), "sign": sign}
+    arrays.update({key: values.astype(float) for key, values in extra_prices.items()})
+    return arrays
 
 
 def read_paper_events(path: Path) -> EventArrays:
@@ -65,19 +70,26 @@ def read_paper_events(path: Path) -> EventArrays:
     return _arrays(time_ms, frame["price"].to_numpy(), frame["qty"].to_numpy(), sign)
 
 
-def read_lake_events(root: Path, symbol: str, month: str) -> EventArrays:
+def read_lake_events(root: Path, symbol: str, month: str, *, extra_prices: bool = False) -> EventArrays:
     """One month of shared `timestamp_direction_v1` events, in exchange order.
 
-    Needs `crypto_market_data` (shared-methodology/src) on the import path.
+    The event price is the last fill. With `extra_prices`, the first fill
+    (`price_first`) and the volume-weighted price (`price_vwap`) are carried too,
+    for robustness checks of the event-price rule. Needs `crypto_market_data`
+    (shared-methodology/src) on the import path.
     """
 
     from crypto_market_data.layout import DataLayout
 
+    columns = ["timestamp_ms", "first_trade_id", "last_price", "quantity", "aggressor_sign"]
+    if extra_prices:
+        columns += ["first_price", "vwap"]
     events = (pl.scan_parquet(DataLayout(Path(root)).event_month(symbol, month))
-              .select("timestamp_ms", "first_trade_id", "last_price", "quantity", "aggressor_sign")
-              .sort("timestamp_ms", "first_trade_id").collect())
+              .select(columns).sort("timestamp_ms", "first_trade_id").collect())
+    extra = ({"price_first": events["first_price"].to_numpy(), "price_vwap": events["vwap"].to_numpy()}
+             if extra_prices else {})
     return _arrays(events["timestamp_ms"].to_numpy(), events["last_price"].to_numpy(),
-                   events["quantity"].to_numpy(), events["aggressor_sign"].to_numpy())
+                   events["quantity"].to_numpy(), events["aggressor_sign"].to_numpy(), **extra)
 
 
 def paper_event_sources(files: Sequence[Path]) -> Iterator[tuple[str, EventArrays]]:
@@ -85,9 +97,10 @@ def paper_event_sources(files: Sequence[Path]) -> Iterator[tuple[str, EventArray
         yield Path(path).name, read_paper_events(Path(path))
 
 
-def lake_event_sources(root: Path, symbol: str, months: Iterable[str]) -> Iterator[tuple[str, EventArrays]]:
+def lake_event_sources(root: Path, symbol: str, months: Iterable[str], *,
+                       extra_prices: bool = False) -> Iterator[tuple[str, EventArrays]]:
     for month in months:
-        yield month, read_lake_events(root, symbol, month)
+        yield month, read_lake_events(root, symbol, month, extra_prices=extra_prices)
 
 
 # ---------------------------------------------------------------------------
@@ -128,6 +141,10 @@ def _event_bars_from_arrays(arrays: EventArrays, n: int) -> pd.DataFrame:
     to_time = lambda ms: pd.to_datetime(ms, unit="ms", utc=True)
     price = shaped["price"]
     sign_sum = shaped["sign"].sum(axis=1, dtype=np.int64)
+    extra = {}
+    for key in (k for k in shaped if k.startswith("price_")):
+        extra[f"start_{key}"] = shaped[key][:, 0]
+        extra[f"end_{key}"] = shaped[key][:, -1]
     return pd.DataFrame({
         "start_time": to_time(shaped["time_ms"][:, 0]),
         "end_time": to_time(shaped["time_ms"][:, -1]),
@@ -143,6 +160,7 @@ def _event_bars_from_arrays(arrays: EventArrays, n: int) -> pd.DataFrame:
         "sign_bias": sign_sum / n,
         "price_change_fraction": (np.diff(price, axis=1) != 0).mean(axis=1) if n > 1 else np.full(rows, np.nan),
         "endpoint_price_changed": price[:, -1] != price[:, 0],
+        **extra,
     })
 
 
