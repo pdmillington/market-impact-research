@@ -52,12 +52,12 @@ This notebook has three parts:
 |---|---|
 | `reports/redo/activity_surface_n250_2021_2026/` (headline fit, N = 250–16,000) | `run_activity_surface.py --tag activity_surface_n250_2021_2026 --n-values 250,...,16000` |
 | `reports/redo/activity_surface_2021_2026/` (all N incl. 100, robustness) | `run_activity_surface.py` |
-| `reports/redo/surface_stability/` (day-block intervals, γ by N and by year) | `surface_identification_and_stability.py` |
+| `reports/redo/surface_stability/` (day-block intervals, η by N and by year) | `surface_identification_and_stability.py` |
 | `reports/redo/surface_vs_threshold/` (like-for-like comparison) | `surface_vs_threshold.py` |
-| `reports/redo/surface_linearity/` (δ within activity deciles) | `surface_linearity_by_activity.py` |
+| `reports/redo/surface_concavity/` (δ within activity deciles) | `surface_concavity_by_activity.py` |
 | `reports/redo/event_price_rule/` (event price rules) | `event_price_rule_robustness.py` |
 | `reports/redo/paper/tables/surface_*.{tex,csv}` | `make_surface_tables.py` |
-| `reports/redo/paper/figures/26–31_*.pdf` | `make_surface_figures.py`, `surface_linearity_by_activity.py` (30) |
+| `reports/redo/paper/figures/26–31_*.pdf` | `make_surface_figures.py`, `surface_concavity_by_activity.py` (30) |
 
 Data: BTCUSDT `pb_blocks_v1` (blocks of N consecutive `timestamp_direction_v1` events, shared builder),
 2021-01 to 2026-08. **Nothing from 2026-09 onward may be used** (reserved for the alpha-search P-006 test).
@@ -94,7 +94,7 @@ HEADLINE = REDO_ROOT / 'activity_surface_n250_2021_2026'
 ALL_N = REDO_ROOT / 'activity_surface_2021_2026'
 STABILITY = REDO_ROOT / 'surface_stability'
 COMPARISON = REDO_ROOT / 'surface_vs_threshold'
-LINEARITY = REDO_ROOT / 'surface_linearity'
+CONCAVITY = REDO_ROOT / 'surface_concavity'
 TABLES = REDO_ROOT / 'paper' / 'tables'
 
 # Categorical slots 1-3 of the reference palette used in the paper figures; hatching/markers carry identity too.
@@ -107,7 +107,7 @@ head_fits = pd.read_csv(HEADLINE / 'fits.csv')
 head_scales = pd.read_csv(HEADLINE / 'scales.csv')
 SURF = head_fits.query('model == "activity_surface"').iloc[0]
 PB = head_fits.query('model == "pb_gamma_1"').iloc[0]
-print(f'headline surface: gamma = {SURF.gamma:.3f}, alpha = {SURF.alpha:.2f}, beta = {SURF.beta:.3f}')
+print(f'headline surface: eta = {SURF.gamma:.3f}, alpha = {SURF.alpha:.2f}, beta = {SURF.beta:.3f}')
 """)
 
 md(r"""
@@ -121,59 +121,68 @@ side $s=\mathrm{sign}(Q)$. **How far does the price move during the block, given
 earlier answer (Patzelt and Bouchaud, P&B) measures the imbalance against the market's daily volume, $|Q|/V_{24h}$.
 The surface asks instead how the imbalance should be scaled, and lets the data decide.
 
-## A2. The variables
+## A2. The variables and notation
+
+The notation follows the paper. Section 3 defines $x = |Q|/V_{24h}$ and $y = r/\sigma_{24h}$; section 4 the P&B scales
+$\mathcal{Q}_N$, $\mathcal{I}^\star_N$ and master curve $\mathcal{F}$; section 6 the threshold model's $u$, $z$,
+$a_0, a_1, b_0, b_1$ and $\eta$. To avoid clashes with section 6, the surface uses **η** (not η) for its activity
+exponent and **ν** (not a) for relative activity.
 
 | Symbol | Definition | Meaning |
 |---|---|---|
 | $q = \lvert Q\rvert/V$ | imbalance ratio | how one-sided the block is (0 = balanced, 1 = all one side) |
-| $a = V/V_{24h}$ | relative activity | the block's volume as a share of the previous 24 h volume (strictly before the block) |
+| $\nu = V/V_{24h}$ | relative activity | the block's volume as a share of the previous 24 h volume (strictly before the block) |
+| $x = \lvert Q\rvert/V_{24h} = q\,\nu$ | normalised imbalance | the paper's $x$ (section 3) and the P&B coordinate |
+| $x_\eta = q\,\nu^{\eta}$ | activity-adjusted imbalance | the surface's coordinate; $x_1 = x$ |
 | $y = r/\sigma_{24h}$ | response | block log return in units of the previous 24 h realised volatility (√ of the sum of squared block returns) |
-| $z$ | log event intensity | the paper's activity state variable for the threshold model (Part B4) |
+| $z$ | log event intensity | the threshold model's activity variable (section 6; Part B6) |
 
-Note that $|Q|/V_{24h} = q\cdot a$: the P&B coordinate is the product of the two.
-(In the code, the column `mean_logz` holds $\log q$: a legacy name from before the notation change.)
+**Column names in the data and code are unchanged:** `gamma` holds η, `a` / `mean_loga` hold ν and log ν,
+`z` / `mean_logz` hold q and log q (legacy names), and `r_scale` holds $\mathcal{I}^\star_N$.
 
 ## A3. The model
 
-$$\mathbb{E}[y \mid q,a,N,s] \;=\; s\,\mathcal{R}_N\,F\!\left(\frac{q\,a^{\gamma}}{\mathcal{Q}_N}\right),
-\qquad F(x)=\frac{x}{(1+|x|^{\alpha})^{\beta/\alpha}}.$$
+$$\mathbb{E}[y \mid q,\nu,N,s] \;=\; s\,\mathcal{I}^\star_N\,\mathcal{F}\!\left(\frac{x_\eta}{\mathcal{Q}_N}\right),
+\qquad x_\eta = q\,\nu^{\eta},
+\qquad \mathcal{F}(w)=\frac{w}{(1+|w|^{\alpha})^{\beta/\alpha}}.$$
 
 Read it in three pieces.
 
-**1. The coordinate $x = q\,a^{\gamma}/\mathcal{Q}_N$: how imbalance is measured.** Write it out:
+**1. The coordinate $x_\eta$: how imbalance is measured.** Write it out:
 
-$$q\,a^{\gamma} \;=\; \frac{|Q|}{V}\left(\frac{V}{V_{24h}}\right)^{\gamma} \;=\; \frac{|Q|}{V^{\,1-\gamma}\;V_{24h}^{\,\gamma}}.$$
+$$x_\eta \;=\; q\,\nu^{\eta} \;=\; \frac{|Q|}{V}\left(\frac{V}{V_{24h}}\right)^{\eta} \;=\; \frac{|Q|}{V^{\,1-\eta}\;V_{24h}^{\,\eta}}.$$
 
 So the imbalance is divided by a *geometric average* of two volumes: the block's own volume $V$ (weight
-$1-\gamma$) and the market's daily volume $V_{24h}$ (weight $\gamma$). This denominator is the **effective
-liquidity** that absorbs the imbalance.
+$1-\eta$) and the market's daily volume $V_{24h}$ (weight $\eta$). This denominator can be read as the volume
+that absorbs the imbalance (an interpretation, not a tested mechanism).
 
-- $\gamma = 1$: only daily volume matters. This is the P&B coordinate $|Q|/V_{24h}$.
-- $\gamma = 0$: only the block's own volume matters. This is the plain imbalance ratio $q$.
-- The headline estimate $\gamma \approx 0.4$ puts weights of about 0.6 on the block's own volume and 0.4 on daily
+- $\eta = 1$: only daily volume matters; $x_1 = x = |Q|/V_{24h}$, the P&B coordinate.
+- $\eta = 0$: only the block's own volume matters; $x_0 = q$, the plain imbalance ratio.
+- The headline estimate $\eta \approx 0.4$ puts weights of about 0.6 on the block's own volume and 0.4 on daily
   volume in that geometric average. An imbalance of a given size moves the price less when the block
-  itself is busy, but not as much less as P&B ($\gamma = 1$) would imply.
+  itself is busy, but not as much less as P&B ($\eta = 1$) would imply.
 
-Equivalently: at a fixed imbalance ratio $q$, the response rises with activity as $a^{\gamma}$; a one-sided block that
+Equivalently: at a fixed imbalance ratio $q$, the response rises with activity as $\nu^{\eta}$; a one-sided block that
 is also large relative to the day moves the price more.
 
-**2. The master curve $F$: the shape of impact.** $F$ is the same for every $N$:
-- small $x$: $F(x)\approx x$, so impact is **linear** in the imbalance;
-- large $x$: $F(x)\approx x^{1-\beta}$, a **concave power law**. With $\beta \approx 0.15$ the tail exponent is about 0.85;
-- $\alpha$ sets how sharply the curve bends between the two regimes (the bend is at $x\approx 1$).
+**2. The master curve $\mathcal{F}$: the shape of impact.** $\mathcal{F}$ is the same for every $N$. Writing $w$ for its
+argument $x_\eta/\mathcal{Q}_N$:
+- small $w$: $\mathcal{F}(w)\approx w$, so the response is proportional to the imbalance;
+- large $w$: $\mathcal{F}(w)\approx w^{1-\beta}$, a **concave power law**. With $\beta \approx 0.15$ the tail exponent is about 0.85;
+- $\alpha$ sets how sharply the curve bends between the two regimes (the bend is at $w\approx 1$).
 
-**3. The scales $\mathcal{Q}_N$ and $\mathcal{R}_N$: aggregation.** One pair per $N$. $\mathcal{Q}_N$ is where the curve
-bends (in units of $q a^\gamma$) and $\mathcal{R}_N$ is the size of the response there (in units of daily volatility).
-Their growth with $N$ is summarised by the power laws $\mathcal{Q}_N \propto N^{\xi}$ and $\mathcal{R}_N \propto N^{\psi}$.
+**3. The scales $\mathcal{Q}_N$ and $\mathcal{I}^\star_N$: aggregation** (as in section 4). One pair per $N$. $\mathcal{Q}_N$
+is where the curve bends (in units of $x_\eta$) and $\mathcal{I}^\star_N$ is the size of the response there (in units of
+daily volatility). Their growth with $N$ is summarised by $\mathcal{Q}_N \propto N^{\xi}$ and $\mathcal{I}^\star_N \propto N^{\psi}$.
 
-**What is shared and what is not.** $\alpha$, $\beta$ and $\gamma$ are common to all $N$; $\mathcal{Q}_N$ and
-$\mathcal{R}_N$ are free per $N$. On the headline set (7 values of N) that is 3 + 2×7 = 17 parameters.
+**What is shared and what is not.** $\alpha$, $\beta$ and $\eta$ are common to all $N$; $\mathcal{Q}_N$ and
+$\mathcal{I}^\star_N$ are free per $N$. On the headline set (7 values of N) that is 3 + 2×7 = 17 parameters.
 
 ## A4. Why it is estimated on cells
 
 Each $N$ has millions (small N) to thousands (large N) of blocks, and single-block returns are very noisy.
-The fit therefore works on **cell means**: for each $N$ and side, a 20 × 10 grid of equal-count bins in $q$ and $a$.
-Each cell contributes its mean $y$, its geometric-mean $q$ and $a$, and a standard error. The fit minimises the
+The fit therefore works on **cell means**: for each $N$ and side, a 20 × 10 grid of equal-count bins in $q$ and $\nu$.
+Each cell contributes its mean $y$, its geometric-mean $q$ and $\nu$, and a standard error. The fit minimises the
 standard-error-weighted residuals (soft-L1 loss), so precise cells count more.
 
 **Standardised RMSE** = root mean squared (residual / standard error) over all cells. It is dimensionless, and
@@ -182,13 +191,14 @@ valid between models on the same cells.
 
 ## A5. Why N = 100 is left out of the headline
 
-At $N = 100$ every cell sits in the linear part of $F$ (in the all-N fit no cell lies beyond the bend;
-`activity_surface_2021_2026/identification_by_n.csv`), where $\mathcal{R}_N F(x/\mathcal{Q}_N)
-\approx (\mathcal{R}_N/\mathcal{Q}_N)\,x$. The data then fix only the ratio $\mathcal{R}_N/\mathcal{Q}_N$, not the two
-separately, so $N = 100$ adds a free direction without information about the bend. The headline uses
-$N$ = 250–16,000, where enough cells lie beyond the bend; the all-N fit is kept as a robustness row.
+At $N = 100$ every cell sits in the proportional part of $\mathcal{F}$ (in the all-N fit no cell lies beyond the bend;
+`activity_surface_2021_2026/identification_by_n.csv`), where
+$\mathcal{I}^\star_N \mathcal{F}(x_\eta/\mathcal{Q}_N) \approx (\mathcal{I}^\star_N/\mathcal{Q}_N)\,x_\eta$. The data then fix only the
+ratio $\mathcal{I}^\star_N/\mathcal{Q}_N$, not the two separately, so $N = 100$ adds a free direction without information
+about the bend. The headline uses $N$ = 250–16,000, where enough cells lie beyond the bend; the all-N fit is kept as a
+robustness row.
 
-The two plots below show the master curve and what γ does to the shape of impact.
+The two plots below show the master curve and what η does to the shape of impact.
 """)
 
 code(r"""
@@ -198,16 +208,16 @@ fig, axes = plt.subplots(1, 2, figsize=(13, 4.6))
 ax = axes[0]
 x = np.geomspace(1e-2, 1e2, 400)
 ax.plot(x, pb_shape(x, SURF.alpha, SURF.beta), color=INK, lw=2.2,
-        label=rf'surface $F$: $\alpha$={SURF.alpha:.2f}, $\beta$={SURF.beta:.3f}')
+        label=rf'surface $\mathcal{{F}}$: $\alpha$={SURF.alpha:.2f}, $\beta$={SURF.beta:.3f}')
 ax.plot(x, pb_shape(x, PB.alpha, PB.beta), color=ORANGE, lw=1.6, ls='--',
-        label=rf'P&B $F$: $\alpha$={PB.alpha:.2f}, $\beta$={PB.beta:.3f}')
-ax.plot(x[x < 3], x[x < 3], color=MUTED, lw=1, ls=':', label='linear: $x$')
+        label=rf'P&B $\mathcal{{F}}$: $\alpha$={PB.alpha:.2f}, $\beta$={PB.beta:.3f}')
+ax.plot(x[x < 3], x[x < 3], color=MUTED, lw=1, ls=':', label='proportional: $w$')
 ax.plot(x[x > 0.3], x[x > 0.3] ** (1 - SURF.beta), color=BLUE, lw=1, ls=':',
-        label=rf'tail: $x^{{1-\beta}}$ = $x^{{{1 - SURF.beta:.2f}}}$')
+        label=rf'tail: $w^{{1-\beta}}$ = $w^{{{1 - SURF.beta:.2f}}}$')
 ax.axvline(1, color=MUTED, lw=0.8)
 ax.set_xscale('log'); ax.set_yscale('log')
-ax.set_xlabel(r'scaled coordinate $x = q\,a^{\gamma}/\mathcal{Q}_N$'); ax.set_ylabel(r'$F(x)$')
-ax.set_title('Master curve: linear, then a concave power law', fontsize=11)
+ax.set_xlabel(r'scaled coordinate $w = x_\eta/\mathcal{Q}_N$'); ax.set_ylabel(r'$\mathcal{F}(w)$')
+ax.set_title('Master curve: proportional, then a concave power law', fontsize=11)
 ax.legend(fontsize=8, loc='upper left')
 
 # A3-1: predicted response against q at low, middle and high activity, N = 2,000 (headline fit).
@@ -222,7 +232,7 @@ for (label, a), colour in zip(a_levels.items(), plt.cm.Blues([0.45, 0.7, 0.95]))
         sc = head_scales.query('model == @fit.model and n_events == @n').iloc[0]
         resp = sc.r_scale * pb_shape(q_grid * a ** fit.gamma / sc.q_scale, fit.alpha, fit.beta)
         ax.plot(q_grid, resp, color=colour, ls=style, lw=1.8 if style == '-' else 1.2,
-                label=f'{label} (a = {a:.1e})' if style == '-' else None)
+                label=f'{label} (ν = {a:.1e})' if style == '-' else None)
 ax.set_xscale('log'); ax.set_yscale('log')
 ax.set_xlabel('imbalance ratio $q = |Q|/V$'); ax.set_ylabel(r'predicted $s\,\mathbb{E}[y]$ (units of $\sigma_{24h}$)')
 ax.set_title(f'N = {n:,}: activity shifts the curve (solid surface, dashed P&B)', fontsize=11)
@@ -231,16 +241,16 @@ fig.tight_layout(); plt.show()
 
 ratio = {k: v for k, v in a_levels.items()}
 lo, hi = ratio['activity bin 1'], ratio['activity bin 10']
-print(f'From activity bin 1 to bin 10, a rises by a factor {hi / lo:.1f}. At a fixed q the scaled coordinate rises by '
-      f'{(hi / lo) ** SURF.gamma:.2f}x under the surface (gamma = {SURF.gamma:.2f}) and {hi / lo:.1f}x under P&B (gamma = 1).')
+print(f'From activity bin 1 to bin 10, ν rises by a factor {hi / lo:.1f}. At a fixed q the scaled coordinate rises by '
+      f'{(hi / lo) ** SURF.gamma:.2f}x under the surface (η = {SURF.gamma:.2f}) and {hi / lo:.1f}x under P&B (η = 1).')
 """)
 
 md(r"""
-**Reading the plots.** Left: the surface's master curve stays close to linear much further than the P&B curve and then
-bends only mildly ($x^{0.85}$). P&B's curve is much more concave, because P&B has to absorb the effect of activity
+**Reading the plots.** Left: the surface's master curve stays proportional much further than the P&B curve and then
+bends only mildly ($w^{0.85}$). P&B's curve is much more concave, because P&B has to absorb the effect of activity
 into the shape. Right: at the same imbalance ratio $q$, more active blocks move the price more. Under P&B the curves
-for low and high activity are far apart (the coordinate scales with $a$ itself); under the surface they are closer
-(it scales with $a^{\gamma}$). Part B shows which the data support.
+for low and high activity are far apart (the coordinate scales with $\nu$ itself); under the surface they are closer
+(it scales with $\nu^{\eta}$). Part B shows which the data support.
 
 ---
 # Part B. The paper's results
@@ -250,11 +260,11 @@ for low and high activity are far apart (the coordinate scales with $a$ itself);
 The common surface and its two restricted versions, fitted on the same cells. Two N sets: the headline
 (N = 250–16,000) and the all-N robustness (including N = 100).
 
-- **γ, 95% CI**: the month-block bootstrap resamples whole calendar months (robust to persistence within a month);
+- **η, 95% CI**: the month-block bootstrap resamples whole calendar months (robust to persistence within a month);
   the day-block bootstrap resamples days (narrower). The paper should quote the month-block interval as the
   conservative one.
-- **ξ, ψ**: slopes of $\log\mathcal{Q}_N$ and $\log\mathcal{R}_N$ on $\log N$ (robust regression), on the identified N.
-- **Param.**: 3 shared + 2 per N for the surface; P&B and γ = 0 fix γ, so one fewer.
+- **ξ, ψ**: slopes of $\log\mathcal{Q}_N$ and $\log\mathcal{I}^\star_N$ on $\log N$ (robust regression), on the identified N.
+- **Param.**: 3 shared + 2 per N for the surface; P&B and η = 0 fix η, so one fewer.
 """)
 
 code(r"""
@@ -273,13 +283,13 @@ fit_table = show_table('surface_fit', ['n_set', 'model', 'gamma', 'gamma_month_b
 """)
 
 md(r"""
-**What it says.** Letting γ be free cuts the standardised RMSE by about a factor of four relative to P&B, with one
-extra parameter. Both restrictions are rejected: γ = 1 (P&B) and γ = 0 (activity irrelevant) both lie far outside the
-interval. γ is close to 0.4 on the headline set and a little lower when N = 100 is included.
+**What it says.** Letting η be free cuts the standardised RMSE by about a factor of four relative to P&B, with one
+extra parameter. Both restrictions are rejected: η = 1 (P&B) and η = 0 (activity irrelevant) both lie far outside the
+interval. η is close to 0.4 on the headline set and a little lower when N = 100 is included.
 
 ## B2. The collapse (figure 26)
 
-If the model is right, plotting each cell's response divided by $\mathcal{R}_N$ against its coordinate divided by
+If the model is right, plotting each cell's response divided by $\mathcal{I}^\star_N$ against its coordinate divided by
 $\mathcal{Q}_N$ puts every N and every activity level on one curve. Colour = activity decile. Under P&B (left) the
 colours separate: at the same P&B coordinate, high-activity cells (dark) sit below low-activity ones, so $|Q|/V_{24h}$
 over-scales activity. Under the surface (right) the colours overlap and the scatter about the curve is much smaller.
@@ -289,13 +299,13 @@ code(r"""
 collapse = pd.read_csv(TABLES / 'activity_surface_collapse_cells.csv')
 fig, axes = plt.subplots(1, 2, figsize=(13, 4.8))
 colours = plt.cm.Blues(np.linspace(0.35, 1.0, collapse.activity_bin.max() + 1))
-for ax, (model, fit, title) in zip(axes, (('pb_gamma_1', PB, 'P&B (γ = 1)'), ('activity_surface', SURF, 'Activity surface'))):
+for ax, (model, fit, title) in zip(axes, (('pb_gamma_1', PB, 'P&B (η = 1)'), ('activity_surface', SURF, 'Activity surface'))):
     c = collapse.query('model == @model')
     ax.scatter(c.scaled_coordinate, c.folded_scaled_response, s=8, c=colours[c.activity_bin], edgecolors='none')
     grid = np.geomspace(c.scaled_coordinate.min(), c.scaled_coordinate.max(), 300)
     ax.plot(grid, pb_shape(grid, fit.alpha, fit.beta), color=INK, lw=2)
     ax.set_xscale('log'); ax.set_yscale('log')
-    ax.set_xlabel(rf'$q\,a^{{\gamma}}/\mathcal{{Q}}_N$  (γ = {fit.gamma:.2f})'); ax.set_ylabel(r'$s\,\bar y/\mathcal{R}_N$')
+    ax.set_xlabel(rf'$x_\eta/\mathcal{{Q}}_N$  (η = {fit.gamma:.2f})'); ax.set_ylabel(r'$s\,\bar y/\mathcal{I}^\star_N$')
     ax.set_title(f'{title}: standardised RMSE {fit.weighted_rmse:.2f}', fontsize=11)
 fig.tight_layout(); plt.show()
 """)
@@ -304,8 +314,8 @@ md(r"""
 ## B3. Where it is identified (figure 29)
 
 The response over the (activity, imbalance) plane for three N. Filled colour = data; lines = fitted contours at the
-same levels (solid surface, dashed P&B). Under the model, contours are straight lines with slope $-\gamma$ in these
-log axes: P&B's are steeper (slope −1). Where the colour bands follow the solid lines, the data prefer γ < 1.
+same levels (solid surface, dashed P&B). Under the model, contours are straight lines with slope $-\eta$ in these
+log axes: P&B's are steeper (slope −1). Where the colour bands follow the solid lines, the data prefer η < 1.
 """)
 
 code(r"""
@@ -326,9 +336,9 @@ for ax, n in zip(axes, sorted(c29.n_events.unique())):
         sc = head_scales.query('model == @fit.model and n_events == @n').iloc[0]
         pred = sc.r_scale * pb_shape(np.exp(Z + fit.gamma * A) / sc.q_scale, fit.alpha, fit.beta) / r_surface
         ax.contour(grid['log10_a'], grid['log10_q'], pred, levels=levels, colors=colour, linestyles=style, linewidths=1.3)
-    ax.set_title(f'N = {n:,}', fontsize=11); ax.set_xlabel(r'$\log_{10} a$'); ax.grid(False)
+    ax.set_title(f'N = {n:,}', fontsize=11); ax.set_xlabel(r'$\log_{10} \nu$'); ax.grid(False)
 axes[0].set_ylabel(r'$\log_{10} q$')
-fig.colorbar(fill, ax=axes, shrink=0.85, ticks=levels, label=r'$s\,\bar y/\mathcal{R}_N$')
+fig.colorbar(fill, ax=axes, shrink=0.85, ticks=levels, label=r'$s\,\bar y/\mathcal{I}^\star_N$')
 plt.show()
 """)
 
@@ -336,11 +346,11 @@ md(r"""
 ## B4. Out of sample by year (paper table: `surface_oos_by_year`; figure 28)
 
 Train on 2021 to the end of year Y−1, test on year Y, refitting every model each time. Test cells are built from the
-test year alone. "Separate per N" fits a full surface (own α, β, γ) to each N; it is a flexible benchmark with many
+test year alone. "Separate per N" fits a full surface (own α, β, η) to each N; it is a flexible benchmark with many
 more parameters, shown as the root mean square of its per-N errors.
 
-**What it says.** The common surface beats P&B and γ = 0 in every test year, and comes close to the far more flexible
-per-N benchmark. The trained γ is stable across training windows (0.42–0.48), even though γ fitted *within* single
+**What it says.** The common surface beats P&B and η = 0 in every test year, and comes close to the far more flexible
+per-N benchmark. The trained η is stable across training windows (0.42–0.48), even though η fitted *within* single
 years moves (B5).
 """)
 
@@ -349,8 +359,8 @@ oos_table = show_table('surface_oos_by_year', caption='Table: out-of-sample stan
 fig, ax = plt.subplots(figsize=(9, 4))
 xs = np.arange(len(oos_table)); w = 0.26
 for k, (col, label, colour, hatch) in enumerate((('activity_surface', 'Activity surface', BLUE, ''),
-                                                 ('pb_gamma_1', 'P&B (γ = 1)', ORANGE, '//'),
-                                                 ('imbalance_ratio_gamma_0', 'Imbalance ratio (γ = 0)', AQUA, '..'))):
+                                                 ('pb_gamma_1', 'P&B (η = 1)', ORANGE, '//'),
+                                                 ('imbalance_ratio_gamma_0', 'Imbalance ratio (η = 0)', AQUA, '..'))):
     ax.bar(xs + (k - 1) * w, oos_table[col], w - 0.02, color=colour, hatch=hatch, edgecolor='white', label=label)
 ax.plot(xs - w, oos_table['independent_N_activity_surface_rms'], 'D', ms=7, color=INK, mfc='white', label='Separate surface per N')
 ax.set_xticks(xs); ax.set_xticklabels(oos_table.test_year)
@@ -358,38 +368,38 @@ ax.set_ylabel('Out-of-sample standardised RMSE'); ax.legend(fontsize=8, ncol=2);
 """)
 
 md(r"""
-## B5. Is γ one number? (paper tables: `surface_gamma_by_n`, `surface_gamma_by_year`; figure 27)
+## B5. Is η one number? (paper tables: `surface_gamma_by_n`, `surface_gamma_by_year`; figure 27)
 
-Fit γ separately for each N and for each calendar year, with 95% day-block bootstrap intervals. The band is the common
-γ with its month-block interval.
+Fit η separately for each N and for each calendar year, with 95% day-block bootstrap intervals. The band is the common
+η with its month-block interval.
 
-**What it says.** γ is *not* a universal constant:
+**What it says.** η is *not* a universal constant:
 - **By N** it rises steadily, from about 0.34 at N = 250 to 0.65 at N = 16,000. Over longer aggregation windows, daily
   volume matters more relative to the block's own volume, i.e. the block's own flow is a better liquidity measure at
-  short horizons. (N = 100 is shown for completeness; only $\mathcal{R}_N/\mathcal{Q}_N$ is identified there.)
+  short horizons. (N = 100 is shown for completeness; only $\mathcal{I}^\star_N/\mathcal{Q}_N$ is identified there.)
 - **By year** it is about 0.42–0.51 in 2021–23 and about 0.24–0.31 from 2024; the intervals of 2023 and 2024 do not
   overlap. This is the post-2024 change (revision log A3b): since 2024 activity matters less.
 
-The common γ is therefore best described as an average over scales and periods: scale- and period-dependent, not a
+The common η is therefore best described as an average over scales and periods: scale- and period-dependent, not a
 structural constant. The out-of-sample results (B4) show the averaged model still predicts well.
 """)
 
 code(r"""
-by_n = show_table('surface_gamma_by_n', caption='Table: γ by N (each N fitted alone)')
-by_year = show_table('surface_gamma_by_year', caption='Table: γ by year (headline N set)')
+by_n = show_table('surface_gamma_by_n', caption='Table: η by N (each N fitted alone)')
+by_year = show_table('surface_gamma_by_year', caption='Table: η by year (headline N set)')
 common_lo, common_hi = fit_table.query('n_set == "N_250_16000" and model == "activity_surface"')[
     ['gamma_month_block_2_5', 'gamma_month_block_97_5']].iloc[0]
 
 fig, axes = plt.subplots(1, 2, figsize=(13, 4.2))
 for ax, frame, xs, labels, xlabel in ((axes[0], by_n, by_n.n_events.to_numpy(float), [f'{n:,}' for n in by_n.n_events], 'N'),
                                       (axes[1], by_year, np.arange(len(by_year)), by_year.year.astype(str), 'year')):
-    ax.axhspan(common_lo, common_hi, color=BLUE, alpha=0.12, lw=0, label='common γ, month-block 95% CI')
-    ax.axhline(SURF.gamma, color=BLUE, ls='--', lw=1.4, label=f'common γ = {SURF.gamma:.2f}')
+    ax.axhspan(common_lo, common_hi, color=BLUE, alpha=0.12, lw=0, label='common η, month-block 95% CI')
+    ax.axhline(SURF.gamma, color=BLUE, ls='--', lw=1.4, label=f'common η = {SURF.gamma:.2f}')
     ax.errorbar(xs, frame.gamma, yerr=[frame.gamma - frame.gamma_p025, frame.gamma_p975 - frame.gamma], color=INK,
-                marker='o', mfc='white', capsize=3, label='γ fitted separately (day-block 95% CI)')
+                marker='o', mfc='white', capsize=3, label='η fitted separately (day-block 95% CI)')
     if xlabel == 'N':
         ax.set_xscale('log'); ax.minorticks_off()
-    ax.set_xticks(xs); ax.set_xticklabels(labels, fontsize=8); ax.set_xlabel(xlabel); ax.set_ylabel('γ'); ax.set_ylim(0, 0.8)
+    ax.set_xticks(xs); ax.set_xticklabels(labels, fontsize=8); ax.set_xlabel(xlabel); ax.set_ylabel('η'); ax.set_ylim(0, 0.8)
     ax.legend(fontsize=8, loc='upper left')
 fig.tight_layout(); plt.show()
 """)
@@ -403,19 +413,26 @@ inverse-variance weighted RMSE in response units (×10⁻³). **This error measu
 RMSE above.** To compare fairly, the surface is fitted on exactly that grid and loss:
 
 - **Shape fixed.** At a single bar size the master-curve shape and the scales are not separately identified (free fits
-  degenerate), so α and β are held at the headline estimate. Only $\mathcal{Q}$, $\mathcal{R}$ and γ are fitted:
+  degenerate), so α and β are held at a multi-N estimate. Only $\mathcal{Q}$, $\mathcal{I}^\star$ and η are fitted:
   3 parameters against the threshold model's 7.
+- **No look-ahead through the fixed parameters.** In sample, α, β (and ξ, ψ) come from the headline full-sample fit.
+  Out of sample, they come from a multi-N surface (N = 250–16,000) fitted on **that fold's training data only**
+  (`surface_vs_threshold/fold_shapes.csv`), so the surface sees no test-period data, just as the threshold model,
+  which is refitted on the training data. (An earlier version used the full-sample headline values in every fold;
+  that leaked the test periods into the surface. Fixing it raised the surface's out-of-sample error slightly.)
 - **Five-minute bars** contain a varying number of events $N_t$, so the scales follow it,
-  $\mathcal{Q} \propto N_t^{\xi}$, $\mathcal{R} \propto N_t^{\psi}$, with ξ, ψ from the headline. With fixed scales
-  the surface fails badly on time bars (row "Surface, $a = V/V_{24h}$" of the five-minute panel).
-- **Activity measured by event intensity** instead of $a$ fails on both bar types. The volume share $a$ is the right
+  $\mathcal{Q} \propto N_t^{\xi}$, $\mathcal{I}^\star \propto N_t^{\psi}$, with ξ, ψ from the same multi-N fit. With fixed scales
+  the surface fails badly on time bars (row "Surface, $\nu = V/V_{24h}$" of the five-minute panel).
+- **Activity measured by event intensity** instead of $\nu$ fails on both bar types. The volume share $\nu$ is the right
   activity variable for the surface.
 - **Out of sample:** blocked (five contiguous day blocks, each held out in turn) and expanding by year.
 
-**What it says.** In sample the 7-parameter threshold model fits better. Out of sample the 3-parameter surface is better
-on average in both designs and on both bar types. Block by block the picture is period-dependent: the threshold model
-wins the periods covering 2022–23 (and, on five-minute bars, the May 2024 – July 2025 block); the surface wins 2021 and
-every by-year test from 2024. This matches the γ break in B5.
+**What it says.** In sample the 7-parameter threshold model fits better. Out of sample:
+- **4,000-event bars:** the 3-parameter surface has clearly lower error on average in both designs.
+- **Five-minute bars:** the two are about equal (the surface is lower by 1–2%).
+- **Block by block** the picture is period-dependent on both bar types: the threshold model wins the periods covering
+  2022–23 (and, on five-minute bars, the May 2024 – July 2025 block); the surface wins 2021 and every by-year test
+  from 2024. This matches the η break in B5.
 """)
 
 code(r"""
@@ -448,21 +465,33 @@ fig.tight_layout(); plt.show()
 """)
 
 md(r"""
-## B7. Why is the pooled impact curve concave? (paper table: `surface_linearity`; figure 30)
+## B7. How much of the pooled concavity comes from mixing activity levels? (paper table: `surface_concavity`; figure 30)
 
-The paper's pooled impact curve against $x = |Q|/V_{24h}$ is clearly concave (exponent δ ≈ 0.6–0.7). Is that concavity
-a property of impact, or a result of pooling blocks with different activity? Hold activity fixed: within each decile
-of $a$, the surface coordinate moves only with $q$, so fit $s\bar y = c\,q^{\delta}$ within each decile.
+The paper's pooled impact curve against $x = |Q|/V_{24h}$ is concave: a single power $s\bar y = c\,x^{\delta}$ fitted to
+its bin means gives δ ≈ 0.6–0.7. Is that concavity a property of the response at a given activity level, or does it
+come from pooling blocks with different activity? Hold relative activity fixed: within each decile of $\nu$ the surface
+coordinate moves only with $q$, so fit $s\bar y = c\,q^{\delta}$ within each decile.
 
-**What it says.** Within a decile, δ ≈ 0.82–0.88 in deciles 1–9 and 0.89–0.94 in the top decile, much closer to
-linear than pooled (0.61–0.72). So mixing activity levels explains **much**, but not all, of the pooled concavity. The remaining
-curvature is close to the master curve's own tail ($x^{1-\beta}$ with $1-\beta \approx 0.85$, see A3), estimated
-independently in the surface fit.
+**What it says.** Holding relative activity fixed, the volatility-normalised response scales with the imbalance ratio
+with an exponent of about 0.85 (0.82–0.88 in deciles 1–9, 0.89–0.94 in the top decile), close to the master curve's
+tail exponent $1-\beta \approx 0.85$ (A3), which is estimated separately in the surface fit. Pooling across activity
+levels lowers the apparent exponent to 0.6–0.7. So much, but not all, of the pooled concavity reflects aggregation over
+activity levels.
+
+**How to read δ (and what it is not).**
+- On log–log axes a power law is a straight line with slope δ; the log scale does not add curvature, it is just
+  how the exponent is read. δ = 1 would mean proportional.
+- δ is a single-power summary fitted across a range that covers both regimes of the master curve, so it is an
+  average slope, not a test of proportionality at any point.
+- It is about the *normalised* variables ($y = r/\sigma_{24h}$ against $q = |Q|/V$) at fixed relative activity, not the
+  raw return against raw $|Q|$: across blocks, $V$ and $\sigma_{24h}$ both vary.
+- A decile still contains a range of $\nu$, so some mixing remains within each decile. The top decile has the widest
+  range of $\nu$ but the highest δ, so leftover mixing does not neatly explain the pattern.
 """)
 
 code(r"""
-lin = show_table('surface_linearity', caption='Table: δ within activity deciles vs pooled')
-deltas = pd.read_csv(LINEARITY / 'delta_by_decile.csv')
+lin = show_table('surface_concavity', caption='Table: δ within activity deciles vs pooled')
+deltas = pd.read_csv(CONCAVITY / 'delta_by_decile.csv')
 fig, axes = plt.subplots(1, 3, figsize=(15, 3.8), sharey=True)
 for ax, (n, g) in zip(axes, deltas.groupby('n_events')):
     d = g[g.group.str.startswith('decile')]
@@ -483,21 +512,21 @@ md(r"""
 ## B8. Robustness (paper tables: `surface_robustness`, `surface_displacement`)
 
 **Specifications.**
-- *Raw returns* (no volatility scaling): γ turns negative. Without dividing by $\sigma_{24h}$, high activity proxies
-  for high recent volatility, which inflates returns at high $a$ for reasons unrelated to imbalance. The volatility
+- *Raw returns* (no volatility scaling): η turns negative. Without dividing by $\sigma_{24h}$, high activity proxies
+  for high recent volatility, which inflates returns at high $\nu$ for reasons unrelated to imbalance. The volatility
   normalisation is essential, not cosmetic.
-- *2019-10 to 2020-12*: γ is higher (≈ 0.69), consistent with the period dependence in B5.
-- *Including N = 100*: γ ≈ 0.36, slightly lower, as expected since γ rises with N.
-- *Event price rule* (last fill, first fill, VWAP; within-timestamp or continuous runs): γ changes in the third decimal.
+- *2019-10 to 2020-12*: η is higher (≈ 0.69), consistent with the period dependence in B5.
+- *Including N = 100*: η ≈ 0.36, slightly lower, as expected since η rises with N.
+- *Event price rule* (last fill, first fill, VWAP; within-timestamp or continuous runs): η changes in the third decimal.
   These rows come from a separate rebuild of the bars on all N, so compare them with each other, not with the headline row.
 
-**Displacement.** The paper's earlier diagnostic: the mean residual (in units of $\mathcal{R}_N$) in the top activity
+**Displacement.** The paper's earlier diagnostic: the mean residual (in units of $\mathcal{I}^\star_N$) in the top activity
 quintile, against the other four. A model that handles activity correctly should show no systematic gap.
-- Under P&B with activity measured by $a$, high-activity blocks sit below the curve at every N (negative difference):
+- Under P&B with activity measured by $\nu$, high-activity blocks sit below the curve at every N (negative difference):
   P&B over-predicts them. (By event intensity, P&B's gap changes sign with N.)
 - Under the surface the gap is much smaller at N = 250 and 1,000. At N = 4,000 and 16,000 it turns positive when activity is measured by
-  $a$: the common γ (0.41) is below those N's own γ (0.57–0.65; B5), so the surface now slightly under-scales activity
-  there. This is the scale dependence of γ seen from another angle.
+  $\nu$: the common η (0.41) is below those N's own η (0.57–0.65; B5), so the surface now slightly under-scales activity
+  there. This is the scale dependence of η seen from another angle.
 """)
 
 code(r"""
@@ -507,17 +536,52 @@ disp = show_table('surface_displacement', caption='Table: displacement at high a
 """)
 
 md(r"""
-## B9. Summary for the text
+## B9. The claim
 
-- The surface's coordinate $|Q|/(V^{1-\gamma}V_{24h}^{\gamma})$ measures imbalance against a mixture of the block's own
-  volume and daily volume. γ ≈ 0.4 on N = 250–16,000 (month-block 95% CI shown in B1); P&B (γ = 1) and the plain ratio
-  (γ = 0) are both rejected.
-- One master curve (near-linear, mild concave tail) collapses all N and activity levels, with about a quarter of
-  P&B's standardised RMSE, and predicts better out of sample in every test year.
-- γ depends on the scale (rises with N) and on the period (lower since 2024). It is a useful summary, not a constant.
-- Against the threshold model on its own design, the 3-parameter surface is better out of sample on average; the
-  threshold model is better in 2022–23, the surface in 2021 and in the by-year tests from 2024.
-- Much, but not all, of the pooled concavity comes from mixing activity levels.
+### In one sentence
+
+> For the Binance BTCUSDT perpetual over 2021-01 to 2026-08, and blocks of 250 to 16,000 events, the mean
+> volatility-normalised block return conditional on the block's order-flow imbalance is well summarised by one function
+> of a single coordinate, $|Q|/(V^{1-\eta}V_{24h}^{\eta})$, with η ≈ 0.4. The imbalance is measured against a
+> mixture of the block's own volume and the preceding day's volume, not against either one alone.
+
+### What is claimed, and the evidence for each part
+
+1. **One coordinate.** Imbalance $q$ and relative activity $\nu$ affect the conditional mean response only through
+   $x_\eta$ (up to per-N scales).
+   - The cells of every N and activity level collapse onto one master curve (B2).
+   - The data contours follow straight lines with slope −η (B3).
+2. **Both simple scalings are rejected.** P&B (η = 1, only daily volume) and the plain imbalance ratio (η = 0, only
+   the block's own volume) both lie far outside the 95% interval for η (B1).
+3. **It predicts better than P&B.**
+   - In sample: about a quarter of P&B's standardised RMSE (B1).
+   - Out of sample: lower error than P&B and η = 0 in every test year, 2023–2026 (B4).
+4. **It is competitive with the state-dependent threshold model on that model's own design,** with 3 parameters
+   against 7 and no test-period data in its fixed shape (B6).
+   - On 4,000-event bars its out-of-sample error is clearly lower on average, in both designs.
+   - On five-minute bars the two are about equal out of sample.
+   - It is worse in sample, and worse in the 2022–23 test periods.
+5. **Part of the pooled concavity is aggregation.** At fixed relative activity the response exponent is about 0.85,
+   against 0.6–0.7 pooled (B7).
+
+### What is *not* claimed
+
+- **η is not a structural constant.** It rises with the aggregation scale (0.34 at N = 250 to 0.65 at N = 16,000) and
+  changes over time (0.42–0.51 in 2021–23, 0.24–0.31 from 2024) (B5). The common η ≈ 0.4 summarises this N range and
+  sample. The scale dependence is also why the surface under-scales activity at large N (displacement, B8).
+- **Not a complete description.** A standardised RMSE of 3.4 means the residuals are still several times their
+  sampling error. The surface is much better than P&B, not exact.
+- **Not causal or a trading-cost model.** It describes the conditional mean of a block's return given that block's
+  aggregate signed flow. Flow and returns are jointly determined (information, trend-following, liquidity provision).
+  It is not the price impact of one trader's own order.
+- **Not about the raw return.** It is about returns normalised by trailing 24 h volatility. Without that normalisation
+  the fit gives η < 0, because activity then proxies for recent volatility (B8).
+- **Not a mechanism.** "Effective liquidity $V^{1-\eta}V_{24h}^{\eta}$" is an interpretation of the coordinate, not
+  a tested mechanism.
+- **Not general.** One instrument, one venue, one period. At N = 100 the bend is not identified, so the headline
+  starts at N = 250 (A5).
+- **Not uniformly better than the threshold model.** Better on average out of sample on event bars, level on
+  five-minute bars, and not block by block (B6).
 
 ---
 # Part C. Sandbox
@@ -537,7 +601,7 @@ md("""
 
 Change these and rerun from here. Cell statistics are cached per (response, grid, sample), so changing
 `RESPONSE`, `N_Z`/`N_A` or the sample window triggers one reload of the blocks (a few minutes for all N);
-everything else (`N_USE`, `MIN_OBS`, sub-periods, fixed γ) refits from the cache in seconds.
+everything else (`N_USE`, `MIN_OBS`, sub-periods, fixed η) refits from the cache in seconds.
 """)
 
 code(r"""
@@ -557,8 +621,8 @@ PUBLISHED = HEADLINE if tuple(N_USE) == tuple(n for n in N_ALL if n >= 250) else
 md("""
 ## C1. Monthly cell statistics (cached)
 
-Cuts are full-sample equal-count marginal quantiles of $q$ and $a$ for each $N$ and side (as in the redo's
-full-sample fits). The cache holds, for every (N, side, z-bin, a-bin, month): count, Σy, Σy², Σlog q (column `sum_logz`, legacy name), Σlog a.
+Cuts are full-sample equal-count marginal quantiles of $q$ and $\nu$ for each $N$ and side (as in the redo's
+full-sample fits). The cache holds, for every (N, side, z-bin, a-bin, month): count, Σy, Σy², Σlog q (column `sum_logz`, legacy name), Σlog ν (column `sum_loga`).
 Any sub-sample or bootstrap is a sum over months.
 """)
 
@@ -596,13 +660,13 @@ md("""
 ## C2. Helpers
 
 - `cells_for(...)`: aggregate monthly stats to cells for a month window / set of N.
-- `fit_models(cells)`: P&B (γ=1), imbalance ratio (γ=0) and free-γ surface.
-- `summary(fits, cells)`: shape, γ, weighted RMSE, and ξ, ψ from the per-N scales.
+- `fit_models(cells)`: P&B (η=1), imbalance ratio (η=0) and free-η surface.
+- `summary(fits, cells)`: shape, η, weighted RMSE, and ξ, ψ from the per-N scales.
 - `folded(fit, cells)`: the collapse coordinates for plotting.
 """)
 
 code(r"""
-MODELS = {'P&B (γ=1)': 1.0, 'imbalance ratio (γ=0)': 0.0, 'activity surface (γ free)': None}
+MODELS = {'P&B (η=1)': 1.0, 'imbalance ratio (η=0)': 0.0, 'activity surface (η free)': None}
 
 
 def months_between(start: str, end: str) -> list[int]:
@@ -663,9 +727,9 @@ if PUBLISHED is not None and RESPONSE == 'y_vol' and SAMPLE == ('2021-01', '2026
 md("""
 ## C4. Collapse: P&B coordinate vs activity-adjusted coordinate
 
-Folded cell means $s\\bar y/\\mathcal{R}_N$ against $q a^{\\gamma}/\\mathcal{Q}_N$, coloured by activity bin
-(dark = high $a$). If activity is mis-specified, the colours separate vertically.
-`plot_collapse` takes any fit, so you can pass a hand-made γ (section C5) as well.
+Folded cell means $s\\bar y/\\mathcal{I}^\\star_N$ against $x_\\eta/\\mathcal{Q}_N = q\\,\\nu^{\\eta}/\\mathcal{Q}_N$, coloured by activity bin
+(dark = high $\nu$). If activity is mis-specified, the colours separate vertically.
+`plot_collapse` takes any fit, so you can pass a hand-made η (section C5) as well.
 """)
 
 code(r"""
@@ -680,27 +744,27 @@ def plot_collapse(fit_list, cells, titles=None, colour='ia'):
         grid = np.geomspace(f['x'].min(), f['x'].max(), 400)
         ax.plot(grid, pb_shape(grid, fit.alpha, fit.beta), color='k', lw=2)
         ax.set_xscale('log'); ax.set_yscale('log')
-        ax.set_xlabel(rf'$q\,a^{{\gamma}}/\mathcal{{Q}}_N$   (γ = {fit.gamma:.2f})')
-        ax.set_ylabel(r'$s\,\bar y/\mathcal{R}_N$')
+        ax.set_xlabel(rf'$x_\eta/\mathcal{{Q}}_N$   (η = {fit.gamma:.2f})')
+        ax.set_ylabel(r'$s\,\bar y/\mathcal{I}^\star_N$')
         ax.set_title(f'{title or ""}  standardised RMSE {weighted_rmse(fit, cells):.2f}', fontsize=10)
     fig.colorbar(sc, ax=axes[0], shrink=0.8, label=colour)
     plt.show()
 
 
-plot_collapse([fits['P&B (γ=1)'], fits['activity surface (γ free)']], cells, ['P&B', 'surface'])
+plot_collapse([fits['P&B (η=1)'], fits['activity surface (η free)']], cells, ['P&B', 'surface'])
 """)
 
 md("""
-## C5. Profile of the fit in γ
+## C5. Profile of the fit in η
 
-Fix γ on a grid and refit everything else. The curvature around the minimum shows how sharply γ is
+Fix η on a grid and refit everything else. The curvature around the minimum shows how sharply η is
 identified (compare with the month-block bootstrap interval in table B1).
 """)
 
 code(r"""
 GAMMA_GRID = np.round(np.arange(-0.2, 1.21, 0.1), 2)
 
-profile, previous = [], fits['activity surface (γ free)']
+profile, previous = [], fits['activity surface (η free)']
 for g in GAMMA_GRID:
     f = fit_activity_surface(cells, gamma=float(g), n_starts=2, initial=previous)
     profile.append({'gamma': g, 'weighted_rmse': weighted_rmse(f, cells), 'alpha': f.alpha, 'beta': f.beta})
@@ -708,8 +772,8 @@ profile = pd.DataFrame(profile)
 
 fig, ax = plt.subplots(figsize=(7, 3.8))
 ax.plot(profile['gamma'], profile['weighted_rmse'], marker='o', color='k')
-ax.axvline(fits['activity surface (γ free)'].gamma, ls='--', color='tab:blue', label='free-γ fit')
-ax.set_xlabel('γ (fixed)'); ax.set_ylabel('standardised RMSE'); ax.legend()
+ax.axvline(fits['activity surface (η free)'].gamma, ls='--', color='tab:blue', label='free-η fit')
+ax.set_xlabel('η (fixed)'); ax.set_ylabel('standardised RMSE'); ax.legend()
 plt.show()
 profile
 """)
@@ -717,7 +781,7 @@ profile
 md("""
 ## C6. Separate fits by N
 
-Each N gets its own α, β, γ. γ rising with N means activity's role shrinks at longer aggregation scales
+Each N gets its own α, β, η. η rising with N means activity's role shrinks at longer aggregation scales
 (see B5 for the paper's version with day-block intervals).
 """)
 
@@ -732,11 +796,11 @@ for n in N_USE:
 by_n = pd.DataFrame(by_n)
 display(by_n.pivot(index='n_events', columns='model', values='weighted_rmse'))
 
-surf = by_n.loc[by_n['model'] == 'activity surface (γ free)']
+surf = by_n.loc[by_n['model'] == 'activity surface (η free)']
 fig, ax = plt.subplots(figsize=(7, 3.8))
-ax.plot(surf['n_events'], surf['gamma'], marker='o', color='k', label='γ by N')
-ax.axhline(fits['activity surface (γ free)'].gamma, ls='--', color='tab:blue', label='common γ')
-ax.set_xscale('log'); ax.set_xlabel('N'); ax.set_ylabel('γ'); ax.legend()
+ax.plot(surf['n_events'], surf['gamma'], marker='o', color='k', label='η by N')
+ax.axhline(fits['activity surface (η free)'].gamma, ls='--', color='tab:blue', label='common η')
+ax.set_xscale('log'); ax.set_xlabel('N'); ax.set_ylabel('η'); ax.legend()
 plt.show()
 """)
 
@@ -755,7 +819,7 @@ for start, end in WINDOWS:
     c = cells_for(start, end, n_values=N_USE)
     f = fit_models(c, n_starts=4)
     s = summary(f, c)
-    period.append({'window': f'{start}..{end}', 'gamma': s.loc['activity surface (γ free)', 'gamma'],
+    period.append({'window': f'{start}..{end}', 'gamma': s.loc['activity surface (η free)', 'gamma'],
                    **{f'wRMSE {k}': v for k, v in s['weighted_rmse'].items()}})
 period = pd.DataFrame(period).set_index('window')
 period
@@ -764,9 +828,9 @@ period
 md("""
 ## C8. Where does the surface still miss?
 
-Standard-error-weighted residuals of the common surface on the (q bin × a bin) grid for one N, sides folded
+Standard-error-weighted residuals of the common surface on the (q bin × ν bin) grid for one N, sides folded
 (mean of $s\\cdot$residual over the two sides). Red = data above the surface. A systematic pattern along
-the activity axis says $a^{\\gamma}$ is not the right functional form for activity.
+the activity axis says $\\nu^{\\eta}$ is not the right functional form for activity.
 """)
 
 code(r"""
@@ -777,7 +841,7 @@ def residual_grid(fit, cells, n):
     return sub.groupby(['iz', 'ia'])['wres'].mean().unstack('ia')
 
 
-fit = fits['activity surface (γ free)']
+fit = fits['activity surface (η free)']
 show_n = [n for n in (250, 1000, 4000, 16000) if n in N_USE]
 fig, axes = plt.subplots(1, len(show_n), figsize=(4.2 * len(show_n), 4.2), squeeze=False, sharey=True)
 lim = 6
@@ -795,14 +859,14 @@ md("""
 ## C9. The surface itself: response over (imbalance, activity)
 
 For one N: colour = folded cell mean $s\\bar y$ (two sides averaged), placed at each cell's geometric-mean
-$(a, q)$. Lines = contours of the fitted response. Under the model the contours are straight lines
-$\\log q + \\gamma\\log a = \\text{const}$, i.e. slope $-\\gamma$ in these axes:
+$(\nu, q)$. Lines = contours of the fitted response. Under the model the contours are straight lines
+$\\log q + \\eta\\log \nu = \\text{const}$, i.e. slope $-\\eta$ in these axes:
 
-- solid: the free-γ surface;
-- dashed: P&B (γ = 1, diagonal contours: only $|Q|/V_{24h}$ matters);
-- γ = 0 would give horizontal contours (activity irrelevant).
+- solid: the free-η surface;
+- dashed: P&B (η = 1, diagonal contours: only $|Q|/V_{24h}$ matters);
+- η = 0 would give horizontal contours (activity irrelevant).
 
-Where the colour bands follow the solid lines rather than the dashed ones, activity enters with γ < 1.
+Where the colour bands follow the solid lines rather than the dashed ones, activity enters with η < 1.
 The same contour levels are used for both fits so they can be compared directly.
 """)
 
@@ -821,10 +885,10 @@ def fitted_on_grid(fit, n, log_a, log_z):
 def plot_surface_map(n_values=(250, 2000, 16000), fit_main=None, fit_ref=None,
                      levels=(0.1, 0.2, 0.5, 1.0, 2.0, 4.0)):
     # Same drawing as thesis figure 29 (scripts/make_surface_figures.py): colour = folded cell mean / surface R_N
-    # on a log scale, drawn on the cells' own (q bin x a bin) grid; lines = fitted contours at the same levels.
+    # on a log scale, drawn on the cells' own (q bin x ν bin) grid; lines = fitted contours at the same levels.
     import matplotlib
-    fit_main = fit_main or fits['activity surface (γ free)']
-    fit_ref = fit_ref or fits['P&B (γ=1)']
+    fit_main = fit_main or fits['activity surface (η free)']
+    fit_ref = fit_ref or fits['P&B (η=1)']
     n_values = [n for n in n_values if n in N_USE]
     fill_levels = np.geomspace(0.05, 8.0, 25)
     norm = matplotlib.colors.LogNorm(fill_levels[0], fill_levels[-1])
@@ -843,12 +907,12 @@ def plot_surface_map(n_values=(250, 2000, 16000), fit_main=None, fit_ref=None,
             pred = r * pb_shape(np.exp(grid['mean_logz'] + fit.gamma * grid['mean_loga']) / q, fit.alpha, fit.beta) / r_main
             ax.contour(grid['mean_loga'] / ln10, grid['mean_logz'] / ln10, pred, levels=list(levels),
                        colors=colour, linestyles=style, linewidths=1.4)
-        ax.set_title(f'N = {n:,}: surface γ={fit_main.gamma:.2f} (black), reference γ={fit_ref.gamma:.2f} (dashed)', fontsize=9)
-        ax.set_xlabel(r'$\log_{10} a$'); ax.grid(False)
+        ax.set_title(f'N = {n:,}: surface η={fit_main.gamma:.2f} (black), reference η={fit_ref.gamma:.2f} (dashed)', fontsize=9)
+        ax.set_xlabel(r'$\log_{10} \nu$'); ax.grid(False)
     axes[0][0].set_ylabel(r'$\log_{10} q$')
     bar = fig.colorbar(fill, ax=axes[0], shrink=0.85, ticks=list(levels))
     bar.ax.set_yticklabels([f'{v:g}' for v in levels])
-    bar.set_label(r'$s\,\bar y/\mathcal{R}_N$')
+    bar.set_label(r'$s\,\bar y/\mathcal{I}^\star_N$')
     plt.show()
 
 
@@ -862,7 +926,7 @@ use the contour map above for the thesis. For a rotatable plot run `%matplotlib 
 
 code(r"""
 def plot_surface_3d(n, fit=None, elev=25, azim=-130):
-    fit = fit or fits['activity surface (γ free)']
+    fit = fit or fits['activity surface (η free)']
     fc = folded_cells(cells, n)
     log_a = np.linspace(fc['mean_loga'].min(), fc['mean_loga'].max(), 60)
     log_z = np.linspace(fc['mean_logz'].min(), fc['mean_logz'].max(), 60)
@@ -871,9 +935,9 @@ def plot_surface_3d(n, fit=None, elev=25, azim=-130):
     ax = fig.add_subplot(projection='3d')
     ax.plot_surface(A / np.log(10), Z / np.log(10), P, cmap='viridis', alpha=0.6, linewidth=0)
     ax.scatter(fc['mean_loga'] / np.log(10), fc['mean_logz'] / np.log(10), fc['fy'], color='k', s=6)
-    ax.set_xlabel('log10 a'); ax.set_ylabel('log10 q'); ax.set_zlabel('s·ȳ')
+    ax.set_xlabel('log10 ν'); ax.set_ylabel('log10 q'); ax.set_zlabel('s·ȳ')
     ax.view_init(elev=elev, azim=azim)
-    ax.set_title(f'N = {n:,}, γ = {fit.gamma:.2f}', fontsize=10)
+    ax.set_title(f'N = {n:,}, η = {fit.gamma:.2f}', fontsize=10)
     plt.show()
 
 
@@ -885,10 +949,10 @@ md("""
 
 Ideas to try (each is a few lines with the helpers above):
 
-- `N_USE = N_ALL` — add N = 100 (only $\\mathcal{R}_N/\\mathcal{Q}_N$ identified) and refit.
-- `RESPONSE = 'y'` — raw returns (γ goes negative: activity then proxies yesterday's volatility).
+- `N_USE = N_ALL` — add N = 100 (only $\\mathcal{I}^\\star_N/\\mathcal{Q}_N$ identified) and refit.
+- `RESPONSE = 'y'` — raw returns (η goes negative: activity then proxies yesterday's volatility).
 - `SAMPLE = ('2019-10', '2020-12')` — the early period (see B8).
-- `N_Z, N_A = 30, 15` — finer grid; check γ is not a binning artefact.
+- `N_Z, N_A = 30, 15` — finer grid; check η is not a binning artefact.
 - `plot_collapse([fit_activity_surface(cells, gamma=0.6)], cells)` — look at a collapse by hand.
 """)
 

@@ -1,10 +1,11 @@
-"""Is the response linear in the surface coordinate within activity levels? (revision log A3c-2, A3d)
+"""How much of the pooled impact concavity comes from mixing activity levels? (revision log A3c-2, A3d)
 
 Hypothesis: the pooled impact curve is concave in x = |Q| / V_24h partly because it
-mixes activity levels. Within a fixed level of relative activity a = V / V_24h the
-surface coordinate q a^gamma / Q_N moves with q = |Q| / V only, so if the response is
-close to linear in q within activity deciles (delta ~ 1) while the pooled curve in x
-is concave (delta < 1), the pooled concavity comes largely from mixing.
+mixes activity levels. Within a fixed level of relative activity nu = V / V_24h (column
+`a`) the surface coordinate x_eta / Q_N = q nu^eta / Q_N moves with q = |Q| / V only. If the exponent of the
+volatility-normalised response in q within activity deciles is clearly higher than the
+pooled exponent in x, part of the pooled concavity comes from mixing. (delta is a
+single-power summary of the normalised variables, not a test of proportionality.)
 
 At N = 1,000, 4,000 and 16,000 (pb_blocks_v1, 2021-01..2026-08, volatility-normalised
 response y = r / sigma_24h, folded by the sign of Q):
@@ -15,8 +16,8 @@ response y = r / sigma_24h, folded by the sign of Q):
 - the share of surface cells beyond the master-curve bend (x > 1 in surface units),
   from diagnose_activity_surface.py.
 
-Outputs: reports/redo/surface_linearity/{delta_by_decile.csv, bins.csv} and
-reports/redo/paper/figures/30_surface_linearity_by_activity.pdf
+Outputs: reports/redo/surface_concavity/{delta_by_decile.csv, bins.csv} and
+reports/redo/paper/figures/30_surface_concavity_by_activity.pdf
 """
 
 from __future__ import annotations
@@ -40,7 +41,7 @@ sys.path[:0] = [str(REPO / "crypto-impact-study" / "src"), str(REPO / "crypto-im
 
 import run_activity_surface as run  # noqa: E402
 
-OUT = REPO / "crypto-impact-study" / "reports" / "redo" / "surface_linearity"
+OUT = REPO / "crypto-impact-study" / "reports" / "redo" / "surface_concavity"
 FIGURES = REPO / "crypto-impact-study" / "reports" / "redo" / "paper" / "figures"
 IDENTIFICATION = REPO / "crypto-impact-study" / "reports" / "redo" / "activity_surface_n250_2021_2026" / "identification_by_n.csv"
 N_SHOWN = (1000, 4000, 16000)
@@ -149,15 +150,15 @@ def figure(deltas: pd.DataFrame, bins: pd.DataFrame) -> None:
                      fmt="o", color=INK, ms=5, capsize=2, label=r"within decile: $\delta$ in $q$ (95% day-block CI)")
         pooled = deltas.loc[(deltas["n_events"] == n) & (deltas["group"] == "pooled_x"), "delta"].iat[0]
         dax.axhline(pooled, color="#eb6834", ls="--", lw=1.4, label=rf"pooled: $\delta$ in $x=|Q|/V_{{24h}}$ = {pooled:.2f}")
-        dax.axhline(1.0, color=MUTED, lw=0.9, ls=":", label="linear")
-        dax.set_xticks(idx); dax.set_xlabel(r"Relative-activity decile ($a=V/V_{24h}$), low $\rightarrow$ high")
+        dax.axhline(1.0, color=MUTED, lw=0.9, ls=":", label=r"proportional ($\delta = 1$)")
+        dax.set_xticks(idx); dax.set_xlabel(r"Relative-activity decile ($\nu=V/V_{24h}$), low $\rightarrow$ high")
         dax.set_ylim(0.3, 1.3); dax.grid(color="#e6e6e6", lw=0.7)
         if col == 0:
             dax.set_ylabel(r"Fitted exponent $\delta$")
             ax.set_ylabel(r"Folded mean response $s\,\bar y$  ($y=r/\sigma_{24h}$)")
             dax.legend(fontsize=7.5, loc="lower left", frameon=True)
     fig.tight_layout()
-    fig.savefig(FIGURES / "30_surface_linearity_by_activity.pdf", bbox_inches="tight")
+    fig.savefig(FIGURES / "30_surface_concavity_by_activity.pdf", bbox_inches="tight")
     plt.close(fig)
 
 

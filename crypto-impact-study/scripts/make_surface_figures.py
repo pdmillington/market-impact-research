@@ -6,8 +6,11 @@ intervals of surface_identification_and_stability.py (reports/redo/surface_stabi
 the like-for-like comparison of surface_vs_threshold.py (reports/redo/surface_vs_threshold/),
 and recomputes the full-sample cells (same cuts and response) for the collapse figure.
 
-Notation (as in the paper): q = |Q| / V is the imbalance ratio of the bar, a = V / V_24h
-relative activity, z the log event intensity; the surface coordinate is q a^gamma / Q_N.
+Notation (matching the paper): q = |Q| / V is the imbalance ratio of the bar, nu = V / V_24h
+relative activity (column `a` in the data), z the log event intensity (section 6); the
+surface exponent is eta (column `gamma` in the data; the paper's gamma is the threshold
+model's), the coordinate x_eta = q nu^eta = |Q| / (V^(1-eta) V_24h^eta), so x_1 = x = |Q|/V_24h;
+scales Q_N and I*_N, master curve F, as in section 4.
 
 Writes to reports/redo/paper/:
 - figures/26_activity_surface_collapse.pdf   P&B coordinate vs activity-adjusted coordinate
@@ -70,7 +73,7 @@ def collapse_figure(cells: pd.DataFrame, fits: pd.DataFrame, scales: pd.DataFram
     rows = []
     fig, axes = plt.subplots(1, 2, figsize=(12.5, 5.0), sharey=False)
     activity_colours = plt.cm.Blues(np.linspace(0.35, 1.0, int(cells["ia"].max()) + 1))
-    for ax, model, title in ((axes[0], "pb_gamma_1", r"P&B coordinate $q\,a/\mathcal{Q}_N$ ($\gamma=1$)"),
+    for ax, model, title in ((axes[0], "pb_gamma_1", r"P&B coordinate $x/\mathcal{Q}_N$ ($x = q\,\nu$, $\eta=1$)"),
                              (axes[1], "activity_surface", None)):
         f = fits.loc[fits.model == model].iloc[0]
         sc = scales.loc[scales.model == model].set_index("n_events")
@@ -84,9 +87,9 @@ def collapse_figure(cells: pd.DataFrame, fits: pd.DataFrame, scales: pd.DataFram
         ax.plot(grid, pb_shape(grid, f.alpha, f.beta), color=INK, lw=2.0,
                 label=rf"master curve ($\alpha$={f.alpha:.2f}, $\beta$={f.beta:.2f})")
         ax.set_xscale("log"); ax.set_yscale("log")
-        ax.set_xlabel(title or rf"Activity-adjusted coordinate $q\,a^{{\gamma}}/\mathcal{{Q}}_N$ ($\gamma$={f.gamma:.2f})")
-        ax.set_ylabel(r"Folded response $s\,\bar y/\mathcal{R}_N$  ($y=r/\sigma_{24h}$)")
-        ax.set_title(f"{'P&B (γ = 1)' if model == 'pb_gamma_1' else 'Activity surface'}: standardised RMSE {f.weighted_rmse:.1f}",
+        ax.set_xlabel(title or rf"Activity-adjusted coordinate $x_\eta/\mathcal{{Q}}_N$ ($x_\eta = q\,\nu^{{\eta}}$, $\eta$ = {f.gamma:.2f})")
+        ax.set_ylabel(r"Folded response $s\,\bar y/\mathcal{I}^\star_N$  ($y=r/\sigma_{24h}$)")
+        ax.set_title(f"{'P&B (η = 1)' if model == 'pb_gamma_1' else 'Activity surface'}: standardised RMSE {f.weighted_rmse:.1f}",
                      color=INK, fontsize=11)
         ax.legend(loc="upper left", fontsize=9, frameon=True)
         for i in np.flatnonzero(keep):
@@ -96,7 +99,7 @@ def collapse_figure(cells: pd.DataFrame, fits: pd.DataFrame, scales: pd.DataFram
     sm = plt.cm.ScalarMappable(cmap=matplotlib.colors.ListedColormap(activity_colours),
                                norm=matplotlib.colors.Normalize(1, len(activity_colours)))
     bar = fig.colorbar(sm, ax=axes, shrink=0.85, pad=0.02)
-    bar.set_label("Relative-activity decile ($a=V/V_{24h}$), low → high")
+    bar.set_label(r"Relative-activity decile ($\nu=V/V_{24h}$), low → high")
     fig.savefig(figures / "26_activity_surface_collapse.pdf", bbox_inches="tight")
     plt.close(fig)
     pd.DataFrame(rows).to_csv(tables / "activity_surface_collapse_cells.csv", index=False)
@@ -114,25 +117,25 @@ def gamma_figure(fits: pd.DataFrame, figures: Path, tables: Path) -> None:
     for ax, frame, xcol, xlabel in ((axes[0], by_n, "n_events", "Events per bar, $N$"),
                                     (axes[1], by_year, "year", "Calendar year")):
         xs = frame[xcol].astype(float).to_numpy() if xcol == "n_events" else np.arange(len(frame))
-        ax.axhspan(lo, hi, color=BLUE, alpha=0.12, lw=0, label=f"common γ, 95% month-block CI [{lo:.2f}, {hi:.2f}]")
-        ax.axhline(common, color=BLUE, lw=1.5, ls="--", label=f"common γ = {common:.2f} (N = 250–16,000)")
+        ax.axhspan(lo, hi, color=BLUE, alpha=0.12, lw=0, label=f"common η, 95% month-block CI [{lo:.2f}, {hi:.2f}]")
+        ax.axhline(common, color=BLUE, lw=1.5, ls="--", label=f"common η = {common:.2f} (N = 250–16,000)")
         err = np.vstack([frame["gamma"] - frame["gamma_p025"], frame["gamma_p975"] - frame["gamma"]])
         identified = (frame["n_events"] >= 250).to_numpy() if xcol == "n_events" else np.ones(len(frame), bool)
         ax.errorbar(xs[identified], frame["gamma"][identified], yerr=err[:, identified], color=INK, lw=1.5, marker="o", ms=7,
-                    markerfacecolor="white", markeredgewidth=2, capsize=3, label="γ fitted separately (95% day-block CI)")
+                    markerfacecolor="white", markeredgewidth=2, capsize=3, label="η fitted separately (95% day-block CI)")
         if (~identified).any():
             ax.errorbar(xs[~identified], frame["gamma"][~identified], yerr=err[:, ~identified], color=MUTED, ls="none",
                         marker="s", ms=6, markerfacecolor="white", markeredgewidth=1.5, capsize=3,
-                        label="N = 100: only $\\mathcal{R}_N/\\mathcal{Q}_N$ identified")
+                        label="N = 100: only $\\mathcal{I}^\\star_N/\\mathcal{Q}_N$ identified")
         if xcol == "n_events":
             ax.set_xscale("log"); ax.set_xticks(xs); ax.set_xticklabels([f"{int(v):,}" for v in xs], rotation=0, fontsize=8)
             ax.minorticks_off()
         else:
             ax.set_xticks(xs); ax.set_xticklabels([f"{y}" + (" (Jan–Aug)" if y == 2026 else "") for y in frame["year"]])
-        ax.set_xlabel(xlabel); ax.set_ylabel("Activity exponent γ"); ax.set_ylim(0, 0.8)
+        ax.set_xlabel(xlabel); ax.set_ylabel("Activity exponent η"); ax.set_ylim(0, 0.8)
         ax.legend(fontsize=8, loc="upper left")
-    axes[0].set_title("γ by aggregation scale (2021–Aug 2026)", fontsize=11)
-    axes[1].set_title("γ by calendar year (N = 250–16,000)", fontsize=11)
+    axes[0].set_title("η by aggregation scale (2021–Aug 2026)", fontsize=11)
+    axes[1].set_title("η by calendar year (N = 250–16,000)", fontsize=11)
     fig.tight_layout()
     fig.savefig(figures / "27_activity_surface_gamma.pdf", bbox_inches="tight")
     plt.close(fig)
@@ -150,9 +153,9 @@ def oos_figure(figures: Path, tables: Path) -> None:
     years = common.index.to_numpy()
     width = 0.26
     fig, ax = plt.subplots(figsize=(9, 4.4))
-    specs = (("activity_surface", "Activity surface (common γ)", BLUE, ""),
-             ("pb_gamma_1", "P&B (γ = 1)", ORANGE, "//"),
-             ("imbalance_ratio_gamma_0", "Imbalance ratio (γ = 0)", AQUA, ".."))
+    specs = (("activity_surface", "Activity surface (common η)", BLUE, ""),
+             ("pb_gamma_1", "P&B (η = 1)", ORANGE, "//"),
+             ("imbalance_ratio_gamma_0", "Imbalance ratio (η = 0)", AQUA, ".."))
     for k, (column, label, colour, hatch) in enumerate(specs):
         ax.bar(np.arange(len(years)) + (k - 1) * width, common[column], width=width - 0.02, color=colour,
                hatch=hatch, edgecolor="white", linewidth=0.8, label=label)
@@ -211,19 +214,19 @@ def contour_figure(cells: pd.DataFrame, fits: pd.DataFrame, scales: pd.DataFrame
             pred = r * pb_shape(np.exp(Z + f.gamma * A) / q, f.alpha, f.beta) / r_surface
             ax.contour(A / ln10, Z / ln10, pred, levels=levels, colors=colour, linestyles=style, linewidths=1.4)
         ax.set_title(f"N = {n:,} events", fontsize=11, color=INK)
-        ax.set_xlabel(r"$\log_{10} a$  ($a=V/V_{24h}$)")
+        ax.set_xlabel(r"$\log_{10} \nu$  ($\nu=V/V_{24h}$)")
         ax.grid(False)
         for row in fc.itertuples():
             rows.append({"n_events": n, "imbalance_bin": int(row.iz), "activity_bin": int(row.ia),
                          "log10_q": row.mean_logz / ln10, "log10_a": row.mean_loga / ln10,
                          "folded_mean_response": row.fy, "scaled_by_surface_r_n": row.scaled})
     axes[0].set_ylabel(r"$\log_{10} q$  ($q=|Q|/V$)")
-    handles = [matplotlib.lines.Line2D([], [], color=INK, lw=1.4, label=f"Activity surface, γ = {surface.gamma:.2f}"),
-               matplotlib.lines.Line2D([], [], color=ORANGE, lw=1.4, ls="--", label="P&B, γ = 1")]
+    handles = [matplotlib.lines.Line2D([], [], color=INK, lw=1.4, label=f"Activity surface, η = {surface.gamma:.2f}"),
+               matplotlib.lines.Line2D([], [], color=ORANGE, lw=1.4, ls="--", label="P&B, η = 1")]
     axes[0].legend(handles=handles, loc="lower left", fontsize=8, frameon=True)
     bar = fig.colorbar(fill, ax=axes, shrink=0.85, pad=0.02, ticks=levels)
     bar.ax.set_yticklabels([f"{v:g}" for v in levels])
-    bar.set_label(r"Folded mean response $s\,\bar y/\mathcal{R}_N$ (contour levels marked)")
+    bar.set_label(r"Folded mean response $s\,\bar y/\mathcal{I}^\star_N$ (contour levels marked)")
     fig.savefig(figures / "29_activity_surface_contours.pdf", bbox_inches="tight")
     plt.close(fig)
     pd.DataFrame(rows).to_csv(tables / "activity_surface_contour_cells.csv", index=False)

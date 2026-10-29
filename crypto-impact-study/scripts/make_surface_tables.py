@@ -9,7 +9,7 @@ Reads saved outputs only (no fitting here), so every number in these tables trac
   (surface_identification_and_stability.py);
 - reports/redo/surface_vs_threshold/              like-for-like comparison (surface_vs_threshold.py);
 - reports/redo/event_price_rule/                  event price rules (event_price_rule_robustness.py);
-- reports/redo/surface_linearity/                 delta within activity deciles (surface_linearity_by_activity.py).
+- reports/redo/surface_concavity/                 delta within activity deciles (surface_concavity_by_activity.py).
 
 Two error measures appear and are not comparable with each other:
 - "standardised RMSE": root mean squared (residual / standard error) over the multi-N
@@ -25,7 +25,7 @@ Writes reports/redo/paper/tables/surface_*.tex and .csv:
 - surface_gamma_by_n / _by_year T4 gamma stability with day-block CIs
 - surface_robustness            T5 price rules, raw returns, 2019-20, N set
 - surface_displacement          T5 high-activity displacement under both activity measures
-- surface_linearity             T6 delta within relative-activity deciles vs pooled
+- surface_concavity             T6 delta within relative-activity deciles vs pooled
 """
 
 from __future__ import annotations
@@ -43,15 +43,15 @@ ALL_N = REDO / "activity_surface_2021_2026"
 STABILITY = REDO / "surface_stability"
 COMPARISON = REDO / "surface_vs_threshold"
 PRICE_RULE = REDO / "event_price_rule"
-LINEARITY = REDO / "surface_linearity"
+CONCAVITY = REDO / "surface_concavity"
 TABLES = REDO / "paper" / "tables"
 
-MODEL_LABEL = {"activity_surface": "Activity surface", "pb_gamma_1": r"P\&B (\(\gamma=1\))",
-               "imbalance_ratio_gamma_0": r"Imbalance ratio (\(\gamma=0\))"}
+MODEL_LABEL = {"activity_surface": "Activity surface", "pb_gamma_1": r"P\&B (\(\eta=1\))",
+               "imbalance_ratio_gamma_0": r"Imbalance ratio (\(\eta=0\))"}
 SURFACE_FOR = {"event_bars": "surface_volume", "time_bars": "surface_volume_scaled"}
 COMPARISON_LABEL = {"pooled_log": "Pooled log", "state_log": "State log", "activity_tail": "Activity tail (threshold)",
-                    "surface_volume": r"Surface, \(a=V/V_{24h}\)", "surface_volume_scaled": r"Surface, scales in \(N_t\)",
-                    "surface_intensity": r"Surface, \(a=\lambda/\lambda_{\mathrm{med}}\)"}
+                    "surface_volume": r"Surface, \(\nu=V/V_{24h}\)", "surface_volume_scaled": r"Surface, scales in \(N_t\)",
+                    "surface_intensity": r"Surface, activity \(\lambda/\lambda_{\mathrm{med}}\)"}
 CONSTRUCTION_LABEL = {"event_bars": "4,000-event", "time_bars": "Five-minute"}
 
 
@@ -116,7 +116,7 @@ def fit_table() -> None:
                          num(rec["alpha"], 2), num(rec["beta"], 3), num(rec["xi_identified"]), num(rec["psi_identified"]),
                          str(rec["parameters"]), f"{rec['cells']:,}", num(rec["standardised_rmse"], 2)])
     write("surface_fit", pd.DataFrame(records),
-          [r"\(N\)", "Model", r"\(\gamma\)", "95\\% CI", "95\\% CI", r"\(\alpha\)", r"\(\beta\)", r"\(\xi\)", r"\(\psi\)",
+          [r"\(N\)", "Model", r"\(\eta\)", "95\\% CI", "95\\% CI", r"\(\alpha\)", r"\(\beta\)", r"\(\xi\)", r"\(\psi\)",
            "Param.", "Cells", "Std."],
           rows, "llrccrrrrrrr",
           second_header=["", "", "", "(month blocks)", "(day blocks)", "", "", "", "", "", "", "RMSE"], breaks=breaks)
@@ -136,7 +136,7 @@ def oos_table() -> None:
              num(r.activity_surface, 2), num(r.pb_gamma_1, 2), num(r.imbalance_ratio_gamma_0, 2),
              num(r.independent_N_activity_surface_rms, 2)] for r in table.itertuples()]
     write("surface_oos_by_year", table,
-          ["Test year", r"Trained \(\gamma\)", "Activity surface", r"P\&B (\(\gamma=1\))", r"\(\gamma=0\)", "Separate per \\(N\\)"],
+          ["Test year", r"Trained \(\eta\)", "Activity surface", r"P\&B (\(\eta=1\))", r"\(\eta=0\)", "Separate per \\(N\\)"],
           rows, "lrrrrr")
 
 
@@ -196,12 +196,12 @@ def stability_tables() -> None:
     by_n = pd.read_csv(STABILITY / "gamma_by_n.csv")
     rows = [[f"{int(r.n_events):,}" + (r"\(^\dagger\)" if r.n_events < 250 else ""), num(r.gamma),
              interval(r.gamma_p025, r.gamma_p975), num(r.alpha, 2), num(r.beta, 3)] for r in by_n.itertuples()]
-    write("surface_gamma_by_n", by_n, [r"\(N\)", r"\(\gamma\)", "95\\% CI (day blocks)", r"\(\alpha\)", r"\(\beta\)"],
+    write("surface_gamma_by_n", by_n, [r"\(N\)", r"\(\eta\)", "95\\% CI (day blocks)", r"\(\alpha\)", r"\(\beta\)"],
           rows, "rrcrr")
     by_year = pd.read_csv(STABILITY / "gamma_by_year.csv")
     rows = [[f"{int(r.year)}" + (" (Jan--Aug)" if r.year == 2026 else ""), f"{int(r.days)}", num(r.gamma),
              interval(r.gamma_p025, r.gamma_p975)] for r in by_year.itertuples()]
-    write("surface_gamma_by_year", by_year, ["Year", "Days", r"\(\gamma\)", "95\\% CI (day blocks)"], rows, "lrrc")
+    write("surface_gamma_by_year", by_year, ["Year", "Days", r"\(\eta\)", "95\\% CI (day blocks)"], rows, "lrrc")
 
 
 def robustness_tables() -> None:
@@ -237,14 +237,14 @@ def robustness_tables() -> None:
     n_label = {"N_250_16000": "250--16,000", "all_N": "100--16,000", "all_N (rebuilt)": "100--16,000\\(^\\ddagger\\)"}
     rows = [[r.specification, n_label[r.n_set], num(r.gamma), num(r.alpha, 2), num(r.beta, 3), num(r.standardised_rmse, 2),
              num(r.pb_standardised_rmse, 2)] for r in frame.itertuples()]
-    write("surface_robustness", frame, ["Specification", r"\(N\)", r"\(\gamma\)", r"\(\alpha\)", r"\(\beta\)",
+    write("surface_robustness", frame, ["Specification", r"\(N\)", r"\(\eta\)", r"\(\alpha\)", r"\(\beta\)",
                                         "Std. RMSE", r"P\&B std. RMSE"], rows, "llrrrrr", breaks={4})
 
     disp = pd.read_csv(HEADLINE / "displacement.csv")
     wide = disp.pivot_table(index=["activity_measure", "n_events"], columns="model",
                             values=["ordinary_activity", "high_activity", "difference_high_minus_ordinary"]).reset_index()
     wide.columns = ["_".join(c for c in col if c) for col in wide.columns]
-    measure = {"volume_share": r"\(a=V/V_{24h}\)", "event_intensity": "Event intensity"}
+    measure = {"volume_share": r"\(\nu=V/V_{24h}\)", "event_intensity": "Event intensity"}
     rows, breaks = [], set()
     for k, r in enumerate(wide.sort_values(["activity_measure", "n_events"], ascending=[False, True]).itertuples()):
         if k and r.n_events == wide["n_events"].min():
@@ -256,10 +256,10 @@ def robustness_tables() -> None:
           second_header=["", "", "Ordinary", "High", "Diff.", "Ordinary", "High", "Diff."], breaks=breaks)
 
 
-def linearity_table() -> None:
+def concavity_table() -> None:
     """T6: exponent delta in q within relative-activity deciles vs delta in x = |Q|/V_24h pooled."""
 
-    d = pd.read_csv(LINEARITY / "delta_by_decile.csv")
+    d = pd.read_csv(CONCAVITY / "delta_by_decile.csv")
     records, rows = [], []
     for n, g in d.groupby("n_events"):
         within = g.loc[g["group"].str.startswith("decile")]
@@ -275,7 +275,7 @@ def linearity_table() -> None:
                      num(rec["within_median"], 2), f"{num(rec['within_min'], 2)}--{num(rec['within_max'], 2)}",
                      num(rec["top_decile_delta"], 2), interval(rec["top_decile_p025"], rec["top_decile_p975"], 2),
                      num(rec["share_beyond_bend"], 2)])
-    write("surface_linearity", pd.DataFrame(records),
+    write("surface_concavity", pd.DataFrame(records),
           [r"\(N\)", r"Pooled \(\delta\)", "95\\% CI", r"Within-decile \(\delta\)", "Range", r"Top decile \(\delta\)",
            "95\\% CI", "Share beyond"],
           rows, "rrcrcrcr", second_header=["", r"(in \(|Q|/V_{24h}\))", "", "(median, in \\(q\\))", "", "", "", "bend"])
@@ -288,7 +288,7 @@ def main() -> None:
     comparison_tables()
     stability_tables()
     robustness_tables()
-    linearity_table()
+    concavity_table()
     print(sorted(p.name for p in TABLES.glob("surface_*.tex")))
 
 

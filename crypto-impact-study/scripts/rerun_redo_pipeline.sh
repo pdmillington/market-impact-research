@@ -46,7 +46,7 @@ step "activity surface (headline N)" "$PY" -W ignore "$S/run_activity_surface.py
 step "surface diagnostics (headline N)" "$PY" -W ignore "$S/diagnose_activity_surface.py" --tag activity_surface_n250_2021_2026 --n-values "$HEADLINE_N"
 step "event price rule robustness" "$PY" -W ignore "$S/event_price_rule_robustness.py"
 step "surface identification and stability" "$PY" -W ignore "$S/surface_identification_and_stability.py"
-step "surface linearity by activity" "$PY" -W ignore "$S/surface_linearity_by_activity.py"
+step "surface concavity by activity" "$PY" -W ignore "$S/surface_concavity_by_activity.py"
 step "surface vs threshold" "$PY" -W ignore "$S/surface_vs_threshold.py"
 step "surface figures" "$PY" -W ignore "$S/make_surface_figures.py"
 step "surface tables" "$PY" -W ignore "$S/make_surface_tables.py"

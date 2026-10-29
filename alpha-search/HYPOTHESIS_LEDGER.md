@@ -50,6 +50,7 @@ specification → walk-forward validation → replication → single locked test
 | ETHUSDT, SOLUSDT 5–15 minute returns, 2023-01 to 2026-05 | **C-006/C-007 test** (registered 2026-10-01; used by C-007 and C-006, 2026-10-01) | Not examined by any previous test at this horizon. Calibration and feature years are 2021–2022. |
 | BTC, ETH, SOL 2026-09 onward | **Prospective: P-006** (registered 2026-10-01) | Reserved for the trade-weighted C-006 test. Data-quality checks only until each scheduled look (12 and 24 months). |
 | BTCUSDT 2026-09 onward (other uses) | **Prospective** | Accumulates as a genuine forward sample. |
+| BTCUSDT `pb_blocks_v1` 2021-01 to 2026-08, contemporaneous block returns | **E-008 calibration test** (registered 2026-10-16) | Fit of the same-block flow–return relation only; no forward returns. Overlaps all development and used windows above, including the C-006 locked months. |
 | BTCUSDT `bookTicker` 2023-05 to 2023-07 | **Order-book exploration** (decision 2026-09-30) | Used for E-004 (order-book features) and for mid-proxy validation. Trade-based hypotheses tested on 2023–26 include these months; that overlap is limited to order-book exploration and is noted. |
 | BTCUSDT `bookTicker` 2023-08 to 2024-04 | **Order-book test** | Reserved for registered order-book hypotheses. |
 | ETHUSDT, SOLUSDT (all periods) | **Used for confirmation** | Built 2026-09-30. Seconds-scale returns used by the H-014 to H-016 confirmations; hourly/daily returns used by C-010 and E-004; `bookTicker` 2023-05 to 2024-03 used by H-017/H-018. No longer untouched. |
@@ -153,6 +154,7 @@ statistic). These are the denominators for later corrections.
 | E-006 | re-score of saved results (descriptive) | 1,696 saved cells re-scored; no new tests |
 | C-006/C-007 | ETH/SOL confirmation (registered) | C-006: 1 primary × 2 instruments × 3 conditions; C-007: 2 co-primary rates (Holm) × 2 instruments × 3 conditions |
 | P-006 | prospective C-006 test (registered) | 1 primary statistic, 2 looks (O'Brien–Fleming-type) |
+| E-008 | rolling-window surface calibration (registered 2026-10-16; contemporaneous fit, not return prediction) | 1 primary comparison + 2 robustness windows (counted separately, not in the total) |
 | | **Total (enumerated rows)** | **about 9,000 cells, plus H-001** |
 
 Impact-model selection experiments (`pb_surface_scaling_v1`, the v2–v4
@@ -2233,6 +2235,139 @@ origin known and the slices counted.
     stress-only variant is registered. C-006 stays as frozen and P-006 runs
     unchanged, with the full α. Effort moves to the cost side (fee route,
     depth data).
+
+### E-008 · Rolling-window calibration of the activity surface (registered 2026-10-16)
+- **Status:** registered 2026-10-16 (proposed and approved the same day, with
+  the 60% month threshold confirmed by the researcher). Protocol and run notes
+  frozen before any rolling fit was run.
+- **Type:** calibration test with a registered protocol, like E-005. It scores
+  how well the surface describes the **contemporaneous** block return given the
+  block's own flow. It predicts no future return, is not a tradable signal, and
+  adds no return-prediction cells to the specification count. Its cells are
+  counted on a separate line.
+- **Not for the market-impact paper** (researcher decision, 2026-10-16). The
+  paper quotes the existing full-sample and by-year results.
+- **Purpose for the alpha search:**
+  1. Does a recently calibrated surface describe the current flow–return
+     relation better than a long-sample fit? This matters for expected-impact
+     and execution-cost inputs (H-018-type implementation shortfall, passive
+     entry).
+  2. It is a prerequisite for any future use of the surface. Impact residuals
+     as an alpha factor were rejected (H-004, H-005, H-006). Any new
+     residual-based hypothesis needs its own registration and a new economic
+     argument, and must link to those entries. This entry tests none.
+- **Origin (results seen before this entry; the question was chosen knowing
+  them):**
+  - In the crypto-impact-study redo, γ fitted by year is 0.42–0.51 in 2021–23
+    and 0.24–0.31 from 2024, with tight day-block intervals
+    (`crypto-impact-study/reports/redo/surface_stability/gamma_by_year.csv`).
+  - Expanding by-year out-of-sample tests (training from 2021) still beat P&B
+    in every year (`activity_surface_n250_2021_2026/oos.csv`).
+  - Whether shorter training windows improve out-of-sample fit is untested.
+- **Model (frozen):** the headline surface,
+  E[y | q, a, N, s] = s · R_N · F(q · a^γ / Q_N), with
+  F(x) = x / (1 + |x|^α)^(β/α).
+  - Shared α, β, γ; free Q_N and R_N for N ∈ {250, 500, 1,000, 2,000, 4,000,
+    8,000, 16,000}.
+  - Variables:
+    - q = |Q| / V;
+    - a = V / V_24h;
+    - y = r / σ_24h, where V_24h and σ_24h use only the 24 h strictly
+      before the block.
+  - Estimator: `crypto_impact.pb_surface.fit_activity_surface` on 20 × 10
+    equal-count (q, a) cells per N and side, at least 100 blocks per cell,
+    with soft-L1 loss and clipped standard-error weights as in the redo.
+    Each month's fit is warm-started from the previous month's.
+- **Data:** BTCUSDT (Binance USD-M perpetual), `pb_blocks_v1` from the shared
+  builder. Blocks spanning a known data gap are excluded. Period 2021-01 to
+  2026-08. **No data from 2026-09 onward** (reserved for P-006).
+- **Windows compared:**
+  - **Primary:** a trailing window of 12 calendar months;
+  - **Comparator:** an expanding window from 2021-01;
+  - **Robustness (reported in full, not used to choose a window):** trailing
+    6 and 24 months.
+- **Refit and test:**
+  - Refit monthly. The training window ends at the month before the test month.
+  - Cell bin edges come from the training window only.
+  - Test months are 2022-01 to 2026-08 (56 months) for the primary comparison.
+    Trailing-24 is compared from 2023-01, on the months it shares with the
+    others.
+- **Scoring:** at block level, so no binning choices are made on test data.
+  - Every test block gets a prediction ŷ from the frozen training fit, scored
+    by squared error (y − ŷ)².
+  - For each test month m: D_m = the mean over the seven N of
+    (MSE_expanding − MSE_rolling) / MSE_expanding.
+  - **Primary statistic:** the mean of D_m over test months, with a 95%
+    month-block bootstrap interval (test months resampled; 2,000 replicates).
+  - **Secondary:**
+    - the same statistic with y clipped at the training window's 0.1% and
+      99.9% quantiles (heavy tails);
+    - per-N and per-year breakdowns;
+    - out-of-sample R² against a zero prediction for each window;
+    - the monthly path of γ, α and β for each window.
+  - **Concentration:** the primary statistic is recomputed with the 10 test
+    days of largest improvement removed.
+- **Decision rule (stated before running):**
+  - **"A 12-month window helps"** only if all three hold:
+    - the mean of D_m is above 0 and its 95% interval excludes 0;
+    - D_m > 0 in at least 60% of test months;
+    - the mean stays above 0 with the best 10 days removed.
+  - **Otherwise** there is no evidence that a 12-month window beats the
+    expanding fit, and alpha-search work uses the expanding (development-sample)
+    calibration.
+  - No window is chosen from among 6, 12 and 24 months on these data.
+- **Costs:** not applicable (no positions, no P&L). The frozen economic
+  assumptions are unaffected.
+- **Sample register:** every month used is already development or used data.
+  BTCUSDT 2026-06 to 2026-08 was spent on the C-006 primary (5-minute forward
+  returns). This entry uses only contemporaneous block returns. A note is
+  added to the register on registration.
+- **Cells:** 1 primary comparison (trailing 12 against expanding), plus
+  2 robustness windows and the descriptive breakdowns. They go on a separate
+  calibration line in the specification table on registration.
+- **Implementation (run notes to be written before results):**
+  - script `alpha-search/scripts/e008_rolling_surface.py`, outputs in
+    `alpha-search/reports/e008_rolling_surface/`;
+  - reuses `crypto_impact.pb_surface` and the `run_activity_surface.py` block
+    loader (shared builders);
+  - one N at a time in memory.
+- **Run notes (2026-10-16; implementation choices, recorded before any result):**
+  - **Training blocks** for test month m and window W: blocks whose start month
+    is within W and whose end day is before the first day of m (no overlap with
+    the test month). Trailing 12 months for m = 2022-01 is 2021-01 to 2021-12,
+    the same as the expanding window in that month.
+  - **Test blocks:** blocks whose start month is m. Blocks spanning a known data
+    gap are excluded by the loader; blocks with non-finite y are dropped.
+  - **Cells:** bin edges are recomputed for each (window, month, N, side) from
+    the training blocks; 20 × 10 cells, at least 100 blocks per cell.
+  - **Optimiser:** the first month of each window uses 8 starts; later months
+    use 2 starts plus a warm start from that window's previous-month fit.
+  - **Prediction:** ŷ = s · R_N · F(q · a^γ / Q_N) with the training fit
+    (`pb_shape`); ŷ = 0 when q = 0.
+  - **Clipping (secondary statistic):** y and the error use y clipped at the
+    0.1% and 99.9% quantiles of training-window y for that N.
+  - **Best-10-days removal:** each test day d gets a contribution
+    c_d = mean over N of Σ_blocks in d (e²_expanding − e²_rolling) /
+    (blocks_N,m × MSE_expanding,N,m), so that D_m = Σ_{d in m} c_d. The 10
+    days with the largest c_d are dropped and the mean of D_m recomputed.
+  - **Bootstrap:** 2,000 resamples of test months, seed 20261016.
+  - **Comparisons reported:**
+    - trailing 12 against expanding on 2022-01 to 2026-08 (primary);
+    - trailing 6 against expanding on the same months;
+    - trailing 24 against expanding, and trailing 12 against expanding, on
+      2023-01 to 2026-08.
+  - **Outputs:** `fits.csv` (window, month, γ, α, β, scales, convergence);
+    `monthly_scores.csv` (window, month, N, blocks, MSE, clipped MSE);
+    `daily_contributions.csv`; `summary.json`.
+- **First run (2026-10-16): stopped before any result.** The registered grid
+  (20 × 10 cells per side, at least 100 blocks per cell) needs about 40,000
+  blocks per N in a training window. A 12-month window has about 2,600 blocks at
+  N = 16,000 and too few for every N ≥ 2,000 (N = 1,000 is borderline), so those
+  cells were dropped silently and the trailing-6 fits failed when N = 16,000 had
+  no cells. No scores were computed and no fit output was written or inspected.
+  The protocol is infeasible as registered; an amendment awaits the researcher's
+  decision, to be recorded here before any rerun.
+- **Outcome:** pending.
 
 ### V-001 · Mid-proxy validation against bookTicker (2023-05-16 to 2023-05-31)
 - **Type:** measurement validation, inside the order-book exploration window.
