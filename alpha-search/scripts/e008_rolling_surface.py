@@ -13,6 +13,10 @@ Implementation choices (recorded in the ledger run notes before any result):
   before the first day of m; test blocks: start month m (finite y; gap blocks are
   excluded by the loader);
 - bin edges recomputed per (window, month, N, side) from the training blocks;
+- Amendment 1 (2026-10-29): adaptive grid n_nu = clamp(floor(sqrt(n / 200)), 2, 10),
+  n_q = 2 n_nu per (window, month, N, side); an N with fewer than 8 cells in a
+  window-month is dropped from that fit; a (month, N) pair is scored only when both
+  windows of a comparison include it; warm starts only when the N set is unchanged;
 - 8 optimiser starts in a window's first month, then 2 starts plus a warm start from
   that window's previous-month fit;
 - prediction y_hat = s R_N F(q a^gamma / Q_N), 0 when q = 0;
@@ -57,6 +61,14 @@ COMPARISONS = [  # (label, window, base, first test month)
     ("common months: trailing_12 vs expanding", "trailing_12", "expanding", "2023-01"),
 ]
 N_BOOT, SEED = 2_000, 20261016
+MIN_CELLS_PER_N = 8
+
+
+def grid_size(n_blocks: int) -> tuple[int, int]:
+    """Amendment 1: (n_q, n_nu) for a side with n_blocks training blocks."""
+
+    n_nu = int(min(10, max(2, np.floor(np.sqrt(n_blocks / 200)))))
+    return 2 * n_nu, n_nu
 
 
 def month_start_day(m: int) -> int:
@@ -93,9 +105,11 @@ def training_stats() -> dict:
         arr = load(n)
         for (window, m) in stats:
             train = training_mask(arr, window, m)
-            cuts = {s: grid_cuts(arr["z"][train & (arr["side"] == s) & (arr["z"] > 0)],
-                                 arr["a"][train & (arr["side"] == s) & np.isfinite(arr["a"])], run.N_Z, run.N_A)
-                    for s in (-1, 1)}
+            cuts = {}
+            for s in (-1, 1):
+                usable = train & (arr["side"] == s) & (arr["z"] > 0) & np.isfinite(arr["a"]) & (arr["a"] > 0)
+                n_q, n_nu = grid_size(int(usable.sum()))
+                cuts[s] = grid_cuts(arr["z"][usable], arr["a"][usable], n_q, n_nu)
             frame = monthly_cell_stats(np.zeros(int(train.sum()), dtype=np.int32), arr["side"][train], arr["z"][train],
                                        arr["a"][train], arr["y_vol"][train], cuts)
             frame.insert(0, "n_events", n)
@@ -111,11 +125,16 @@ def fit_windows(stats: dict) -> tuple[dict, pd.DataFrame, pd.DataFrame]:
         previous = None
         for m in test_months(window):
             cells = aggregate_cells(pd.concat(stats[(window, m)], ignore_index=True))
-            fit = (fit_activity_surface(cells, n_starts=8) if previous is None
-                   else fit_activity_surface(cells, n_starts=2, initial=previous))
+            counts = cells.groupby("n_events").size()
+            kept = sorted(counts.index[counts >= MIN_CELLS_PER_N])
+            cells = cells.loc[cells["n_events"].isin(kept)].reset_index(drop=True)
+            same_n = previous is not None and sorted(previous.scales["n_events"]) == kept
+            fit = (fit_activity_surface(cells, n_starts=2, initial=previous) if same_n
+                   else fit_activity_surface(cells, n_starts=8))
             fits[(window, m)] = previous = fit
             rows.append({"window": window, "test_month": label(m), "gamma": fit.gamma, "alpha": fit.alpha,
-                         "beta": fit.beta, "objective": fit.objective, "converged": fit.converged, "cells": len(cells)})
+                         "beta": fit.beta, "objective": fit.objective, "converged": fit.converged, "cells": len(cells),
+                         "n_included": ",".join(str(n) for n in kept), "warm_start": same_n})
             scale_rows.append(fit.scales.assign(window=window, test_month=label(m)))
         print(f"fits: {window} done", flush=True)
     return fits, pd.DataFrame(rows), pd.concat(scale_rows, ignore_index=True)
@@ -126,6 +145,8 @@ def score(fits: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
     for n in N_VALUES:
         arr = load(n)
         for (window, m), fit in fits.items():
+            if n not in set(fit.scales["n_events"]):
+                continue                                           # N dropped from this window-month fit
             train = training_mask(arr, window, m)
             lo, hi = np.quantile(arr["y_vol"][train], [0.001, 0.999])
             test = (arr["month"] == m) & np.isfinite(arr["y_vol"]) & np.isfinite(arr["a"]) & (arr["a"] > 0)
@@ -150,16 +171,22 @@ def compare(monthly: pd.DataFrame, daily: pd.DataFrame, window: str, base: str, 
     for kind, col, dcol in (("raw", "sse", "err2"), ("clipped", "sse_clip", "err2_clip")):
         mw = monthly.loc[(monthly.window == window) & (monthly.test_month >= first)].set_index(["test_month", "n_events"])
         mb = monthly.loc[(monthly.window == base) & (monthly.test_month >= first)].set_index(["test_month", "n_events"])
+        common = mw.index.intersection(mb.index)                   # (month, N) scored by both windows
+        mw, mb = mw.loc[common], mb.loc[common]
         rel = (mb[col] - mw[col]) / mb[col]                        # blocks are identical, so MSE ratio = SSE ratio
         d_m = rel.groupby(level="test_month").mean()
         boot = [rng.choice(d_m.to_numpy(), len(d_m), replace=True).mean() for _ in range(N_BOOT)]
         dw = daily.loc[(daily.window == window) & (daily.test_month >= first)].set_index(["test_month", "n_events", "day"])
         db = daily.loc[(daily.window == base) & (daily.test_month >= first)].set_index(["test_month", "n_events", "day"])
-        contrib = ((db[dcol] - dw[dcol]) / mb[col].reindex(db.index.droplevel("day")).to_numpy())
-        c_d = contrib.groupby(level=["test_month", "day"]).sum() / len(N_VALUES)   # mean over N
+        keep = db.index.droplevel("day").isin(common)
+        db, dw = db.loc[keep], dw.loc[db.index[keep]]
+        contrib = (db[dcol] - dw[dcol]) / mb[col].reindex(db.index.droplevel("day")).to_numpy()
+        n_per_month = rel.groupby(level="test_month").size()
+        sums = contrib.groupby(level=["test_month", "day"]).sum()
+        c_d = sums / n_per_month.reindex(sums.index.get_level_values("test_month")).to_numpy()   # mean over N
         top = c_d.sort_values(ascending=False).index[:10]
         d_m_trim = c_d.drop(top).groupby(level="test_month").sum().reindex(d_m.index, fill_value=0.0)
-        out[kind] = {"months": int(len(d_m)), "mean_D": float(d_m.mean()),
+        out[kind] = {"months": int(len(d_m)), "month_n_pairs": int(len(rel)), "mean_D": float(d_m.mean()),
                      "ci_2_5": float(np.quantile(boot, 0.025)), "ci_97_5": float(np.quantile(boot, 0.975)),
                      "share_months_positive": float((d_m > 0).mean()), "mean_D_best10_days_removed": float(d_m_trim.mean()),
                      "best10_days": [str(np.datetime64(int(day), "D")) for _, day in top],
@@ -184,7 +211,9 @@ def main() -> None:
     rng = np.random.default_rng(SEED)
     r2 = (monthly.groupby(["window", "n_events"])[["sse", "sum_y2"]].sum()
           .assign(oos_r2=lambda d: 1 - d["sse"] / d["sum_y2"])["oos_r2"])
-    summary = {"entry": "E-008", "data": f"BTCUSDT pb_blocks_v1 2021-01..{LAST_MONTH}", "n_values": list(N_VALUES),
+    coverage = fit_table.groupby("window")["n_included"].agg(lambda v: {k: int(c) for k, c in v.value_counts().items()}).to_dict()
+    summary = {"entry": "E-008", "amendment": 1, "data": f"BTCUSDT pb_blocks_v1 2021-01..{LAST_MONTH}",
+               "n_values": list(N_VALUES), "n_coverage_by_window": coverage,
                "comparisons": {name: compare(monthly, daily, w, b, f, rng) for name, w, b, f in COMPARISONS},
                "oos_r2_vs_zero": {f"{w}|{n}": float(v) for (w, n), v in r2.items()}}
     (OUT / "summary.json").write_text(json.dumps(summary, indent=2))

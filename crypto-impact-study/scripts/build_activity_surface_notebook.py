@@ -123,7 +123,7 @@ The surface asks instead how the imbalance should be scaled, and lets the data d
 
 ## A2. The variables and notation
 
-The notation follows the paper. Section 3 defines $x = |Q|/V_{24h}$ and $y = r/\sigma_{24h}$; section 4 the P&B scales
+The notation follows the paper. Section 3 defines $x = |Q|/V_{24h}$ and the signed response $y_t = \mathrm{sign}(Q_t)\,r_t/\sigma^-_{24h,t}$; section 4 the P&B scales
 $\mathcal{Q}_N$, $\mathcal{I}^\star_N$ and master curve $\mathcal{F}$; section 6 the threshold model's $u$, $z$,
 $a_0, a_1, b_0, b_1$ and $\eta$. To avoid clashes with section 6, the surface uses **η** (not η) for its activity
 exponent and **ν** (not a) for relative activity.
@@ -134,15 +134,16 @@ exponent and **ν** (not a) for relative activity.
 | $\nu = V/V_{24h}$ | relative activity | the block's volume as a share of the previous 24 h volume (strictly before the block) |
 | $x = \lvert Q\rvert/V_{24h} = q\,\nu$ | normalised imbalance | the paper's $x$ (section 3) and the P&B coordinate |
 | $x_\eta = q\,\nu^{\eta}$ | activity-adjusted imbalance | the surface's coordinate; $x_1 = x$ |
-| $y = r/\sigma_{24h}$ | response | block log return in units of the previous 24 h realised volatility (√ of the sum of squared block returns) |
+| $y_t = \mathrm{sign}(Q_t)\,r_t/\sigma^-_{24h,t}$ | signed response | block log return, signed by the direction of the imbalance, in units of the previous 24 h realised volatility (√ of the sum of squared block returns) |
 | $z$ | log event intensity | the threshold model's activity variable (section 6; Part B6) |
 
 **Column names in the data and code are unchanged:** `gamma` holds η, `a` / `mean_loga` hold ν and log ν,
-`z` / `mean_logz` hold q and log q (legacy names), and `r_scale` holds $\mathcal{I}^\star_N$.
+`z` / `mean_logz` hold q and log q (legacy names), and `r_scale` holds $\mathcal{I}^\star_N$. The response columns
+`y` / `y_vol` / `mean_y` are *unsigned* $r/\sigma$; the code multiplies by the side $s = \mathrm{sign}(Q)$ to get $y_t$.
 
 ## A3. The model
 
-$$\mathbb{E}[y \mid q,\nu,N,s] \;=\; s\,\mathcal{I}^\star_N\,\mathcal{F}\!\left(\frac{x_\eta}{\mathcal{Q}_N}\right),
+$$\mathbb{E}[y_t \mid q,\nu,N] \;=\; \mathcal{I}^\star_N\,\mathcal{F}\!\left(\frac{x_\eta}{\mathcal{Q}_N}\right),
 \qquad x_\eta = q\,\nu^{\eta},
 \qquad \mathcal{F}(w)=\frac{w}{(1+|w|^{\alpha})^{\beta/\alpha}}.$$
 
@@ -234,7 +235,7 @@ for (label, a), colour in zip(a_levels.items(), plt.cm.Blues([0.45, 0.7, 0.95]))
         ax.plot(q_grid, resp, color=colour, ls=style, lw=1.8 if style == '-' else 1.2,
                 label=f'{label} (ν = {a:.1e})' if style == '-' else None)
 ax.set_xscale('log'); ax.set_yscale('log')
-ax.set_xlabel('imbalance ratio $q = |Q|/V$'); ax.set_ylabel(r'predicted $s\,\mathbb{E}[y]$ (units of $\sigma_{24h}$)')
+ax.set_xlabel('imbalance ratio $q = |Q|/V$'); ax.set_ylabel(r'predicted $\mathbb{E}[y_t]$ (units of $\sigma^-_{24h}$)')
 ax.set_title(f'N = {n:,}: activity shifts the curve (solid surface, dashed P&B)', fontsize=11)
 ax.legend(fontsize=8, loc='upper left')
 fig.tight_layout(); plt.show()
@@ -305,7 +306,7 @@ for ax, (model, fit, title) in zip(axes, (('pb_gamma_1', PB, 'P&B (η = 1)'), ('
     grid = np.geomspace(c.scaled_coordinate.min(), c.scaled_coordinate.max(), 300)
     ax.plot(grid, pb_shape(grid, fit.alpha, fit.beta), color=INK, lw=2)
     ax.set_xscale('log'); ax.set_yscale('log')
-    ax.set_xlabel(rf'$x_\eta/\mathcal{{Q}}_N$  (η = {fit.gamma:.2f})'); ax.set_ylabel(r'$s\,\bar y/\mathcal{I}^\star_N$')
+    ax.set_xlabel(rf'$x_\eta/\mathcal{{Q}}_N$  (η = {fit.gamma:.2f})'); ax.set_ylabel(r'$\bar y/\mathcal{I}^\star_N$')
     ax.set_title(f'{title}: standardised RMSE {fit.weighted_rmse:.2f}', fontsize=11)
 fig.tight_layout(); plt.show()
 """)
@@ -338,7 +339,7 @@ for ax, n in zip(axes, sorted(c29.n_events.unique())):
         ax.contour(grid['log10_a'], grid['log10_q'], pred, levels=levels, colors=colour, linestyles=style, linewidths=1.3)
     ax.set_title(f'N = {n:,}', fontsize=11); ax.set_xlabel(r'$\log_{10} \nu$'); ax.grid(False)
 axes[0].set_ylabel(r'$\log_{10} q$')
-fig.colorbar(fill, ax=axes, shrink=0.85, ticks=levels, label=r'$s\,\bar y/\mathcal{I}^\star_N$')
+fig.colorbar(fill, ax=axes, shrink=0.85, ticks=levels, label=r'$\bar y/\mathcal{I}^\star_N$')
 plt.show()
 """)
 
@@ -467,10 +468,10 @@ fig.tight_layout(); plt.show()
 md(r"""
 ## B7. How much of the pooled concavity comes from mixing activity levels? (paper table: `surface_concavity`; figure 30)
 
-The paper's pooled impact curve against $x = |Q|/V_{24h}$ is concave: a single power $s\bar y = c\,x^{\delta}$ fitted to
+The paper's pooled impact curve against $x = |Q|/V_{24h}$ is concave: a single power $\bar y = c\,x^{\delta}$ fitted to
 its bin means gives δ ≈ 0.6–0.7. Is that concavity a property of the response at a given activity level, or does it
 come from pooling blocks with different activity? Hold relative activity fixed: within each decile of $\nu$ the surface
-coordinate moves only with $q$, so fit $s\bar y = c\,q^{\delta}$ within each decile.
+coordinate moves only with $q$, so fit $\bar y = c\,q^{\delta}$ within each decile.
 
 **What it says.** Holding relative activity fixed, the volatility-normalised response scales with the imbalance ratio
 with an exponent of about 0.85 (0.82–0.88 in deciles 1–9, 0.89–0.94 in the top decile), close to the master curve's
@@ -483,7 +484,7 @@ activity levels.
   how the exponent is read. δ = 1 would mean proportional.
 - δ is a single-power summary fitted across a range that covers both regimes of the master curve, so it is an
   average slope, not a test of proportionality at any point.
-- It is about the *normalised* variables ($y = r/\sigma_{24h}$ against $q = |Q|/V$) at fixed relative activity, not the
+- It is about the *normalised* variables ($y_t$ against $q = |Q|/V$) at fixed relative activity, not the
   raw return against raw $|Q|$: across blocks, $V$ and $\sigma_{24h}$ both vary.
 - A decile still contains a range of $\nu$, so some mixing remains within each decile. The top decile has the widest
   range of $\nu$ but the highest δ, so leftover mixing does not neatly explain the pattern.
@@ -727,7 +728,7 @@ if PUBLISHED is not None and RESPONSE == 'y_vol' and SAMPLE == ('2021-01', '2026
 md("""
 ## C4. Collapse: P&B coordinate vs activity-adjusted coordinate
 
-Folded cell means $s\\bar y/\\mathcal{I}^\\star_N$ against $x_\\eta/\\mathcal{Q}_N = q\\,\\nu^{\\eta}/\\mathcal{Q}_N$, coloured by activity bin
+Cell means $\\bar y/\\mathcal{I}^\\star_N$ of the signed response against $x_\\eta/\\mathcal{Q}_N = q\\,\\nu^{\\eta}/\\mathcal{Q}_N$, coloured by activity bin
 (dark = high $\nu$). If activity is mis-specified, the colours separate vertically.
 `plot_collapse` takes any fit, so you can pass a hand-made η (section C5) as well.
 """)
@@ -745,7 +746,7 @@ def plot_collapse(fit_list, cells, titles=None, colour='ia'):
         ax.plot(grid, pb_shape(grid, fit.alpha, fit.beta), color='k', lw=2)
         ax.set_xscale('log'); ax.set_yscale('log')
         ax.set_xlabel(rf'$x_\eta/\mathcal{{Q}}_N$   (η = {fit.gamma:.2f})')
-        ax.set_ylabel(r'$s\,\bar y/\mathcal{I}^\star_N$')
+        ax.set_ylabel(r'$\bar y/\mathcal{I}^\star_N$')
         ax.set_title(f'{title or ""}  standardised RMSE {weighted_rmse(fit, cells):.2f}', fontsize=10)
     fig.colorbar(sc, ax=axes[0], shrink=0.8, label=colour)
     plt.show()
@@ -828,7 +829,7 @@ period
 md("""
 ## C8. Where does the surface still miss?
 
-Standard-error-weighted residuals of the common surface on the (q bin × ν bin) grid for one N, sides folded
+Standard-error-weighted residuals of the common surface on the (q bin × ν bin) grid for one N, in units of the signed response $y_t$
 (mean of $s\\cdot$residual over the two sides). Red = data above the surface. A systematic pattern along
 the activity axis says $\\nu^{\\eta}$ is not the right functional form for activity.
 """)
@@ -858,7 +859,7 @@ plt.show()
 md("""
 ## C9. The surface itself: response over (imbalance, activity)
 
-For one N: colour = folded cell mean $s\\bar y$ (two sides averaged), placed at each cell's geometric-mean
+For one N: colour = cell mean $\\bar y$ of the signed response (two sides averaged), placed at each cell's geometric-mean
 $(\nu, q)$. Lines = contours of the fitted response. Under the model the contours are straight lines
 $\\log q + \\eta\\log \nu = \\text{const}$, i.e. slope $-\\eta$ in these axes:
 
@@ -912,7 +913,7 @@ def plot_surface_map(n_values=(250, 2000, 16000), fit_main=None, fit_ref=None,
     axes[0][0].set_ylabel(r'$\log_{10} q$')
     bar = fig.colorbar(fill, ax=axes[0], shrink=0.85, ticks=list(levels))
     bar.ax.set_yticklabels([f'{v:g}' for v in levels])
-    bar.set_label(r'$s\,\bar y/\mathcal{I}^\star_N$')
+    bar.set_label(r'$\bar y/\mathcal{I}^\star_N$')
     plt.show()
 
 
@@ -935,7 +936,7 @@ def plot_surface_3d(n, fit=None, elev=25, azim=-130):
     ax = fig.add_subplot(projection='3d')
     ax.plot_surface(A / np.log(10), Z / np.log(10), P, cmap='viridis', alpha=0.6, linewidth=0)
     ax.scatter(fc['mean_loga'] / np.log(10), fc['mean_logz'] / np.log(10), fc['fy'], color='k', s=6)
-    ax.set_xlabel('log10 ν'); ax.set_ylabel('log10 q'); ax.set_zlabel('s·ȳ')
+    ax.set_xlabel('log10 ν'); ax.set_ylabel('log10 q'); ax.set_zlabel('ȳ')
     ax.view_init(elev=elev, azim=azim)
     ax.set_title(f'N = {n:,}, η = {fit.gamma:.2f}', fontsize=10)
     plt.show()

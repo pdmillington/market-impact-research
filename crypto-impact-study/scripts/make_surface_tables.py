@@ -218,7 +218,7 @@ def robustness_tables() -> None:
                         "source": source})
 
     head = pd.read_csv(HEADLINE / "fits.csv")
-    add("Headline: \\(r/\\sigma_{24h}\\), 2021-01 to 2026-08", "N_250_16000", head.loc[~head["model"].str.startswith("independent")],
+    add("Headline: \\(y_t\\) (volatility-normalised), 2021-01 to 2026-08", "N_250_16000", head.loc[~head["model"].str.startswith("independent")],
         "activity_surface_n250_2021_2026/fits.csv")
     rob = pd.read_csv(HEADLINE / "robustness.csv")
     add("Raw log return (no volatility scaling)", "N_250_16000", rob.loc[rob["response"] == "log_return (raw)"],

@@ -2367,6 +2367,24 @@ origin known and the slices counted.
   no cells. No scores were computed and no fit output was written or inspected.
   The protocol is infeasible as registered; an amendment awaits the researcher's
   decision, to be recorded here before any rerun.
+- **Amendment 1 (researcher decision, 2026-10-29; recorded before the rerun, with
+  no result seen):** an adaptive grid replaces the fixed 20 × 10 grid.
+  - For each (window, month, N, side), with n training blocks on that side:
+    n_ν = clamp(⌊√(n / 200)⌋, 2, 10) activity bins and n_q = 2 · n_ν imbalance
+    bins (equal count), so a full window reaches the headline 20 × 10. At least
+    100 blocks per cell, unchanged.
+  - The same rule applies to every window, including expanding, so each month's
+    comparison is like-for-like.
+  - An N with fewer than 8 usable cells (both sides together) in a
+    window-month is dropped from that fit. A (month, N) pair is scored only when
+    both windows of the comparison include that N; D_m is the mean over those N.
+    Coverage (N per window-month) is reported.
+  - Warm starts are used only when the previous month's fit has the same N set;
+    otherwise the fit uses 8 cold starts.
+  - Everything else in the protocol, the decision rule and the run notes is
+    unchanged.
+- **Second run (2026-10-29):** stopped at the first data load because the data
+  drive was not mounted. No result. To be rerun unchanged.
 - **Outcome:** pending.
 
 ### V-001 · Mid-proxy validation against bookTicker (2023-05-16 to 2023-05-31)

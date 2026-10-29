@@ -8,7 +8,7 @@ pooled exponent in x, part of the pooled concavity comes from mixing. (delta is 
 single-power summary of the normalised variables, not a test of proportionality.)
 
 At N = 1,000, 4,000 and 16,000 (pb_blocks_v1, 2021-01..2026-08, volatility-normalised
-response y = r / sigma_24h, folded by the sign of Q):
+signed response y_t = sign(Q_t) r_t / sigma_24h, as in section 3 of the paper):
 - relative-activity deciles of a; within each, 20 equal-count bins of q;
 - a free power s y = c q^delta fitted to the bin means (geometric-mean q, inverse-
   variance weights), with a UTC-day block bootstrap (200 replicates) for delta;
@@ -155,7 +155,7 @@ def figure(deltas: pd.DataFrame, bins: pd.DataFrame) -> None:
         dax.set_ylim(0.3, 1.3); dax.grid(color="#e6e6e6", lw=0.7)
         if col == 0:
             dax.set_ylabel(r"Fitted exponent $\delta$")
-            ax.set_ylabel(r"Folded mean response $s\,\bar y$  ($y=r/\sigma_{24h}$)")
+            ax.set_ylabel(r"Mean response $\bar y$  ($y_t=\mathrm{sign}(Q_t)\,r_t/\sigma^-_{24h,t}$)")
             dax.legend(fontsize=7.5, loc="lower left", frameon=True)
     fig.tight_layout()
     fig.savefig(FIGURES / "30_surface_concavity_by_activity.pdf", bbox_inches="tight")

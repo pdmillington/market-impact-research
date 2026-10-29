@@ -88,7 +88,7 @@ def collapse_figure(cells: pd.DataFrame, fits: pd.DataFrame, scales: pd.DataFram
                 label=rf"master curve ($\alpha$={f.alpha:.2f}, $\beta$={f.beta:.2f})")
         ax.set_xscale("log"); ax.set_yscale("log")
         ax.set_xlabel(title or rf"Activity-adjusted coordinate $x_\eta/\mathcal{{Q}}_N$ ($x_\eta = q\,\nu^{{\eta}}$, $\eta$ = {f.gamma:.2f})")
-        ax.set_ylabel(r"Folded response $s\,\bar y/\mathcal{I}^\star_N$  ($y=r/\sigma_{24h}$)")
+        ax.set_ylabel(r"Mean response $\bar y/\mathcal{I}^\star_N$  ($y_t=\mathrm{sign}(Q_t)\,r_t/\sigma^-_{24h,t}$)")
         ax.set_title(f"{'P&B (η = 1)' if model == 'pb_gamma_1' else 'Activity surface'}: standardised RMSE {f.weighted_rmse:.1f}",
                      color=INK, fontsize=11)
         ax.legend(loc="upper left", fontsize=9, frameon=True)
@@ -182,7 +182,7 @@ CONTOUR_N = (250, 2000, 16000)
 def contour_figure(cells: pd.DataFrame, fits: pd.DataFrame, scales: pd.DataFrame, figures: Path, tables: Path) -> None:
     """Response surface over (log a, log q) for three N: data as filled contours (log scale), fits as lines.
 
-    The colour is the folded cell mean (sides averaged) divided by the surface's R_N, so the
+    The colour is the cell mean of the signed response y_t = sign(Q_t) r_t / sigma_24h (sides averaged) divided by the surface's I*_N, so the
     panels share one scale. Lines are contours of the fitted response on the same scale and at
     the same levels: solid = activity surface (slope -gamma in these axes), dashed = P&B (gamma = 1).
     """
@@ -226,7 +226,7 @@ def contour_figure(cells: pd.DataFrame, fits: pd.DataFrame, scales: pd.DataFrame
     axes[0].legend(handles=handles, loc="lower left", fontsize=8, frameon=True)
     bar = fig.colorbar(fill, ax=axes, shrink=0.85, pad=0.02, ticks=levels)
     bar.ax.set_yticklabels([f"{v:g}" for v in levels])
-    bar.set_label(r"Folded mean response $s\,\bar y/\mathcal{I}^\star_N$ (contour levels marked)")
+    bar.set_label(r"Mean response $\bar y/\mathcal{I}^\star_N$ (contour levels marked)")
     fig.savefig(figures / "29_activity_surface_contours.pdf", bbox_inches="tight")
     plt.close(fig)
     pd.DataFrame(rows).to_csv(tables / "activity_surface_contour_cells.csv", index=False)
