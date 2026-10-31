@@ -2236,7 +2236,7 @@ origin known and the slices counted.
     unchanged, with the full α. Effort moves to the cost side (fee route,
     depth data).
 
-### E-008 · Rolling-window calibration of the activity surface (registered 2026-10-16)
+### E-008 · Rolling-window calibration of the activity surface (registered 2026-10-16; completed 2026-10-29)
 - **Status:** registered 2026-10-16 (proposed and approved the same day, with
   the 60% month threshold confirmed by the researcher). Protocol and run notes
   frozen before any rolling fit was run.
@@ -2385,7 +2385,21 @@ origin known and the slices counted.
     unchanged.
 - **Second run (2026-10-29):** stopped at the first data load because the data
   drive was not mounted. No result. To be rerun unchanged.
-- **Outcome:** pending.
+- **Outcome (2026-10-29, run as amended): no evidence that a 12-month window
+  helps; the expanding calibration is retained.**
+  - Primary (trailing 12 vs expanding, 56 test months): mean relative MSE
+    improvement +0.24%, 95% month-block CI [−0.20%, +0.67%]; positive in 46% of
+    months; +0.05% with the best 10 days removed. Fails the registered rule
+    (CI includes 0; under 60% of months).
+  - With y clipped at training 0.1%/99.9% quantiles, trailing 12 is worse than
+    expanding: −1.03% [−1.45%, −0.65%]. Trailing 6 (−1.24%) and trailing 24
+    (−0.87%) likewise. Raw gains, where any, come from extreme blocks.
+  - Trailing-12 η ranges 0.23–0.52 (expanding 0.41–0.48) and α reaches its
+    bound in some months: short windows follow the drift but estimate the shape
+    noisily.
+  - Out-of-sample R² vs zero 0.45 (N = 250) to 0.62 (N = 16,000) for all windows.
+  - All N kept in every window-month; all fits converged.
+- **Report:** `reports/e008-rolling-surface-results.md`.
 
 ### V-001 · Mid-proxy validation against bookTicker (2023-05-16 to 2023-05-31)
 - **Type:** measurement validation, inside the order-book exploration window.
