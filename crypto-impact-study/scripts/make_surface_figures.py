@@ -14,7 +14,7 @@ scales Q_N and I*_N, master curve F, as in section 4.
 
 Writes to reports/redo/paper/:
 - figures/26_activity_surface_collapse.pdf   P&B coordinate vs activity-adjusted coordinate
-- figures/27_activity_surface_gamma.pdf      gamma by bar size and by calendar year
+- figures/27_activity_surface_eta.pdf        eta by bar size and by calendar year
 - figures/28_activity_surface_oos.pdf        out-of-sample weighted RMSE by test year
 - figures/29_activity_surface_contours.pdf   response over (activity, imbalance): data vs fitted contours
 - figures/31_surface_vs_threshold_oos.pdf    out-of-sample weighted RMSE by test block/year, surface vs threshold
@@ -137,12 +137,12 @@ def gamma_figure(fits: pd.DataFrame, figures: Path, tables: Path) -> None:
     axes[0].set_title("η by aggregation scale (2021–Aug 2026)", fontsize=11)
     axes[1].set_title("η by calendar year (N = 250–16,000)", fontsize=11)
     fig.tight_layout()
-    fig.savefig(figures / "27_activity_surface_gamma.pdf", bbox_inches="tight")
+    fig.savefig(figures / "27_activity_surface_eta.pdf", bbox_inches="tight")
     plt.close(fig)
-    by_n.to_csv(tables / "activity_surface_gamma_by_n.csv", index=False)
-    by_year.to_csv(tables / "activity_surface_gamma_by_year.csv", index=False)
+    by_n.to_csv(tables / "activity_surface_eta_by_n.csv", index=False)
+    by_year.to_csv(tables / "activity_surface_eta_by_year.csv", index=False)
     pd.DataFrame([{"n_set": "N_250_16000", "common_gamma": common, "month_block_2_5": lo, "month_block_97_5": hi,
-                   "replicates": len(boot)}]).to_csv(tables / "activity_surface_gamma_bootstrap_summary.csv", index=False)
+                   "replicates": len(boot)}]).to_csv(tables / "activity_surface_eta_bootstrap_summary.csv", index=False)
 
 
 def oos_figure(figures: Path, tables: Path) -> None:
