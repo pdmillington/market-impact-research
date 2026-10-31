@@ -256,10 +256,13 @@ for low and high activity are far apart (the coordinate scales with $\nu$ itself
 ---
 # Part B. The paper's results
 
-## B1. The fit (paper table: `surface_fit`)
+## B1. The fit (paper table: `surface_fit_headline`; complete record: `surface_fit`)
 
-The common surface and its two restricted versions, fitted on the same cells. Two N sets: the headline
-(N = 250–16,000) and the all-N robustness (including N = 100).
+The common surface and its two restricted versions, fitted on the same cells.
+
+- **Paper table, `surface_fit_headline`:** the headline N set (250–16,000) only, with the month-block interval for η̂.
+- **Complete record, `surface_fit`:** both N sets (the headline and the all-N fit including N = 100) and both
+  bootstrap intervals. The N = 100 rows also appear in the robustness table (`surface_robustness`, B8).
 
 - **η, 95% CI**: the month-block bootstrap resamples whole calendar months (robust to persistence within a month);
   the day-block bootstrap resamples days (narrower). The paper should quote the month-block interval as the
@@ -277,10 +280,13 @@ def show_table(name: str, columns=None, caption: str | None = None):
     return frame
 
 
+headline_table = show_table('surface_fit_headline', ['model', 'eta', 'eta_month_block_2_5', 'eta_month_block_97_5',
+                                                     'alpha', 'beta', 'xi', 'psi', 'parameters', 'standardised_rmse'],
+                            'Paper table: surface fit, headline N = 250–16,000')
 fit_table = show_table('surface_fit', ['n_set', 'model', 'gamma', 'gamma_month_block_2_5', 'gamma_month_block_97_5',
                                        'gamma_day_block_2_5', 'gamma_day_block_97_5', 'alpha', 'beta',
                                        'xi_identified', 'psi_identified', 'parameters', 'cells', 'standardised_rmse'],
-                       'Table: surface fit')
+                       'Complete record: both N sets and both intervals (column `gamma` holds η; N = 100 rows also in surface_robustness)')
 """)
 
 md(r"""
@@ -369,7 +375,7 @@ ax.set_ylabel('Out-of-sample standardised RMSE'); ax.legend(fontsize=8, ncol=2);
 """)
 
 md(r"""
-## B5. Is η one number? (paper tables: `surface_gamma_by_n`, `surface_gamma_by_year`; figure 27)
+## B5. Is η one number? (paper tables: `surface_eta_by_n`, `surface_eta_by_year`; figure 27)
 
 Fit η separately for each N and for each calendar year, with 95% day-block bootstrap intervals. The band is the common
 η with its month-block interval.
@@ -386,8 +392,8 @@ structural constant. The out-of-sample results (B4) show the averaged model stil
 """)
 
 code(r"""
-by_n = show_table('surface_gamma_by_n', caption='Table: η by N (each N fitted alone)')
-by_year = show_table('surface_gamma_by_year', caption='Table: η by year (headline N set)')
+by_n = show_table('surface_eta_by_n', caption='Table: η by N (each N fitted alone)')
+by_year = show_table('surface_eta_by_year', caption='Table: η by year (headline N set)')
 common_lo, common_hi = fit_table.query('n_set == "N_250_16000" and model == "activity_surface"')[
     ['gamma_month_block_2_5', 'gamma_month_block_97_5']].iloc[0]
 

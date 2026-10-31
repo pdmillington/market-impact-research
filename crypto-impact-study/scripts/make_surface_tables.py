@@ -18,11 +18,12 @@ Two error measures appear and are not comparable with each other:
   event-intensity grid of the threshold model (crypto_impact.effective_liquidity.weighted_rmse).
 
 Writes reports/redo/paper/tables/surface_*.tex and .csv:
-- surface_fit                   T1 headline and all-N fits, gamma with month- and day-block CIs
+- surface_fit                   T1 headline and all-N fits, eta with month- and day-block CIs (complete record)
+- surface_fit_headline          T1 paper table: headline N set only, month-block CI
 - surface_oos_by_year           T2 expanding-window out-of-sample error by test year
 - surface_vs_threshold          T3 like-for-like comparison (in sample and mean out of sample)
 - surface_vs_threshold_by_block T3 appendix: out-of-sample error block by block
-- surface_gamma_by_n / _by_year T4 gamma stability with day-block CIs
+- surface_eta_by_n / _by_year   T4 eta stability with day-block CIs
 - surface_robustness            T5 price rules, raw returns, 2019-20, N set
 - surface_displacement          T5 high-activity displacement under both activity measures
 - surface_concavity             T6 delta within relative-activity deciles vs pooled
@@ -121,6 +122,25 @@ def fit_table() -> None:
           rows, "llrccrrrrrrr",
           second_header=["", "", "", "(month blocks)", "(day blocks)", "", "", "", "", "", "", "RMSE"], breaks=breaks)
 
+    # The paper's main surface table: headline N set only, month-block interval only. Same numbers as the
+    # N_250_16000 rows of surface_fit (no refitting); restricted values of eta printed as integers.
+    head = [r for r in records if r["n_set"] == "N_250_16000"]
+    frame = pd.DataFrame([{"model": r["model"], "eta": r["gamma"], "eta_fixed": r["model"] != "activity_surface",
+                           "eta_month_block_2_5": r["gamma_month_block_2_5"],
+                           "eta_month_block_97_5": r["gamma_month_block_97_5"], "alpha": r["alpha"], "beta": r["beta"],
+                           "xi": r["xi_identified"], "psi": r["psi_identified"], "parameters": r["parameters"],
+                           "standardised_rmse": r["standardised_rmse"]} for r in head])
+    rows = []
+    for r in frame.itertuples():
+        eta = f"{r.eta:.0f}" if r.eta_fixed else num(r.eta, 3)
+        ci = "---" if r.eta_fixed else interval(r.eta_month_block_2_5, r.eta_month_block_97_5, 3)
+        rows.append([MODEL_LABEL[r.model], eta, ci, num(r.alpha, 2), num(r.beta, 3), num(r.xi, 3), num(r.psi, 3),
+                     str(r.parameters), num(r.standardised_rmse, 2)])
+    write("surface_fit_headline", frame,
+          ["Model", r"\(\hat\eta\)", "95\\% CI", r"\(\alpha\)", r"\(\beta\)", r"\(\xi\)", r"\(\psi\)",
+           "Param.", "Std. RMSE"],
+          rows, "lrcrrrrrr", second_header=["", "", "(month blocks)", "", "", "", "", "", ""])
+
 
 def oos_table() -> None:
     """T2: train 2021 to Y-1, test Y; headline N set."""
@@ -196,12 +216,12 @@ def stability_tables() -> None:
     by_n = pd.read_csv(STABILITY / "gamma_by_n.csv")
     rows = [[f"{int(r.n_events):,}" + (r"\(^\dagger\)" if r.n_events < 250 else ""), num(r.gamma),
              interval(r.gamma_p025, r.gamma_p975), num(r.alpha, 2), num(r.beta, 3)] for r in by_n.itertuples()]
-    write("surface_gamma_by_n", by_n, [r"\(N\)", r"\(\eta\)", "95\\% CI (day blocks)", r"\(\alpha\)", r"\(\beta\)"],
+    write("surface_eta_by_n", by_n, [r"\(N\)", r"\(\eta\)", "95\\% CI (day blocks)", r"\(\alpha\)", r"\(\beta\)"],
           rows, "rrcrr")
     by_year = pd.read_csv(STABILITY / "gamma_by_year.csv")
     rows = [[f"{int(r.year)}" + (" (Jan--Aug)" if r.year == 2026 else ""), f"{int(r.days)}", num(r.gamma),
              interval(r.gamma_p025, r.gamma_p975)] for r in by_year.itertuples()]
-    write("surface_gamma_by_year", by_year, ["Year", "Days", r"\(\eta\)", "95\\% CI (day blocks)"], rows, "lrrc")
+    write("surface_eta_by_year", by_year, ["Year", "Days", r"\(\eta\)", "95\\% CI (day blocks)"], rows, "lrrc")
 
 
 def robustness_tables() -> None:
