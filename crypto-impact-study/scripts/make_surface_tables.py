@@ -26,11 +26,15 @@ Writes reports/redo/paper/tables/surface_*.tex and .csv:
 - surface_eta_by_n / _by_year   T4 eta stability with day-block CIs
 - surface_robustness            T5 price rules, raw returns, 2019-20, N set
 - surface_displacement          T5 high-activity displacement under both activity measures
+- surface_power_law_fit         A3g (additional): 7-parameter power-law-scale surface and 6-parameter benchmarks
+- surface_power_law_oos_by_year A3g: out-of-sample standardised RMSE by year
+- surface_power_law_rolling     A3g: trailing 12-month vs expanding, 3-month tests, block-level MSE
 - surface_concavity             T6 delta within relative-activity deciles vs pooled
 """
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import numpy as np
@@ -45,6 +49,7 @@ STABILITY = REDO / "surface_stability"
 COMPARISON = REDO / "surface_vs_threshold"
 PRICE_RULE = REDO / "event_price_rule"
 CONCAVITY = REDO / "surface_concavity"
+POWER_LAW = REDO / "surface_power_law"
 TABLES = REDO / "paper" / "tables"
 
 MODEL_LABEL = {"activity_surface": "Activity surface", "pb_gamma_1": r"P\&B (\(\eta=1\))",
@@ -301,6 +306,75 @@ def concavity_table() -> None:
           rows, "rrcrcrcr", second_header=["", r"(in \(|Q|/V_{24h}\))", "", "(median, in \\(q\\))", "", "", "", "bend"])
 
 
+def power_law_tables() -> None:
+    """A3g (additional work): scales restricted to power laws in N inside the fit (surface_power_law_scales.py)."""
+
+    fits = pd.read_csv(POWER_LAW / "fits.csv").set_index("model")
+    boot = pd.read_csv(POWER_LAW / "bootstrap.csv")
+    head = pd.read_csv(HEADLINE / "fits.csv").set_index("model")
+    head_exp = pd.read_csv(HEADLINE / "scaling_exponents_identified.csv").set_index("model")
+    month_lo, month_hi = month_block(HEADLINE)
+    p_lo, p_hi = np.quantile(boot["gamma"], [0.025, 0.975])
+    specs = [  # (label, scales, parameters, eta, fixed, ci, alpha, beta, xi, psi, rmse, source)
+        ("Activity surface", "free", 17, fits.loc["surface_free", "gamma"], False, (month_lo, month_hi),
+         fits.loc["surface_free", "alpha"], fits.loc["surface_free", "beta"], head_exp.loc["activity_surface", "xi"],
+         head_exp.loc["activity_surface", "psi"], fits.loc["surface_free", "standardised_rmse"], "surface_power_law/fits.csv"),
+        ("Activity surface", "power law", 7, fits.loc["surface_power", "gamma"], False, (p_lo, p_hi),
+         fits.loc["surface_power", "alpha"], fits.loc["surface_power", "beta"], fits.loc["surface_power", "xi"],
+         fits.loc["surface_power", "psi"], fits.loc["surface_power", "standardised_rmse"], "surface_power_law/fits.csv"),
+        (MODEL_LABEL["pb_gamma_1"], "free", 16, 1.0, True, None, head.loc["pb_gamma_1", "alpha"], head.loc["pb_gamma_1", "beta"],
+         head_exp.loc["pb_gamma_1", "xi"], head_exp.loc["pb_gamma_1", "psi"], head.loc["pb_gamma_1", "weighted_rmse"],
+         "activity_surface_n250_2021_2026/fits.csv"),
+        (MODEL_LABEL["pb_gamma_1"], "power law", 6, 1.0, True, None, fits.loc["pb_power", "alpha"], fits.loc["pb_power", "beta"],
+         fits.loc["pb_power", "xi"], fits.loc["pb_power", "psi"], fits.loc["pb_power", "standardised_rmse"], "surface_power_law/fits.csv"),
+        (MODEL_LABEL["imbalance_ratio_gamma_0"], "free", 16, 0.0, True, None, head.loc["imbalance_ratio_gamma_0", "alpha"],
+         head.loc["imbalance_ratio_gamma_0", "beta"], head_exp.loc["imbalance_ratio_gamma_0", "xi"],
+         head_exp.loc["imbalance_ratio_gamma_0", "psi"], head.loc["imbalance_ratio_gamma_0", "weighted_rmse"],
+         "activity_surface_n250_2021_2026/fits.csv"),
+        (MODEL_LABEL["imbalance_ratio_gamma_0"], "power law", 6, 0.0, True, None, fits.loc["ratio_power", "alpha"],
+         fits.loc["ratio_power", "beta"], fits.loc["ratio_power", "xi"], fits.loc["ratio_power", "psi"],
+         fits.loc["ratio_power", "standardised_rmse"], "surface_power_law/fits.csv"),
+    ]
+    records, rows = [], []
+    for (lab, scales, k, eta, fixed, ci, alpha, beta, xi, psi, rmse, source) in specs:
+        records.append({"model": lab.replace("\\", ""), "scales": scales, "parameters": k, "eta": eta, "eta_fixed": fixed,
+                        "eta_ci_2_5": np.nan if ci is None else ci[0], "eta_ci_97_5": np.nan if ci is None else ci[1],
+                        "alpha": alpha, "beta": beta, "xi": xi, "xi_psi_fitted_inside": scales == "power law",
+                        "psi": psi, "standardised_rmse": rmse, "source": source})
+        mark = "" if scales == "power law" else r"\(^\dagger\)"
+        rows.append([lab, scales, str(k), f"{eta:.0f}" if fixed else num(eta, 3),
+                     "---" if ci is None else interval(ci[0], ci[1], 3), num(alpha, 2), num(beta, 3),
+                     num(xi, 3) + mark, num(psi, 3) + mark, num(rmse, 2)])
+    write("surface_power_law_fit", pd.DataFrame(records),
+          ["Model", "Scales", "Param.", r"\(\hat\eta\)", "95\\% CI", r"\(\alpha\)", r"\(\beta\)", r"\(\xi\)", r"\(\psi\)", "Std."],
+          rows, "llrrcrrrrr", second_header=["", "", "", "", "(month blocks)", "", "", "", "", "RMSE"], breaks={2, 4})
+
+    oos = pd.read_csv(POWER_LAW / "oos_by_year.csv").pivot(index="test_year", columns="model", values="test_standardised_rmse")
+    head_oos = pd.read_csv(HEADLINE / "oos.csv")
+    pb_free = head_oos.loc[head_oos["model"] == "pb_gamma_1"].set_index("test_year")["test_weighted_rmse"]
+    table = oos.assign(pb_free=pb_free).reset_index()
+    rows = [[f"{int(r.test_year)}" + (" (Jan--Aug)" if r.test_year == 2026 else ""), num(r.surface_free, 2),
+             num(r.surface_power, 2), num(r.pb_free, 2), num(r.pb_power, 2), num(r.ratio_power, 2)] for r in table.itertuples()]
+    write("surface_power_law_oos_by_year", table,
+          ["Test year", "Surface", "Surface", r"P\&B (\(\eta=1\))", r"P\&B (\(\eta=1\))", r"\(\eta=0\)"], rows, "lrrrrr",
+          second_header=["", "free (17)", "power law (7)", "free (16)", "power law (6)", "power law (6)"])
+
+    summary = json.loads((POWER_LAW / "rolling_summary.json").read_text())
+    records, rows = [], []
+    for name, res in summary["comparisons"].items():
+        raw, clip = res["raw"], res["clipped"]
+        records.append({"comparison": name, "months": raw["months"], "mean_D_raw": raw["mean_D"], "ci_raw_2_5": raw["ci_2_5"],
+                        "ci_raw_97_5": raw["ci_97_5"], "share_months_positive_raw": raw["share_months_positive"],
+                        "mean_D_clipped": clip["mean_D"], "ci_clipped_2_5": clip["ci_2_5"], "ci_clipped_97_5": clip["ci_97_5"]})
+        pct = lambda v: num(100 * v, 2)
+        rows.append([name, str(raw["months"]), pct(raw["mean_D"]), f"[{pct(raw['ci_2_5'])}, {pct(raw['ci_97_5'])}]",
+                     f"{100 * raw['share_months_positive']:.0f}\\%", pct(clip["mean_D"]),
+                     f"[{pct(clip['ci_2_5'])}, {pct(clip['ci_97_5'])}]"])
+    write("surface_power_law_rolling", pd.DataFrame(records),
+          ["Comparison (first vs second)", "Months", "Mean D", "95\\% CI", "Months D \\(>0\\)", "Mean D", "95\\% CI"],
+          rows, "lrrcrrc", second_header=["", "", "(\\%)", "", "", "clipped (\\%)", ""])
+
+
 def main() -> None:
     TABLES.mkdir(parents=True, exist_ok=True)
     fit_table()
@@ -309,6 +383,7 @@ def main() -> None:
     stability_tables()
     robustness_tables()
     concavity_table()
+    power_law_tables()
     print(sorted(p.name for p in TABLES.glob("surface_*.tex")))
 
 

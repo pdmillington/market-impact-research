@@ -1,0 +1,15 @@
+\begin{tabular}{llrrcrrrrr}
+\toprule
+Model & Scales & Param. & \(\hat\eta\) & 95\% CI & \(\alpha\) & \(\beta\) & \(\xi\) & \(\psi\) & Std. \\
+ &  &  &  & (month blocks) &  &  &  &  & RMSE \\
+\midrule
+Activity surface & free & 17 & 0.405 & [0.372, 0.439] & 3.70 & 0.147 & 0.204\(^\dagger\) & 0.610\(^\dagger\) & 3.37 \\
+Activity surface & power law & 7 & 0.402 & [0.366, 0.440] & 4.54 & 0.138 & 0.095 & 0.488 & 3.69 \\
+\addlinespace
+P\&B (\(\eta=1\)) & free & 16 & 1 & --- & 1.45 & 0.571 & 0.961\(^\dagger\) & 0.680\(^\dagger\) & 13.85 \\
+P\&B (\(\eta=1\)) & power law & 6 & 1 & --- & 1.52 & 0.565 & 0.919 & 0.651 & 13.97 \\
+\addlinespace
+Imbalance ratio (\(\eta=0\)) & free & 16 & 0 & --- & 2.80 & 0.156 & $-$0.446\(^\dagger\) & 0.394\(^\dagger\) & 17.37 \\
+Imbalance ratio (\(\eta=0\)) & power law & 6 & 0 & --- & 8.00 & 0.130 & $-$0.518 & 0.305 & 17.54 \\
+\bottomrule
+\end{tabular}

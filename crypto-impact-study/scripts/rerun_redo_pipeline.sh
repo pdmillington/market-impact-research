@@ -48,6 +48,7 @@ step "event price rule robustness" "$PY" -W ignore "$S/event_price_rule_robustne
 step "surface identification and stability" "$PY" -W ignore "$S/surface_identification_and_stability.py"
 step "surface concavity by activity" "$PY" -W ignore "$S/surface_concavity_by_activity.py"
 step "surface vs threshold" "$PY" -W ignore "$S/surface_vs_threshold.py"
+step "surface power-law scales (A3g)" "$PY" -W ignore "$S/surface_power_law_scales.py"
 step "surface figures" "$PY" -W ignore "$S/make_surface_figures.py"
 step "surface tables" "$PY" -W ignore "$S/make_surface_tables.py"
 

@@ -589,7 +589,83 @@ md(r"""
   starts at N = 250 (A5).
 - **Not uniformly better than the threshold model.** Better on average out of sample on event bars, level on
   five-minute bars, and not block by block (B6).
+""")
 
+md(r"""
+---
+## B10. Additional work: power-law scales inside the fit (revision log A3g)
+
+*This section adds a restricted variant. It does not change the headline model or the claim in B9.*
+
+The headline surface leaves $\mathcal{Q}_N$ and $\mathcal{I}^\star_N$ free for each N (3 + 2 × 7 = 17 parameters); the
+ξ and ψ in B1 are slopes computed **after** the fit (marked † in the tables). Here the power laws of section 4 are imposed
+**inside** the fit:
+
+$$\mathcal{Q}_N=\mathcal{Q}_1N^{\xi},\qquad \mathcal{I}^\star_N=\mathcal{I}^\star_1N^{\psi},$$
+
+giving 7 parameters (η, α, β, 𝒬₁, ξ, 𝓘\*₁, ψ), the same count as the single-N threshold model but covering every N.
+The benchmarks get the same restriction (η = 1 and η = 0, 6 parameters each). Same cells, response and loss as the
+headline (`crypto_impact.pb_surface.fit_activity_surface(scale_law=True)`; script `surface_power_law_scales.py`).
+
+Three checks:
+1. **In sample** on the headline cells (standardised RMSE) and η, ξ, ψ with a month-block interval for η.
+2. **Out of sample by year**, exactly as B4.
+3. **Rolling:** fit on the 12 months before each test quarter and test the next 3 months (19 quarters, 2022Q1–2026Q3),
+   against an expanding window. Three-month tests are too small for cells, so these are scored block by block (MSE of
+   $y_t$; D = mean relative MSE reduction over N, month-block interval). The E-008 result for the free-scale surface
+   (a trailing window does not help) was known when this design was chosen.
+""")
+
+code(r"""
+POWER_LAW = REDO_ROOT / 'surface_power_law'
+pl_fit = show_table('surface_power_law_fit', ['model', 'scales', 'parameters', 'eta', 'eta_ci_2_5', 'eta_ci_97_5',
+                                              'alpha', 'beta', 'xi', 'psi', 'standardised_rmse'],
+                    'Table: power-law scales vs free scales (ξ, ψ of the free-scale rows are post-fit slopes)')
+pl_oos = show_table('surface_power_law_oos_by_year', caption='Table: out-of-sample standardised RMSE by test year')
+pl_roll = show_table('surface_power_law_rolling', caption='Table: rolling 12-month fits, 3-month tests (block-level MSE)')
+
+# Figure 32: free per-N scales against the power laws fitted inside the 7-parameter surface.
+pl_scales = pd.read_csv(POWER_LAW / 'scales.csv')
+pl_fits = pd.read_csv(POWER_LAW / 'fits.csv').set_index('model')
+fig, axes = plt.subplots(1, 2, figsize=(12, 4.2))
+for ax, col, title in ((axes[0], 'q_scale', r'$\mathcal{Q}_N$'), (axes[1], 'r_scale', r'$\mathcal{I}^\star_N$')):
+    free = pl_scales.query('model == "surface_free"'); power = pl_scales.query('model == "surface_power"')
+    ax.plot(free.n_events, free[col], 'o', mfc='white', mec=INK, mew=1.8, ms=7, label='free per N (17 parameters)')
+    ax.plot(power.n_events, power[col], '-', color=BLUE, lw=2, label='power law inside the fit (7 parameters)')
+    ax.set_xscale('log'); ax.set_yscale('log'); ax.set_xticks(free.n_events)
+    ax.set_xticklabels([f'{n:,}' for n in free.n_events], fontsize=8); ax.minorticks_off()
+    ax.set_xlabel('N'); ax.set_title(title, fontsize=11); ax.legend(fontsize=8, loc='upper left')
+fig.tight_layout(); plt.show()
+""")
+
+md(r"""
+**What it says.**
+
+- **In sample, the 7-parameter surface keeps almost all of the gain over P&B.** Standardised RMSE 3.69 against 3.37 for
+  the free-scale surface (about 10% higher) and 13.85 for P&B with free scales: it retains about 97% of the improvement
+  over P&B with 7 parameters instead of 17. η is essentially unchanged (0.402, month-block CI [0.366, 0.440], against
+  0.405 [0.372, 0.439]).
+- **The scales are not exact power laws.** The free per-N scales curve upwards in log–log (figure 32): the largest N
+  (8,000 and 16,000) sit above any single line, and N = 250 sits above the trend for $\mathcal{Q}_N$. The imposed slopes
+  are therefore lower than the post-fit slopes: ξ = 0.095 (bootstrap 95% range 0.015–0.163) against 0.204, and ψ = 0.488
+  (0.426–0.526) against 0.610. This curvature is consistent with η rising with N (B5): with one η for all N, the free
+  scales absorb part of that drift, and a power law cannot. (The free points and the line come from fits with different
+  α, β and η, so the vertical gap partly reflects the shape trading off against the scales.)
+- **For the benchmarks the restriction costs almost nothing:** P&B 13.97 against 13.85, η = 0 17.54 against 17.37.
+- **Out of sample by year** the 7-parameter surface is 2–4% worse than the free-scale surface in every year
+  (e.g. 3.95 against 3.82 in 2023) and still far better than P&B in either form (5.8–7.6).
+- **Rolling windows do not help the parsimonious model either.** Trailing 12 against expanding: mean D −0.16%
+  [−0.59%, +0.23%], better in 36% of months; with clipped $y_t$ it is significantly worse (−1.23%). Fewer parameters do not
+  turn recency into an advantage. At block level, free scales beat power-law scales by 0.5–0.9% of MSE under both
+  windows; out-of-sample R² is almost identical (0.45 at N = 250 for both; 0.61 against 0.62 at N = 16,000).
+
+**Reading (A3g):** between the two outcomes the revision log anticipated. The loss of fit is modest, so the surface can be
+stated as one formula across all N, $\mathbb{E}[y_t] = \mathcal{I}^\star_1N^{\psi}\,\mathcal{F}\big(x_\eta/(\mathcal{Q}_1N^{\xi})\big)$,
+at about 10% higher error; but the loss is systematic, tied to the scale dependence of η, so the free-scale surface
+remains the better description. Suggested use: a robustness row or short paragraph.
+""")
+
+md(r"""
 ---
 # Part C. Sandbox
 
