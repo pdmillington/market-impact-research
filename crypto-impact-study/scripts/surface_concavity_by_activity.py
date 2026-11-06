@@ -155,7 +155,7 @@ def figure(deltas: pd.DataFrame, bins: pd.DataFrame) -> None:
         dax.set_ylim(0.3, 1.3); dax.grid(color="#e6e6e6", lw=0.7)
         if col == 0:
             dax.set_ylabel(r"Fitted exponent $\delta$")
-            ax.set_ylabel(r"Mean response $\bar y$  ($y_t=\mathrm{sign}(Q_t)\,r_t/\sigma^-_{24h,t}$)")
+            ax.set_ylabel(r"Mean response $\bar y$  ($y_t=\mathrm{sign}(Q_t)\,r_t/\sigma_{24h,t}$)")
             dax.legend(fontsize=7.5, loc="lower left", frameon=True)
     fig.tight_layout()
     fig.savefig(FIGURES / "30_surface_concavity_by_activity.pdf", bbox_inches="tight")

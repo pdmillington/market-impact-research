@@ -88,7 +88,7 @@ def collapse_figure(cells: pd.DataFrame, fits: pd.DataFrame, scales: pd.DataFram
                 label=rf"master curve ($\alpha$={f.alpha:.2f}, $\beta$={f.beta:.2f})")
         ax.set_xscale("log"); ax.set_yscale("log")
         ax.set_xlabel(title or rf"Activity-adjusted coordinate $x_\eta/\mathcal{{Q}}_N$ ($x_\eta = q\,\nu^{{\eta}}$, $\eta$ = {f.gamma:.2f})")
-        ax.set_ylabel(r"Mean response $\bar y/\mathcal{I}^\star_N$  ($y_t=\mathrm{sign}(Q_t)\,r_t/\sigma^-_{24h,t}$)")
+        ax.set_ylabel(r"Mean response $\bar y/\mathcal{I}^\star_N$  ($y_t=\mathrm{sign}(Q_t)\,r_t/\sigma_{24h,t}$)")
         ax.set_title(f"{'P&B (η = 1)' if model == 'pb_gamma_1' else 'Activity surface'}: standardised RMSE {f.weighted_rmse:.1f}",
                      color=INK, fontsize=11)
         ax.legend(loc="upper left", fontsize=9, frameon=True)

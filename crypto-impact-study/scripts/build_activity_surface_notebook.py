@@ -123,7 +123,7 @@ The surface asks instead how the imbalance should be scaled, and lets the data d
 
 ## A2. The variables and notation
 
-The notation follows the paper. Section 3 defines $x = |Q|/V_{24h}$ and the signed response $y_t = \mathrm{sign}(Q_t)\,r_t/\sigma^-_{24h,t}$; section 4 the P&B scales
+The notation follows the paper. Section 3 defines $x = |Q|/V_{24h}$ and the signed response $y_t = \mathrm{sign}(Q_t)\,r_t/\sigma_{24h,t}$; section 4 the P&B scales
 $\mathcal{Q}_N$, $\mathcal{I}^\star_N$ and master curve $\mathcal{F}$; section 6 the threshold model's $u$, $z$,
 $a_0, a_1, b_0, b_1$ and $\eta$. To avoid clashes with section 6, the surface uses **η** (not η) for its activity
 exponent and **ν** (not a) for relative activity.
@@ -134,7 +134,7 @@ exponent and **ν** (not a) for relative activity.
 | $\nu = V/V_{24h}$ | relative activity | the block's volume as a share of the previous 24 h volume (strictly before the block) |
 | $x = \lvert Q\rvert/V_{24h} = q\,\nu$ | normalised imbalance | the paper's $x$ (section 3) and the P&B coordinate |
 | $x_\eta = q\,\nu^{\eta}$ | activity-adjusted imbalance | the surface's coordinate; $x_1 = x$ |
-| $y_t = \mathrm{sign}(Q_t)\,r_t/\sigma^-_{24h,t}$ | signed response | block log return, signed by the direction of the imbalance, in units of the previous 24 h realised volatility (√ of the sum of squared block returns) |
+| $y_t = \mathrm{sign}(Q_t)\,r_t/\sigma_{24h,t}$ | signed response | block log return, signed by the direction of the imbalance, in units of the previous 24 h realised volatility (√ of the sum of squared block returns) |
 | $z$ | log event intensity | the threshold model's activity variable (section 6; Part B6) |
 
 **Column names in the data and code are unchanged:** `gamma` holds η, `a` / `mean_loga` hold ν and log ν,
@@ -235,7 +235,7 @@ for (label, a), colour in zip(a_levels.items(), plt.cm.Blues([0.45, 0.7, 0.95]))
         ax.plot(q_grid, resp, color=colour, ls=style, lw=1.8 if style == '-' else 1.2,
                 label=f'{label} (ν = {a:.1e})' if style == '-' else None)
 ax.set_xscale('log'); ax.set_yscale('log')
-ax.set_xlabel('imbalance ratio $q = |Q|/V$'); ax.set_ylabel(r'predicted $\mathbb{E}[y_t]$ (units of $\sigma^-_{24h}$)')
+ax.set_xlabel('imbalance ratio $q = |Q|/V$'); ax.set_ylabel(r'predicted $\mathbb{E}[y_t]$ (units of $\sigma_{24h}$)')
 ax.set_title(f'N = {n:,}: activity shifts the curve (solid surface, dashed P&B)', fontsize=11)
 ax.legend(fontsize=8, loc='upper left')
 fig.tight_layout(); plt.show()
