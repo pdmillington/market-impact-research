@@ -1,0 +1,185 @@
+"""Section 5.2 P&B activity-residual table rebuilt on the volatility-normalised response.
+
+The paper's table tab:pb-activity-residuals (notebooks/PatzeltBouchaudScaling.ipynb,
+reports/redo/paper/tables/pb_activity_residuals.csv) uses the raw block log return:
+the master curve is fitted to raw binned responses and residuals are scaled by R_N.
+The surface's displacement table (activity_surface_displacement.csv) uses
+y_t = sign(Q_t) r_t / sigma_{24h,t}, so the two are not directly comparable. This
+script rebuilds the section 5.2 table under both responses with everything else
+held fixed, and adds the surface on the same footing.
+
+Variants (all on 2021-01..2026-08, 2020-12 used only to warm up the 24 h windows):
+- pb_binned_raw:      notebook method, raw log return (reproduction check);
+- pb_binned_y:        notebook method, y_t (the like-for-like rebuild);
+- pb_cells_y:         P&B (eta = 1) from the headline surface run's cell fit, y_t;
+- surface_y:          headline activity surface (eta free), y_t.
+"Notebook method": 60 equal-count bins of x = Q/V_24h per side, min 100 per bin,
+robust SE-weighted master-curve fit across N = 100..16,000 (crypto_impact.pb_collapse).
+
+Each variant gives the table's columns for N = 250, 1,000, 4,000, 16,000, with
+activity measured by event intensity N/T (the paper's state variable) and, as a
+second measure, by the volume share nu = V/V_24h (the surface's activity variable).
+Standard errors: the table's descriptive std/sqrt(n), and UTC-day clustered SEs
+for the two contrasts.
+
+Outputs: reports/redo/pb_activity_residuals_normalised/{residuals.csv,
+master_fits.csv, pb_activity_residuals_y.tex}.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+import sys
+
+import numpy as np
+import pandas as pd
+
+REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO / "crypto-impact-study" / "src"))
+sys.path.insert(0, str(REPO / "crypto-impact-study" / "scripts"))
+sys.path.insert(0, str(REPO / "shared-methodology" / "src"))
+
+from build_pb_blocks import N_VALUES  # noqa: E402
+from crypto_impact.pb_collapse import fit_pb_master_curve, independently_binned_signed_response, pb_shape  # noqa: E402
+from run_activity_surface import load_arrays  # noqa: E402
+
+TABLE_N = (250, 1000, 4000, 16000)
+HEADLINE = REPO / "crypto-impact-study" / "reports" / "redo" / "activity_surface_n250_2021_2026"
+OUT = REPO / "crypto-impact-study" / "reports" / "redo" / "pb_activity_residuals_normalised"
+
+
+def frame_for(arrays: dict) -> pd.DataFrame:
+    ok = (arrays["side"] != 0) & np.isfinite(arrays["pb_x"]) & np.isfinite(arrays["intensity"]) \
+        & np.isfinite(arrays["y_vol"]) & np.isfinite(arrays["a"])
+    return pd.DataFrame({
+        "pb_signed": arrays["side"][ok] * arrays["pb_x"][ok], "abs_x": arrays["pb_x"][ok],
+        "z": arrays["z"][ok], "nu": arrays["a"][ok], "side": arrays["side"][ok],
+        "log_return": arrays["y"][ok], "y_vol": arrays["y_vol"][ok],
+        "intensity": arrays["intensity"][ok], "day": arrays["day"][ok],
+    })
+
+
+def cluster_se(resid: np.ndarray, design: np.ndarray, clusters: np.ndarray) -> np.ndarray:
+    """OLS coefficients and day-clustered standard errors (CR1)."""
+
+    xtx_inv = np.linalg.inv(design.T @ design)
+    beta = xtx_inv @ design.T @ resid
+    u = resid - design @ beta
+    codes, inverse = np.unique(clusters, return_inverse=True)
+    scores = np.zeros((len(codes), design.shape[1]))
+    np.add.at(scores, inverse, design * u[:, None])
+    g, n, k = len(codes), len(resid), design.shape[1]
+    meat = scores.T @ scores * (g / (g - 1)) * ((n - 1) / (n - k))
+    return beta, np.sqrt(np.diag(xtx_inv @ meat @ xtx_inv))
+
+
+def residual_row(scaled: np.ndarray, activity: np.ndarray, abs_x: np.ndarray, day: np.ndarray) -> dict:
+    act = pd.qcut(activity, 5, labels=False, duplicates="drop")
+    imb = pd.qcut(abs_x, 5, labels=False, duplicates="drop")
+    high, extreme = act == act.max(), imb == imb.max()
+
+    def mean_se(v):
+        return v.mean(), v.std(ddof=1) / np.sqrt(len(v))
+
+    o_m, o_se = mean_se(scaled[~high])
+    h_m, h_se = mean_se(scaled[high])
+    cells = {(h, e): mean_se(scaled[(high == h) & (extreme == e)]) for h in (True, False) for e in (True, False)}
+    one = np.ones(len(scaled))
+    _, se_hmo = cluster_se(scaled, np.column_stack([one, high]).astype(float), day)
+    _, se_int = cluster_se(scaled, np.column_stack([one, high, extreme, high & extreme]).astype(float), day)
+    return {
+        "ordinary_activity": o_m, "ordinary_activity_se": o_se,
+        "high_activity": h_m, "high_activity_se": h_se,
+        "all_states": scaled.mean(),
+        "high_minus_ordinary": h_m - o_m, "high_minus_ordinary_se": np.hypot(h_se, o_se),
+        "high_minus_ordinary_se_day": se_hmo[1],
+        "activity_imbalance_interaction": (cells[(True, True)][0] - cells[(True, False)][0])
+        - (cells[(False, True)][0] - cells[(False, False)][0]),
+        "activity_imbalance_interaction_se": np.sqrt(sum(se ** 2 for _, se in cells.values())),
+        "activity_imbalance_interaction_se_day": se_int[3],
+        "high_extreme": cells[(True, True)][0],
+        "blocks": len(scaled), "high_activity_blocks": int(high.sum()),
+    }
+
+
+def headline_model(name: str) -> tuple[dict, pd.DataFrame]:
+    fits = pd.read_csv(HEADLINE / "fits.csv").set_index("model")
+    scales = pd.read_csv(HEADLINE / "scales.csv")
+    row = fits.loc[name]
+    return ({"alpha": row["alpha"], "beta": row["beta"], "eta": row["gamma"]},
+            scales.loc[scales["model"] == name].set_index("n_events"))
+
+
+def main() -> None:
+    OUT.mkdir(parents=True, exist_ok=True)
+    root = REPO / "shared-data"
+    frames, curves = {}, {"log_return": [], "y_vol": []}
+    for n in N_VALUES:
+        f = frame_for(load_arrays(root, n, "2020-12", "2021-01", "2026-08"))
+        for response in curves:
+            c = independently_binned_signed_response(f, "pb_signed", response=response)
+            c.insert(0, "n_events", n)
+            curves[response].append(c)
+        if n in TABLE_N:
+            frames[n] = f
+        print(f"N={n}: {len(f):,} blocks", flush=True)
+
+    # Notebook-method master curves, raw and normalised response.
+    pb_fits = {r: fit_pb_master_curve(pd.concat(c, ignore_index=True), N_VALUES) for r, c in curves.items()}
+    master = []
+    for r, fit in pb_fits.items():
+        for _, s in fit["scales"].iterrows():
+            master.append({"response": r, "alpha": fit["alpha"], "beta": fit["beta"],
+                           "n_events": int(s["n_events"]), "q_scale": s["fitted_q_scale"], "r_scale": s["fitted_r_scale"]})
+    pd.DataFrame(master).to_csv(OUT / "master_fits.csv", index=False)
+    print({r: (round(f["alpha"], 4), round(f["beta"], 4)) for r, f in pb_fits.items()}, flush=True)
+
+    variants = {}
+    for r, label in (("log_return", "pb_binned_raw"), ("y_vol", "pb_binned_y")):
+        fit = pb_fits[r]
+        sc = fit["scales"].set_index("n_events")
+        variants[label] = (r, lambda f, n, fit=fit, sc=sc: (
+            sc.loc[n, "fitted_r_scale"] * pb_shape(f["abs_x"] / sc.loc[n, "fitted_q_scale"], fit["alpha"], fit["beta"]),
+            sc.loc[n, "fitted_r_scale"]))
+    for name, label in (("pb_gamma_1", "pb_cells_y"), ("activity_surface", "surface_y")):
+        p, sc = headline_model(name)
+        variants[label] = ("y_vol", lambda f, n, p=p, sc=sc: (
+            sc.loc[n, "r_scale"] * pb_shape(f["z"] * f["nu"] ** p["eta"] / sc.loc[n, "q_scale"], p["alpha"], p["beta"]),
+            sc.loc[n, "r_scale"]))
+
+    rows = []
+    for label, (response, predict) in variants.items():
+        for n in TABLE_N:
+            f = frames[n]
+            pred, r_scale = predict(f, n)
+            scaled = ((np.sign(f["pb_signed"]) * f[response] - pred) / r_scale).to_numpy()
+            for measure, col in (("event_intensity", "intensity"), ("volume_share", "nu")):
+                rows.append({"variant": label, "response": response, "n_events": n, "activity_measure": measure,
+                             **residual_row(scaled, f[col].to_numpy(), f["abs_x"].to_numpy(), f["day"].to_numpy())})
+        print(f"{label} done", flush=True)
+    table = pd.DataFrame(rows)
+    table.to_csv(OUT / "residuals.csv", index=False)
+
+    # LaTeX in the paper table's layout: notebook method on y_t, event-intensity quintiles.
+    t = table.loc[(table["variant"] == "pb_binned_y") & (table["activity_measure"] == "event_intensity")]
+
+    def num(v, d=4):
+        return f"\\({v:.{d}f}\\)"
+
+    lines = []
+    for _, r in t.iterrows():
+        lines.append(f"{int(r['n_events']):,} & {num(r['ordinary_activity'])} \\(({r['ordinary_activity_se']:.4f})\\) & "
+                     f"{num(r['high_activity'])} \\(({r['high_activity_se']:.4f})\\) & {num(r['all_states'])} & "
+                     f"{num(r['high_minus_ordinary'])} \\(({r['high_minus_ordinary_se_day']:.4f})\\) & "
+                     f"{num(r['activity_imbalance_interaction'])} \\(({r['activity_imbalance_interaction_se_day']:.4f})\\) \\\\")
+    (OUT / "pb_activity_residuals_y.tex").write_text("\n".join(lines) + "\n")
+    with pd.option_context("display.width", 200):
+        print(table.loc[table["activity_measure"] == "event_intensity",
+                        ["variant", "n_events", "ordinary_activity", "high_activity", "all_states",
+                         "high_minus_ordinary", "high_minus_ordinary_se_day",
+                         "activity_imbalance_interaction", "activity_imbalance_interaction_se_day"]].round(4).to_string())
+    print("DONE", flush=True)
+
+
+if __name__ == "__main__":
+    main()

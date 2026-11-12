@@ -49,6 +49,8 @@ step "surface identification and stability" "$PY" -W ignore "$S/surface_identifi
 step "surface concavity by activity" "$PY" -W ignore "$S/surface_concavity_by_activity.py"
 step "surface vs threshold" "$PY" -W ignore "$S/surface_vs_threshold.py"
 step "surface power-law scales (A3g)" "$PY" -W ignore "$S/surface_power_law_scales.py"
+step "P&B activity residuals on y_t (section 5.2 check)" "$PY" -W ignore "$S/pb_activity_residuals_normalised.py"
+step "P&B high-nu residuals split by relative V24h" "$PY" -W ignore "$S/pb_activity_nu_v24_split.py"
 step "surface figures" "$PY" -W ignore "$S/make_surface_figures.py"
 step "surface tables" "$PY" -W ignore "$S/make_surface_tables.py"
 

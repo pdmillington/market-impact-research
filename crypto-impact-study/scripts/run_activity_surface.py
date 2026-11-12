@@ -89,6 +89,7 @@ def arrays_from_blocks(blocks: pd.DataFrame, n: int, start: str, return_col: str
         "y_vol": b[return_col].to_numpy(float) / trailing_vol[keep],
         "intensity": n / np.where(b["duration_seconds"].to_numpy(float) > 0, b["duration_seconds"].to_numpy(float), np.nan),
         "pb_x": np.abs(signed) / tv,
+        "gross": gross_v,  # block gross volume V (V_24h = V / a)
         "day": (b["start_time_ms"].to_numpy() // 86_400_000).astype(np.int32),  # UTC day, for day-block bootstraps
         "end_day": (b["end_time_ms"].to_numpy() // 86_400_000).astype(np.int32),  # UTC day of the block end (conservative for exclusions)
     }

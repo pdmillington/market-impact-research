@@ -568,6 +568,75 @@ disp = show_table('surface_displacement', caption='Table: displacement at high a
 """)
 
 md(r"""
+### The section 5.2 residual table on $y_t$ (added 2026-11-12)
+
+The paper's table `tab:pb-activity-residuals` (section 5.2, from `PatzeltBouchaudScaling.ipynb`) is built on the
+**raw** log return, so its numbers are not comparable with the displacement table above, which uses $y_t$.
+`scripts/pb_activity_residuals_normalised.py` rebuilds it with everything else fixed (same P&B method: 60 bins per side,
+all eight N; event-intensity quintiles; residuals in units of $\mathcal{I}^\star_N$), and adds day-clustered standard errors.
+
+- **Reproduction:** on the raw response the rebuild matches the paper to about 0.01 (e.g. high − ordinary 0.341 vs 0.339 at N = 250).
+- **On $y_t$ the displacement mostly disappears.** High − ordinary falls from 0.34–0.58 to −0.05 … 0.08. It is
+  reversed at N = 250, about zero at N = 1,000, and a modest +0.06–0.08 at N ≥ 4,000. The interaction $D_N$ is
+  negative at N ≤ 1,000 and +0.05–0.08 at N ≥ 4,000. On raw returns, high event intensity mostly proxies higher volatility.
+- **Fitting method barely matters:** the P&B fit from the surface run (`pb_cells_y`) gives nearly the same contrasts,
+  and matches the displacement table above exactly.
+- **The surface does not absorb event-intensity displacement** (its activity variable is ν, not speed). By ν,
+  P&B and the surface err in opposite directions: P&B puts high-ν blocks below the curve at every N, the surface
+  above it at N ≥ 4,000 (η rising with N, as above).
+- **The two activity measures point opposite ways on raw returns.** By event intensity, high-activity blocks sit well
+  *above* the raw P&B curve (+0.34 to +0.58); by ν they sit well *below* it (−0.42 to −0.48). Fast trading coincides
+  with high volatility, which inflates raw returns. High ν = V/V₂₄ₕ mostly comes from a quiet preceding day instead
+  (checked below). On $y_t$ the ν gap shrinks to −0.27 at N = 250 and −0.06 at N = 16,000.
+
+**Check: is the raw high-ν shortfall a quiet-day effect?** (`scripts/pb_activity_nu_v24_split.py`)
+Relative V₂₄ₕ is V₂₄ₕ over its mean across the previous 30 days (so the split is not just calendar periods); blocks are
+cut into ν quintiles × relative-V₂₄ₕ terciles. Residuals are P&B, notebook method, in units of $\mathcal{I}^\star_N$.
+- **High ν mostly means a quiet preceding day.** 60–71% of top-ν-quintile blocks are in the low relative-V₂₄ₕ tercile
+  (against a third overall), and their trailing σ₂₄ₕ is also low (0.66–0.70 of its 30-day level).
+- **The raw shortfall sits in those blocks:** raw residual −0.46 to −0.50 in the quiet-day tercile, about zero
+  (−0.02 to +0.11) in the high-V₂₄ₕ tercile.
+- **It is a return shortfall, not a bigger prediction.** Within the top quintile the P&B prediction is nearly the same
+  across terciles; the realised signed return is lower when the preceding day was quiet (low volatility). Across ν
+  quintiles the prediction does rise with ν, since $|Q|/V_{24h} = q\nu$. The same tercile ordering, about 0.6 wide,
+  appears in every ν quintile: on raw returns the residual tracks the preceding day's volatility.
+- **On $y_t$ the tercile ordering in the top quintile reverses at small N** (N = 250: −0.14 quiet day, −0.36 high
+  V₂₄ₕ) and fades by N = 16,000 (−0.04, −0.03). Dividing by trailing σ₂₄ₕ removes the quiet-day effect and, at small N,
+  slightly overshoots for blocks after a busy day. This is an observation; it has not been investigated further.
+
+- The descriptive SEs in the paper's table are 10–15× smaller than day-clustered ones; the contrasts remain significant.
+""")
+
+code(r"""
+PB_RESID = REDO_ROOT / 'pb_activity_residuals_normalised'
+pb_resid = pd.read_csv(PB_RESID / 'residuals.csv')
+display(Markdown('**Section 5.2 table on $y_t$** — P&B, paper method, event-intensity quintiles '
+                 '(`reports/redo/pb_activity_residuals_normalised/residuals.csv`; LaTeX rows: `pb_activity_residuals_y.tex`; '
+                 'SEs in the contrasts are day-clustered)'))
+y_table = pb_resid.loc[(pb_resid.variant == 'pb_binned_y') & (pb_resid.activity_measure == 'event_intensity'),
+                       ['n_events', 'ordinary_activity', 'ordinary_activity_se', 'high_activity', 'high_activity_se',
+                        'all_states', 'high_minus_ordinary', 'high_minus_ordinary_se_day',
+                        'activity_imbalance_interaction', 'activity_imbalance_interaction_se_day']]
+display(y_table.set_index('n_events').round(4))
+
+display(Markdown('**All four variants side by side** — high − ordinary and the interaction $D_N$ '
+                 '(`pb_binned_raw` reproduces the paper; `pb_cells_y` = P&B from the surface run; `surface_y` = headline surface)'))
+for measure in ('event_intensity', 'volume_share'):
+    display(Markdown(f'*Activity measured by {measure.replace("_", " ")}*'))
+    display(pb_resid.loc[pb_resid.activity_measure == measure]
+            .pivot(index='n_events', columns='variant',
+                   values=['high_minus_ordinary', 'activity_imbalance_interaction'])
+            .reindex(columns=['pb_binned_raw', 'pb_binned_y', 'pb_cells_y', 'surface_y'], level=1).round(3))
+
+split = pd.read_csv(PB_RESID / 'nu_v24_split.csv')
+display(Markdown('**Top ν quintile split by relative V₂₄ₕ** (`reports/redo/pb_activity_residuals_normalised/nu_v24_split.csv`; '
+                 'all quintiles are in the CSV)'))
+display(split.loc[split.nu_quintile == 5, ['n_events', 'v24_tercile', 'share_of_nu_quintile', 'median_rel_v24',
+                                           'median_rel_sigma', 'raw_signed_return', 'raw_prediction', 'raw_resid', 'y_resid']]
+        .set_index(['n_events', 'v24_tercile']).round(3))
+""")
+
+md(r"""
 ## B9. The claim
 
 ### In one sentence
