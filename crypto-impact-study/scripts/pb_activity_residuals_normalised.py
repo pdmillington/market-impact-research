@@ -22,8 +22,19 @@ second measure, by the volume share nu = V/V_24h (the surface's activity variabl
 Standard errors: the table's descriptive std/sqrt(n), and UTC-day clustered SEs
 for the two contrasts.
 
+Section 4.2 quantities for y_t (added 2026-11-12), from the same master-curve fits:
+- scaling_exponents.csv: xi and psi, Theil-Sen (95% interval) and OLS slopes of the
+  fitted log scales on log N, as in section 4.2 (crypto_impact.pb_collapse.scaling_slope);
+- collapse_diagnostics.csv: collapse RMSE, MAE and R^2 per N and pooled, on the
+  rescaled binned responses (crypto_impact.pb_collapse.collapse_diagnostics);
+- binned_curves.csv / collapsed_curves.csv: the binned and rescaled curves;
+- figure reports/redo/paper/figures/22c_pb_collapse_normalised_response.pdf
+  (unscaled and collapsed y_t curves, in the layout of figure 22).
+Both responses are reported; the raw rows are the like-for-like reference for 4.2.
+
 Outputs: reports/redo/pb_activity_residuals_normalised/{residuals.csv,
-master_fits.csv, pb_activity_residuals_y.tex}.
+master_fits.csv, pb_activity_residuals_y.tex, scaling_exponents.csv,
+collapse_diagnostics.csv, binned_curves.csv, collapsed_curves.csv}.
 """
 
 from __future__ import annotations
@@ -31,6 +42,9 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -40,12 +54,48 @@ sys.path.insert(0, str(REPO / "crypto-impact-study" / "scripts"))
 sys.path.insert(0, str(REPO / "shared-methodology" / "src"))
 
 from build_pb_blocks import N_VALUES  # noqa: E402
-from crypto_impact.pb_collapse import fit_pb_master_curve, independently_binned_signed_response, pb_shape  # noqa: E402
+from crypto_impact.pb_collapse import (  # noqa: E402
+    collapse_diagnostics, fit_pb_master_curve, independently_binned_signed_response, pb_shape, scaling_slope,
+)
 from run_activity_surface import load_arrays  # noqa: E402
 
 TABLE_N = (250, 1000, 4000, 16000)
 HEADLINE = REPO / "crypto-impact-study" / "reports" / "redo" / "activity_surface_n250_2021_2026"
 OUT = REPO / "crypto-impact-study" / "reports" / "redo" / "pb_activity_residuals_normalised"
+FIGURE = REPO / "crypto-impact-study" / "reports" / "redo" / "paper" / "figures" / "22c_pb_collapse_normalised_response.pdf"
+
+
+def collapse_figure(curves: pd.DataFrame, collapsed: pd.DataFrame, fit: dict) -> None:
+    """Figure 22's layout for y_t: unscaled binned curves, and the collapse onto the master curve."""
+
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5.2))
+    colours = plt.cm.viridis(np.linspace(0.05, 0.95, len(N_VALUES)))
+    for colour, n in zip(colours, N_VALUES):
+        raw = curves.loc[curves["n_events"] == n]
+        col = collapsed.loc[collapsed["n_events"] == n]
+        axes[0].plot(raw["mean_q"], raw["mean_response"], marker="o", ms=2.5, lw=1, color=colour, label=f"N={n:,}")
+        axes[1].plot(col["scaled_q"], col["scaled_response"], marker="o", ms=2.5, lw=1, color=colour)
+    positive = np.geomspace(max(collapsed["scaled_q"].abs().min(), 1e-8), collapsed["scaled_q"].abs().max(), 300)
+    grid = np.r_[-positive[::-1], 0.0, positive]
+    axes[1].plot(grid, pb_shape(grid, fit["alpha"], fit["beta"]), color="black", lw=2.2,
+                 label=rf"Shared P&B curve ($\alpha$={fit['alpha']:.3f}, $\beta$={fit['beta']:.3f})")
+    axes[0].set_xscale("symlog", linthresh=max(curves["mean_q"].abs().quantile(0.10), 1e-12))
+    axes[1].set_xscale("symlog", linthresh=max(collapsed["scaled_q"].abs().quantile(0.10), 1e-12))
+    axes[0].set_xlabel("Signed imbalance / trailing 24-hour volume")
+    axes[0].set_ylabel(r"Mean $y_t = r_t/\sigma_{24h,t}$")
+    axes[0].set_title(r"Unscaled response, $y_t$")
+    axes[0].legend(ncol=2, fontsize=8)
+    axes[1].set_xlabel(r"$Q/\mathcal{Q}_N$")
+    axes[1].set_ylabel(r"$\bar y/\mathcal{I}^\star_N$")
+    axes[1].set_title(r"Scale-collapsed response, $y_t$")
+    axes[1].legend(fontsize=8)
+    for ax in axes:
+        ax.axhline(0, color="0.35", lw=0.8)
+        ax.axvline(0, color="0.35", lw=0.8)
+    fig.tight_layout()
+    FIGURE.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(FIGURE, bbox_inches="tight")
+    plt.close(fig)
 
 
 def frame_for(arrays: dict) -> pd.DataFrame:
@@ -133,6 +183,27 @@ def main() -> None:
                            "n_events": int(s["n_events"]), "q_scale": s["fitted_q_scale"], "r_scale": s["fitted_r_scale"]})
     pd.DataFrame(master).to_csv(OUT / "master_fits.csv", index=False)
     print({r: (round(f["alpha"], 4), round(f["beta"], 4)) for r, f in pb_fits.items()}, flush=True)
+
+    # Section 4.2 quantities for each response: xi, psi and collapse quality.
+    exponents, diagnostics, binned, collapsed_all = [], [], [], []
+    for r, fit in pb_fits.items():
+        response_curves = pd.concat(curves[r], ignore_index=True)
+        collapsed, summary = collapse_diagnostics(response_curves, fit)
+        for column, label in (("fitted_q_scale", "xi: fitted response width"),
+                              ("fitted_r_scale", "psi: fitted response height")):
+            exponents.append({"response": r, **scaling_slope(fit["scales"], column, label)})
+        diagnostics.append(summary.assign(response=r))
+        binned.append(response_curves.assign(response=r))
+        collapsed_all.append(collapsed.assign(response=r))
+        if r == "y_vol":
+            collapse_figure(response_curves, collapsed, fit)
+    pd.DataFrame(exponents).to_csv(OUT / "scaling_exponents.csv", index=False)
+    pd.concat(diagnostics, ignore_index=True).to_csv(OUT / "collapse_diagnostics.csv", index=False)
+    pd.concat(binned, ignore_index=True).to_csv(OUT / "binned_curves.csv", index=False)
+    pd.concat(collapsed_all, ignore_index=True).to_csv(OUT / "collapsed_curves.csv", index=False)
+    print(pd.DataFrame(exponents)[["response", "quantity", "robust_exponent", "robust_lower_95", "robust_upper_95",
+                                   "ols_exponent", "ols_r_squared"]].round(4).to_string(), flush=True)
+    print(pd.concat(diagnostics).round(4).to_string(), flush=True)
 
     variants = {}
     for r, label in (("log_return", "pb_binned_raw"), ("y_vol", "pb_binned_y")):

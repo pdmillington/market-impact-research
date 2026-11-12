@@ -130,9 +130,20 @@ def collapse_diagnostics(curves: pd.DataFrame, fit: dict) -> tuple[pd.DataFrame,
     collapsed["scaled_response"] = collapsed["mean_response"] / collapsed["r_scale"]
     collapsed["master_prediction"] = pb_shape(collapsed["scaled_q"], fit["alpha"], fit["beta"])
     collapsed["collapse_residual"] = collapsed["scaled_response"] - collapsed["master_prediction"]
-    summary = collapsed.groupby("n_events", observed=True).agg(
-        collapse_rmse=("collapse_residual", lambda x: float(np.sqrt(np.mean(np.square(x))))),
-        collapse_mae=("collapse_residual", lambda x: float(np.mean(np.abs(x)))),
-        bins=("collapse_residual", "size"),
-    ).reset_index()
+    def fit_quality(frame: pd.DataFrame) -> pd.Series:
+        # R^2: share of the variance of the rescaled bin responses explained by the shared
+        # master curve, on the collapsed axes (as in the notebook's collapse table).
+        residual = frame["collapse_residual"]
+        centred = frame["scaled_response"] - frame["scaled_response"].mean()
+        return pd.Series({"collapse_rmse": float(np.sqrt(np.mean(np.square(residual)))),
+                          "collapse_mae": float(np.mean(np.abs(residual))),
+                          "collapse_r_squared": float(1 - np.sum(np.square(residual)) / np.sum(np.square(centred))),
+                          "bins": int(len(residual))})
+
+    summary = pd.concat([
+        collapsed.groupby("n_events", observed=True)[["collapse_residual", "scaled_response"]]
+        .apply(fit_quality).reset_index(),
+        fit_quality(collapsed).to_frame().T.assign(n_events="all"),
+    ], ignore_index=True)
+    summary["bins"] = summary["bins"].astype(int)
     return collapsed, summary

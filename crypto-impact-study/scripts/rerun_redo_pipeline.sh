@@ -51,6 +51,7 @@ step "surface vs threshold" "$PY" -W ignore "$S/surface_vs_threshold.py"
 step "surface power-law scales (A3g)" "$PY" -W ignore "$S/surface_power_law_scales.py"
 step "P&B activity residuals on y_t (section 5.2 check)" "$PY" -W ignore "$S/pb_activity_residuals_normalised.py"
 step "P&B high-nu residuals split by relative V24h" "$PY" -W ignore "$S/pb_activity_nu_v24_split.py"
+step "sigma_24h by N (y_t P&B exponent check)" "$PY" -W ignore "$S/pb_sigma24_by_n.py"
 step "surface figures" "$PY" -W ignore "$S/make_surface_figures.py"
 step "surface tables" "$PY" -W ignore "$S/make_surface_tables.py"
 
