@@ -15,9 +15,15 @@ signed response y_t = sign(Q_t) r_t / sigma_24h, as in section 3 of the paper):
 - the same fit pooled over all activity levels against x = |Q| / V_24h, for contrast;
 - the share of surface cells beyond the master-curve bend (x > 1 in surface units),
   from diagnose_activity_surface.py.
+- nu check (added 2026-11-12): within a decile nu is only roughly fixed. If the bin
+  geometric-mean nu drifts with q as log nu = c + kappa log q, the surface implies an
+  apparent exponent delta = delta_F (1 + eta kappa), so kappa is fitted per decile (OLS of
+  log nu on log q across the q bins, same day-block draws as delta) and
+  delta_adjusted = delta / (1 + eta kappa) is reported, eta from the headline fit. The
+  delta values and figure 30 are unchanged.
 
 Outputs: reports/redo/surface_concavity/{delta_by_decile.csv, bins.csv} and
-reports/redo/paper/figures/30_surface_concavity_by_activity.pdf
+reports/redo/paper/figures/{30_surface_concavity_by_activity.pdf, 30b_surface_concavity_nu_check.pdf}
 """
 
 from __future__ import annotations
@@ -44,15 +50,17 @@ import run_activity_surface as run  # noqa: E402
 OUT = REPO / "crypto-impact-study" / "reports" / "redo" / "surface_concavity"
 FIGURES = REPO / "crypto-impact-study" / "reports" / "redo" / "paper" / "figures"
 IDENTIFICATION = REPO / "crypto-impact-study" / "reports" / "redo" / "activity_surface_n250_2021_2026" / "identification_by_n.csv"
+HEADLINE_FITS = REPO / "crypto-impact-study" / "reports" / "redo" / "activity_surface_n250_2021_2026" / "fits.csv"
 N_SHOWN = (1000, 4000, 16000)
 N_DECILES, N_QBINS, N_BOOT = 10, 20, 200
 INK, MUTED = "#1f1f1f", "#6b6b6b"
 
 
-def day_bin_stats(group: np.ndarray, x: np.ndarray, y: np.ndarray, day: np.ndarray) -> pd.DataFrame:
-    frame = pd.DataFrame({"group": group, "day": day, "y": y, "y2": y * y, "logx": np.log(x)})
+def day_bin_stats(group: np.ndarray, x: np.ndarray, y: np.ndarray, day: np.ndarray, nu: np.ndarray) -> pd.DataFrame:
+    frame = pd.DataFrame({"group": group, "day": day, "y": y, "y2": y * y, "logx": np.log(x), "lognu": np.log(nu)})
     return frame.groupby(["group", "day"], observed=True).agg(
-        count=("y", "size"), sum_y=("y", "sum"), sum_y2=("y2", "sum"), sum_logx=("logx", "sum")).reset_index()
+        count=("y", "size"), sum_y=("y", "sum"), sum_y2=("y2", "sum"), sum_logx=("logx", "sum"),
+        sum_lognu=("lognu", "sum")).reset_index()
 
 
 def bin_means(stats: pd.DataFrame, weights: pd.Series | None = None) -> pd.DataFrame:
@@ -60,13 +68,20 @@ def bin_means(stats: pd.DataFrame, weights: pd.Series | None = None) -> pd.DataF
     if weights is not None:
         data = stats.loc[stats["day"].isin(weights.index)].copy()
         factor = data["day"].map(weights).to_numpy()
-        for column in ("count", "sum_y", "sum_y2", "sum_logx"):
+        for column in ("count", "sum_y", "sum_y2", "sum_logx", "sum_lognu"):
             data[column] = data[column] * factor
-    g = data.groupby("group", observed=True)[["count", "sum_y", "sum_y2", "sum_logx"]].sum()
+    g = data.groupby("group", observed=True)[["count", "sum_y", "sum_y2", "sum_logx", "sum_lognu"]].sum()
     mean = g["sum_y"] / g["count"]
     variance = (g["sum_y2"] - g["count"] * mean**2) / (g["count"] - 1)
     return pd.DataFrame({"x": np.exp(g["sum_logx"] / g["count"]), "y": mean,
-                         "se": np.sqrt(variance.clip(lower=0) / g["count"]), "count": g["count"]})
+                         "se": np.sqrt(variance.clip(lower=0) / g["count"]), "count": g["count"],
+                         "nu": np.exp(g["sum_lognu"] / g["count"])})
+
+
+def fit_kappa(bins: pd.DataFrame) -> float:
+    """OLS slope of log nu on log x across the bins (bin geometric means)."""
+
+    return float(np.polyfit(np.log(bins["x"].to_numpy()), np.log(bins["nu"].to_numpy()), 1)[0])
 
 
 def fit_power(bins: pd.DataFrame) -> tuple[float, float]:
@@ -86,6 +101,7 @@ def fit_power(bins: pd.DataFrame) -> tuple[float, float]:
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(20261015)
+    eta = float(pd.read_csv(HEADLINE_FITS).set_index("model").loc["activity_surface", "gamma"])
     delta_rows, bin_rows = [], []
     for n in N_SHOWN:
         arr = run.load_arrays(REPO / "shared-data", n, "2020-12", "2021-01", "2026-08")
@@ -99,21 +115,29 @@ def main() -> None:
             qbin = pd.qcut(q[in_d], N_QBINS, labels=False, duplicates="drop")
             groups[d] = (in_d, qbin)
         pooled_bin = pd.qcut(x, N_QBINS, labels=False, duplicates="drop")
-        specs = {f"decile_{d + 1}": (q[g[0]], y[g[0]], day[g[0]], g[1]) for d, g in groups.items()}
-        specs["pooled_x"] = (x, y, day, pooled_bin)
-        for label, (xv, yv, dv, bins_id) in specs.items():
-            stats = day_bin_stats(bins_id, xv, yv, dv)
+        specs = {f"decile_{d + 1}": (q[g[0]], y[g[0]], day[g[0]], g[1], a[g[0]]) for d, g in groups.items()}
+        specs["pooled_x"] = (x, y, day, pooled_bin, a)
+        for label, (xv, yv, dv, bins_id, nv) in specs.items():
+            stats = day_bin_stats(bins_id, xv, yv, dv, nv)
             bins = bin_means(stats)
             c, delta = fit_power(bins)
+            kappa = fit_kappa(bins)
             days = np.asarray(sorted(stats["day"].unique()))
-            boot = []
+            boot, boot_kappa = [], []
             for _ in range(N_BOOT):
                 draw = pd.Series(rng.choice(days, len(days), replace=True)).value_counts()
-                boot.append(fit_power(bin_means(stats, draw))[1])
+                resampled = bin_means(stats, draw)
+                boot.append(fit_power(resampled)[1])
+                boot_kappa.append(fit_kappa(resampled))
             decile_a = np.nan if label == "pooled_x" else float(np.median(a[groups[int(label.split("_")[1]) - 1][0]]))
             delta_rows.append({"n_events": n, "group": label, "median_a": decile_a, "delta": delta, "c": c,
                                "delta_p025": np.quantile(boot, 0.025), "delta_p975": np.quantile(boot, 0.975),
-                               "bins": len(bins), "blocks": int(bins["count"].sum())})
+                               "bins": len(bins), "blocks": int(bins["count"].sum()),
+                               "kappa": kappa, "kappa_p025": np.quantile(boot_kappa, 0.025),
+                               "kappa_p975": np.quantile(boot_kappa, 0.975),
+                               "nu_bin_ratio_max_min": float(bins["nu"].max() / bins["nu"].min()),
+                               "delta_adjusted": np.nan if label == "pooled_x" else delta / (1 + eta * kappa),
+                               "eta_used": eta})
             bins = bins.reset_index().rename(columns={"group": "bin"})
             bin_rows.append(bins.assign(n_events=n, group=label, fitted=c * bins["x"] ** delta))
         print(n, "done", flush=True)
@@ -126,6 +150,7 @@ def main() -> None:
     bins.to_csv(OUT / "bins.csv", index=False)
     print(deltas.round(3).to_string(index=False))
     figure(deltas, bins)
+    nu_figure(deltas, bins)
 
 
 def figure(deltas: pd.DataFrame, bins: pd.DataFrame) -> None:
@@ -159,6 +184,41 @@ def figure(deltas: pd.DataFrame, bins: pd.DataFrame) -> None:
             dax.legend(fontsize=7.5, loc="lower left", frameon=True)
     fig.tight_layout()
     fig.savefig(FIGURES / "30_surface_concavity_by_activity.pdf", bbox_inches="tight")
+    plt.close(fig)
+
+
+def nu_figure(deltas: pd.DataFrame, bins: pd.DataFrame) -> None:
+    """30b: is nu constant across the q bins within each decile? Bin geometric-mean nu against q, and kappa."""
+
+    fig, axes = plt.subplots(2, len(N_SHOWN), figsize=(4.6 * len(N_SHOWN), 8.2),
+                             gridspec_kw={"height_ratios": [1.5, 1.0]})
+    colours = plt.cm.Blues(np.linspace(0.30, 1.0, N_DECILES))
+    for col, n in enumerate(N_SHOWN):
+        ax = axes[0, col]
+        for d in range(N_DECILES):
+            b = bins.loc[(bins["n_events"] == n) & (bins["group"] == f"decile_{d + 1}")].sort_values("x")
+            ax.plot(b["x"], b["nu"], "o-", ms=3, lw=1.0, color=colours[d])
+        ax.set_xscale("log"); ax.set_yscale("log")
+        ax.set_title(f"N = {n:,} events", fontsize=11, color=INK)
+        ax.set_xlabel(r"Imbalance ratio $q=|Q|/V$ (bin geometric mean)")
+        ax.grid(color="#e6e6e6", lw=0.7)
+        kax = axes[1, col]
+        dsub = deltas.loc[(deltas["n_events"] == n) & deltas["group"].str.startswith("decile")]
+        idx = np.arange(1, len(dsub) + 1)
+        kax.errorbar(idx, dsub["kappa"], yerr=[dsub["kappa"] - dsub["kappa_p025"], dsub["kappa_p975"] - dsub["kappa"]],
+                     fmt="o", color=INK, ms=5, capsize=2, label=r"$\kappa$: slope of $\log\nu$ on $\log q$ (95% day-block CI)")
+        kax.axhline(0.0, color=MUTED, lw=0.9, ls=":", label=r"$\nu$ constant across $q$ ($\kappa = 0$)")
+        kax.set_xticks(idx); kax.set_xlabel(r"Relative-activity decile ($\nu=V/V_{24h}$), low $\rightarrow$ high")
+        kax.grid(color="#e6e6e6", lw=0.7)
+        if col == 0:
+            ax.set_ylabel(r"Bin geometric-mean $\nu = V/V_{24h}$")
+            kax.set_ylabel(r"$\kappa$")
+            kax.legend(fontsize=7.5, loc="best", frameon=True)
+    lim = max(0.05, float(np.nanmax(np.abs(deltas.loc[deltas["group"].str.startswith("decile"), ["kappa_p025", "kappa_p975"]].to_numpy()))) * 1.15)
+    for kax in axes[1]:
+        kax.set_ylim(-lim, lim)
+    fig.tight_layout()
+    fig.savefig(FIGURES / "30b_surface_concavity_nu_check.pdf", bbox_inches="tight")
     plt.close(fig)
 
 

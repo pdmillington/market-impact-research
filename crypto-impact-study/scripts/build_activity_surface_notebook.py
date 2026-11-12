@@ -516,6 +516,31 @@ fig.tight_layout(); plt.show()
 """)
 
 md(r"""
+**Check: is ν really fixed within a decile?** (figure 30b; added 2026-11-12)
+
+Within a decile ν is only roughly constant. If the bin mean of ν drifted with q, as $\log\nu = c + \kappa\log q$, the surface
+would imply an apparent exponent $\delta = \delta_F(1 + \eta\kappa)$, so part of δ would come from $\nu^{\eta}$ rather than $q$.
+The script fits κ in each decile (slope of the bin geometric-mean $\log\nu$ on $\log q$, same day-block draws as δ) and
+reports $\delta_{\text{adj}} = \delta/(1+\eta\kappa)$ with the headline η.
+
+- **Deciles 1–9:** κ ≤ 0.008 (≤ 0.003 in deciles 2–9); bin mean ν varies by at most 5% across the q bins. ν is
+  effectively constant and δ is unaffected (changes ≤ 0.003).
+- **Top decile:** the decile is open-ended, and the most one-sided blocks there are also the most active, so ν rises at
+  the highest q: κ = 0.045, 0.031, 0.020 at N = 1,000, 4,000, 16,000 (ν spans 34%, 24%, 16%). The correction is small:
+  δ falls from 0.943 to 0.927, 0.888 to 0.877, 0.890 to 0.883. It explains only part of the top decile's higher δ.
+- **Pooled bins** (for contrast) are strongly correlated with ν (κ ≈ 0.24–0.30), which is the mixing the decile split
+  removes.
+""")
+
+code(r"""
+nu_check = deltas.loc[deltas.group.str.startswith('decile'), ['n_events', 'group', 'delta', 'kappa', 'kappa_p025',
+                                                             'kappa_p975', 'nu_bin_ratio_max_min', 'delta_adjusted']]
+display(Markdown('**ν check by decile** (`reports/redo/surface_concavity/delta_by_decile.csv`; figure 30b)'))
+display(nu_check.pivot(index='group', columns='n_events', values=['kappa', 'delta', 'delta_adjusted'])
+        .reindex([f'decile_{d}' for d in range(1, 11)]).round(3))
+""")
+
+md(r"""
 ## B8. Robustness (paper tables: `surface_robustness`, `surface_displacement`)
 
 **Specifications.**
